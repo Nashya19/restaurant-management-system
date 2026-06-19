@@ -33,7 +33,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { createUser, getUserById, updateUser, resetUserPassword } from '@/lib/api/users';
+import { getUserById } from '@/lib/api/users';
+import { createUser, updateUser, resetUserPassword } from '@/lib/actions/users';
 import { useFormState } from '@/lib/hooks/useFormState';
 import { validateUserForm, validateEmail, validatePassword, validateFullName, validateRole } from '@/lib/utils/validation';
 import { ArrowLeft, Loader2, Key } from 'lucide-react';
@@ -80,6 +81,7 @@ export default function UserDetailPage() {
       if (isNewUser) {
         await createUser({
           email: data.email,
+          password: data.password,
           fullName: data.fullName,
           role: data.role,
         });
@@ -141,7 +143,7 @@ export default function UserDetailPage() {
       setResetPassword('');
       setResetConfirm('');
       setShowResetForm(false);
-      alert('Password reset successfully. Staff member will receive a confirmation email.');
+      alert('Password reset successfully.');
     } catch (err) {
       setResetError(err.message);
       console.error('Password reset error:', err);
@@ -179,7 +181,7 @@ export default function UserDetailPage() {
         </h1>
         <p className="text-body text-[var(--text-secondary)]">
           {isNewUser
-            ? 'Add a new staff member. They will receive an invite email to set their password.'
+            ? 'Add a new staff member. They can log in immediately with the password you set.'
             : 'Update staff member details.'}
         </p>
       </div>
@@ -249,7 +251,7 @@ export default function UserDetailPage() {
             />
             {errors.password && <p className="text-small text-[var(--destructive)] mt-1">{errors.password}</p>}
             <p className="text-small text-[var(--text-muted)] mt-1">
-              This password will be sent to the staff member's email.
+              Set the initial password for this staff member.
             </p>
           </div>
         )}
@@ -305,7 +307,7 @@ export default function UserDetailPage() {
             <div>
               <h3 className="text-heading text-[var(--text-primary)] mb-1">Reset Password</h3>
               <p className="text-body text-[var(--text-secondary)]">
-                Set a new password for this staff member. They will receive a confirmation email.
+                Set a new password for this staff member.
               </p>
             </div>
             <button

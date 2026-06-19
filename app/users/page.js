@@ -26,7 +26,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { listUsers, searchUsers, deleteUser } from '@/lib/api/users';
+import { listUsers, searchUsers } from '@/lib/api/users';
+import { deleteUser } from '@/lib/actions/users';
 import { formatRole, getStatusBadgeClass, formatDate } from '@/lib/utils/formatters';
 import { Edit2, Trash2, Plus, Search } from 'lucide-react';
 
