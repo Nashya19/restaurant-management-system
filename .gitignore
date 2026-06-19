@@ -42,3 +42,5 @@ next-env.d.ts
 
 # User added
 Others/WhatsApp Image*.jpeg
+# Documentation (internship prep notes, not part of submission)
+/docs/
