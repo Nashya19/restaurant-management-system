@@ -16,9 +16,9 @@ Welcome to the Restaurant Management System repository! This project is being bu
 This checklist tracks the assignment and completion of all system modules. Please check off your assigned module (`- [x]`) and commit this `README.md` file when your work is complete and pushed.
 
 - [x] **1. Authentication** (Must build after: *Nothing*)
-- [ ] **2. User Management** (Must build after: *Auth*)
+- [x] **2. User Management** (Must build after: *Auth*)
 - [ ] **3. Dashboard** (Must build after: *Auth, most other modules*)
-- [ ] **4. Menu Management** (Must build after: *Auth*)
+- [x] **4. Menu Management** (Must build after: *Auth*)
 - [ ] **5. Surplus Food Distribution** (Must build after: *Auth, Menu*)
 - [ ] **6. Feedback and Ratings** (Must build after: *Billing*)
 - [ ] **7. Table Management** (Must build after: *Auth*)
