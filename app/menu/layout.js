@@ -11,6 +11,7 @@ import { AdminGuard } from '@/lib/hooks/useAdminAuth';
 import Link from 'next/link';
 import { UtensilsCrossed, Menu, X } from 'lucide-react';
 import { useState } from 'react';
+import { AdminNavBar } from '@/lib/components/AdminNavBar';
 
 export default function MenuLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -76,6 +77,7 @@ export default function MenuLayout({ children }) {
 
           {/* Page Content */}
           <div className="flex-1 overflow-y-auto p-6">
+            <AdminNavBar title="Menu Management" subtitle="Create, update, and organize menu items with ease." />
             {children}
           </div>
         </main>

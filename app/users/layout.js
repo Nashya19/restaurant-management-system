@@ -18,6 +18,7 @@ import { useAdminAuth, AdminGuard } from '@/lib/hooks/useAdminAuth';
 import Link from 'next/link';
 import { Users, Menu, X } from 'lucide-react';
 import { useState } from 'react';
+import { AdminNavBar } from '@/lib/components/AdminNavBar';
 
 export default function UsersLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -83,6 +84,7 @@ export default function UsersLayout({ children }) {
 
           {/* Page Content */}
           <div className="flex-1 overflow-y-auto p-6">
+            <AdminNavBar title="User Management" subtitle="Manage staff accounts and user access from one place." />
             {children}
           </div>
         </main>
