@@ -18,7 +18,7 @@ This checklist tracks the assignment and completion of all system modules. Pleas
 - [x] **1. Authentication** (Must build after: *Nothing*)
 - [x] **2. User Management** (Must build after: *Auth*)
 - [ ] **3. Dashboard** (Must build after: *Auth, most other modules*)
-- [ ] **4. Menu Management** (Must build after: *Auth*)
+- [x] **4. Menu Management** (Must build after: *Auth*)
 - [ ] **5. Surplus Food Distribution** (Must build after: *Auth, Menu*)
 - [ ] **6. Feedback and Ratings** (Must build after: *Billing*)
 - [ ] **7. Table Management** (Must build after: *Auth*)

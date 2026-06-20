@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Loader2, Utensils } from "lucide-react";
@@ -12,6 +12,10 @@ export default function LoginPage() {
   const [error, setError] = useState(null);
   const router = useRouter();
   const supabase = createClient();
+
+  useEffect(() => {
+    document.documentElement.classList.add("dark");
+  }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();
