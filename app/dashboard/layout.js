@@ -13,6 +13,7 @@ import { AdminGuard } from '@/lib/hooks/useAdminAuth';
 import Link from 'next/link';
 import { BarChart3, Menu, X } from 'lucide-react';
 import { useState } from 'react';
+import { AdminNavBar } from '@/lib/components/AdminNavBar';
 
 export default function DashboardLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -71,6 +72,7 @@ export default function DashboardLayout({ children }) {
 
           {/* Page Content */}
           <div className="flex-1 overflow-y-auto p-6">
+            <AdminNavBar title="Dashboard" subtitle="Access the latest restaurant metrics and quick actions." />
             {children}
           </div>
         </main>
