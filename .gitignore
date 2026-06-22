@@ -44,3 +44,7 @@ next-env.d.ts
 Others/WhatsApp Image*.jpeg
 # Documentation (internship prep notes, not part of submission)
 /docs/
+
+# Ignore generated documentation files
+*.txt
+*.tex
