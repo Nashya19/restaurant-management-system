@@ -67,6 +67,7 @@ export default function UserDetailPage() {
       password: '',
       fullName: '',
       role: 'staff',
+      phone: '',
     },
     validate: (data) => {
       return validateUserForm({
@@ -74,6 +75,7 @@ export default function UserDetailPage() {
         password: data.password,
         fullName: data.fullName,
         role: data.role,
+        phone: data.phone,
         isNewUser,
       });
     },
@@ -84,11 +86,13 @@ export default function UserDetailPage() {
           password: data.password,
           fullName: data.fullName,
           role: data.role,
+          phone: data.phone,
         });
       } else {
         await updateUser(userId, {
           fullName: data.fullName,
           role: data.role,
+          phone: data.phone,
         });
       }
     },
@@ -112,6 +116,7 @@ export default function UserDetailPage() {
         const user = await getUserById(userId);
         setFieldValue('fullName', user.full_name);
         setFieldValue('role', user.role);
+        setFieldValue('phone', user.phone || '');
       } catch (err) {
         setFieldError('submit', err.message);
         console.error('Failed to fetch user:', err);
@@ -276,6 +281,23 @@ export default function UserDetailPage() {
           <p className="text-small text-[var(--text-muted)] mt-1">
             Admins can manage staff, inventory, and view dashboard metrics.
           </p>
+        </div>
+
+        {/* Phone Field */}
+        <div className="form-group">
+          <label htmlFor="phone" className="text-small uppercase text-[var(--text-secondary)] font-semibold block mb-2">
+            Phone
+          </label>
+          <input
+            id="phone"
+            name="phone"
+            type="tel"
+            value={formData.phone}
+            onChange={handleChange}
+            placeholder="e.g. +15551234567"
+            className="w-full"
+          />
+          {errors.phone && <p className="text-small text-[var(--destructive)] mt-1">{errors.phone}</p>}
         </div>
 
         {/* Buttons */}

@@ -16,8 +16,12 @@ CREATE POLICY "profiles_insert" ON profiles
 CREATE POLICY "profiles_update" ON profiles
     FOR UPDATE USING (auth.uid() = id OR get_user_role() = 'admin');
 
-CREATE POLICY "profiles_delete" ON profiles
-    FOR DELETE USING (get_user_role() = 'admin');
+-- Allow admins to archive/restore users by updating the is_archived flag
+CREATE POLICY "profiles_archive_by_admin" ON profiles
+    FOR UPDATE USING (get_user_role() = 'admin') WITH CHECK (get_user_role() = 'admin');
+
+-- Prevent direct DELETEs; archiving is preferred.
+DROP POLICY IF EXISTS "profiles_delete" ON profiles;
 
 -- categories
 ALTER TABLE categories ENABLE ROW LEVEL SECURITY;

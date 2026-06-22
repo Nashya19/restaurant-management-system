@@ -6,7 +6,7 @@
  * - Table with columns: Name, Email (TBD), Role, Created Date, Actions
  * - Search bar for real-time filtering
  * - Create button linking to /users/new
- * - Edit/Delete actions per row
+ * - Edit/Archive actions per row
  * 
  * DESIGN COMPLIANCE:
  * - Dark theme (`.dark` class on root)
@@ -27,9 +27,9 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { listUsers, searchUsers } from '@/lib/api/users';
-import { deleteUser } from '@/lib/actions/users';
+import { archiveUser, restoreUser } from '@/lib/actions/users';
 import { formatRole, getStatusBadgeClass, formatDate } from '@/lib/utils/formatters';
-import { Edit2, Trash2, Plus, Search } from 'lucide-react';
+import { Edit2, Archive, RefreshCw, Plus, Search } from 'lucide-react';
 
 export default function UsersPage() {
   const [users, setUsers] = useState([]);
@@ -77,19 +77,32 @@ export default function UsersPage() {
     }
   };
 
-  // Handle delete with confirmation
-  const handleDelete = async (userId, userName) => {
-    if (!confirm(`Delete staff member "${userName}"? This cannot be undone.`)) {
+  // Handle archive with confirmation
+  const handleArchive = async (userId, userName) => {
+    if (!confirm(`Archive staff member "${userName}"? This can be restored later.`)) {
       return;
     }
 
     try {
-      await deleteUser(userId);
+      await archiveUser(userId);
       setUsers(users.filter((u) => u.id !== userId));
       setFilteredUsers(filteredUsers.filter((u) => u.id !== userId));
     } catch (err) {
       setError(err.message);
-      console.error('Failed to delete user:', err);
+      console.error('Failed to archive user:', err);
+    }
+  };
+
+  const handleRestore = async (userId) => {
+    try {
+      await restoreUser(userId);
+      // Refresh full list
+      const { users: data } = await listUsers();
+      setUsers(data);
+      setFilteredUsers(data);
+    } catch (err) {
+      setError(err.message);
+      console.error('Failed to restore user:', err);
     }
   };
 
@@ -159,6 +172,9 @@ export default function UsersPage() {
                     Role
                   </th>
                   <th className="text-left text-subheading uppercase text-[var(--text-secondary)] font-semibold px-6 py-3">
+                    Phone
+                  </th>
+                  <th className="text-left text-subheading uppercase text-[var(--text-secondary)] font-semibold px-6 py-3">
                     Created
                   </th>
                   <th className="text-right text-subheading uppercase text-[var(--text-secondary)] font-semibold px-6 py-3">
@@ -183,6 +199,9 @@ export default function UsersPage() {
                       </span>
                     </td>
                     <td className="text-small text-[var(--text-secondary)] px-6 py-4">
+                      {user.phone || '—'}
+                    </td>
+                    <td className="text-body px-6 py-4">
                       {formatDate(user.created_at, 'short')}
                     </td>
                     <td className="text-body px-6 py-4 flex justify-end gap-2">
@@ -194,11 +213,11 @@ export default function UsersPage() {
                         Edit
                       </Link>
                       <button
-                        onClick={() => handleDelete(user.id, user.full_name)}
-                        className="btn btn-danger inline-flex items-center gap-1 px-3 py-2"
+                        onClick={() => handleArchive(user.id, user.full_name)}
+                        className="btn btn-warning inline-flex items-center gap-1 px-3 py-2"
                       >
-                        <Trash2 size={16} />
-                        Delete
+                        <Archive size={16} />
+                        Archive
                       </button>
                     </td>
                   </tr>
@@ -214,6 +233,59 @@ export default function UsersPage() {
         Showing <span className="font-semibold">{filteredUsers.length}</span> of{' '}
         <span className="font-semibold">{users.length}</span> staff members
       </div>
+
+      {/* Archived staff section */}
+      <div className="mt-8">
+        <h2 className="text-subheading mb-3">Archived Staff</h2>
+        <ArchivedList onRestore={handleRestore} />
+      </div>
+    </div>
+  );
+}
+
+function ArchivedList({ onRestore }) {
+  const [archived, setArchived] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchArchived = async () => {
+      setLoading(true);
+      try {
+        // fetch archived users (direct client call)
+        const res = await fetch('/api/_internal/archived-users');
+        const json = await res.json();
+        setArchived(json.users || []);
+      } catch (err) {
+        console.error('Failed to fetch archived users', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchArchived();
+  }, []);
+
+  if (loading) return <p>Loading archived staff…</p>;
+  if (archived.length === 0) return <p>No archived staff.</p>;
+
+  return (
+    <div className="card p-4">
+      <ul>
+        {archived.map((u) => (
+          <li key={u.id} className="flex items-center justify-between py-2">
+            <div>
+              <div className="font-semibold">{u.full_name}</div>
+              <div className="text-small text-[var(--text-secondary)]">{u.phone || '—'}</div>
+            </div>
+            <div>
+              <button onClick={() => onRestore(u.id)} className="btn btn-ghost inline-flex items-center gap-2">
+                <RefreshCw size={14} />
+                Restore
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

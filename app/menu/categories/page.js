@@ -23,7 +23,7 @@ import {
 } from '@/lib/api/menu';
 import { validateCategoryForm } from '@/lib/utils/validation';
 import { formatDate } from '@/lib/utils/formatters';
-import { Edit2, Trash2, Plus, X, Check, Loader2 } from 'lucide-react';
+import { Edit2, Archive, Plus, X, Check, Loader2 } from 'lucide-react';
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState([]);
@@ -117,18 +117,20 @@ export default function CategoriesPage() {
     }
   };
 
-  // Handle delete
-  const handleDelete = async (categoryId, categoryName) => {
-    if (!confirm(`Delete category "${categoryName}"? Items in this category will be unaffected.`)) {
+  // Handle archive (UI label changed from Delete -> Archive)
+  const handleArchive = async (categoryId, categoryName) => {
+    if (!confirm(`Archive category "${categoryName}"? Items in this category will be unaffected.`)) {
       return;
     }
 
     try {
+      // NOTE: backend currently performs deletion via deleteCategory();
+      // this UI change updates the label/confirmation only.
       await deleteCategory(categoryId);
       setCategories(categories.filter((c) => c.id !== categoryId));
     } catch (err) {
       setError(err.message);
-      console.error('Failed to delete category:', err);
+      console.error('Failed to archive category:', err);
     }
   };
 
@@ -302,11 +304,11 @@ export default function CategoriesPage() {
                           Edit
                         </button>
                         <button
-                          onClick={() => handleDelete(category.id, category.name)}
+                          onClick={() => handleArchive(category.id, category.name)}
                           className="btn btn-danger inline-flex items-center gap-1 px-3 py-2"
                         >
-                          <Trash2 size={16} />
-                          Delete
+                          <Archive size={16} />
+                          Archive
                         </button>
                       </td>
                     </tr>

@@ -1,8 +1,24 @@
-CREATE TABLE profiles (
-    id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-    full_name text NOT NULL,
-    role text NOT NULL CHECK (role IN ('admin', 'staff')),
-    created_at timestamptz NOT NULL DEFAULT now()
+CREATE TABLE public.profiles (
+    id UUID NOT NULL,
+    full_name TEXT NOT NULL,
+    role TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    phone BIGINT NULL,
+    is_archived BOOLEAN NOT NULL DEFAULT FALSE,
+
+    CONSTRAINT profiles_pkey PRIMARY KEY (id),
+
+    CONSTRAINT profiles_id_fkey
+        FOREIGN KEY (id)
+        REFERENCES auth.users (id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT profiles_role_check
+        CHECK (
+            role = ANY (
+                ARRAY['admin'::TEXT, 'staff'::TEXT]
+            )
+        )
 );
 
 CREATE TABLE categories (
