@@ -24,15 +24,17 @@ export default function CustomSelect({ value, onChange, options, icon: Icon, cla
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full h-[40px] flex items-center gap-3 bg-[var(--surface-raised)] border border-[var(--border)] rounded px-4 hover:border-[var(--accent)] transition-colors focus:outline-none focus:border-[var(--accent)]"
+        className="w-full h-10 flex items-center justify-between gap-3 bg-[#09090b] border border-[#27272a] rounded-xl px-4 hover:border-[var(--accent)] transition-all duration-200 focus:outline-none cursor-pointer"
       >
-        {Icon && <Icon size={18} className="text-[var(--text-secondary)]" />}
-        <span className="flex-1 text-left text-[var(--text-primary)] text-[14px]">{selectedOption.label}</span>
-        <ChevronDown size={16} className={`text-[var(--text-secondary)] transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <span className="flex items-center gap-2">
+          {Icon && <Icon size={16} className="text-[var(--text-secondary)]" />}
+          <span className="text-sm font-semibold text-[var(--text-primary)]">{selectedOption.label}</span>
+        </span>
+        <ChevronDown size={14} className={`text-[var(--text-secondary)] transition-transform duration-200 ${isOpen ? 'rotate-180 text-[var(--accent)]' : ''}`} />
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-[var(--surface)] border border-[var(--border)] rounded shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+        <div className="absolute z-50 w-full mt-2 bg-[#18181b] border border-[#27272a] rounded-xl shadow-2xl overflow-hidden animate-fade-in">
           {options.map((opt) => (
             <button
               key={opt.value}
@@ -41,8 +43,8 @@ export default function CustomSelect({ value, onChange, options, icon: Icon, cla
                 onChange(opt.value);
                 setIsOpen(false);
               }}
-              className={`w-full text-left px-4 py-2.5 text-[14px] hover:bg-[var(--surface-raised)] transition-colors ${
-                value === opt.value ? 'text-[var(--accent)] font-medium' : 'text-[var(--text-primary)]'
+              className={`w-full text-left px-4 py-2.5 text-sm transition-colors cursor-pointer hover:bg-[#27272a] ${
+                value === opt.value ? 'text-[var(--accent)] font-bold bg-[#09090b]/40' : 'text-[var(--text-primary)]'
               }`}
             >
               {opt.label}

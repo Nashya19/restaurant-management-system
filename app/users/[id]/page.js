@@ -169,22 +169,24 @@ export default function UserDetailPage() {
   }
 
   return (
-    <div className="w-full max-w-2xl mx-auto">
+    <div className="w-full max-w-2xl mx-auto space-y-8 animate-fade-in">
       {/* Back Button */}
-      <Link
-        href="/users"
-        className="inline-flex items-center gap-2 text-[var(--accent)] hover:text-[var(--accent)] mb-6 font-semibold"
-      >
-        <ArrowLeft size={18} />
-        Back to Staff
-      </Link>
+      <div>
+        <Link
+          href="/users"
+          className="btn btn-ghost bg-[#09090b] border-[#27272a] hover:bg-[#18181b] hover:text-[var(--accent)] inline-flex items-center gap-2 font-bold px-4 py-2 rounded-xl cursor-pointer text-xs"
+        >
+          <ArrowLeft size={14} />
+          <span>Back to Staff</span>
+        </Link>
+      </div>
 
       {/* Page Header */}
-      <div className="mb-8">
-        <h1 className="text-display text-[var(--text-primary)] mb-2">
+      <div className="pb-4 border-b border-[#27272a]">
+        <h1 className="text-display text-2xl font-bold tracking-tight text-[var(--text-primary)]">
           {isNewUser ? 'Create Staff Member' : 'Edit Staff Member'}
         </h1>
-        <p className="text-body text-[var(--text-secondary)]">
+        <p className="text-sm text-[var(--text-secondary)] mt-1">
           {isNewUser
             ? 'Add a new staff member. They can log in immediately with the password you set.'
             : 'Update staff member details.'}
@@ -192,18 +194,19 @@ export default function UserDetailPage() {
       </div>
 
       {/* Main Form */}
-      <form onSubmit={handleFormSubmit} className="card space-y-6 mb-8">
+      <form onSubmit={handleFormSubmit} className="card bg-[#18181b] border border-[#27272a] p-8 rounded-2xl shadow-lg space-y-6">
         {/* Submit Error */}
         {errors.submit && (
-          <div className="bg-[var(--destructive-bg)] border border-[var(--destructive-border)] rounded p-4">
-            <p className="text-body text-[var(--destructive)]">⚠️ {errors.submit}</p>
+          <div className="flex items-start gap-2 bg-[#2a1010] border border-[#5a2020] text-[#c45a5a] text-sm p-4 rounded-xl">
+            <span className="shrink-0 mt-0.5">⚠️</span>
+            <span>{errors.submit}</span>
           </div>
         )}
 
         {/* Email Field (Create only) */}
         {isNewUser && (
-          <div className="form-group">
-            <label htmlFor="email" className="text-small uppercase text-[var(--text-secondary)] font-semibold block mb-2">
+          <div className="space-y-1.5">
+            <label htmlFor="email" className="text-xs uppercase text-[var(--text-secondary)] font-bold tracking-wider cursor-pointer">
               Email Address
             </label>
             <input
@@ -213,16 +216,16 @@ export default function UserDetailPage() {
               value={formData.email}
               onChange={handleChange}
               placeholder="staff@restaurant.com"
-              className="w-full"
+              className="w-full bg-[#09090b] border-[#27272a] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-lg text-sm transition-all"
               required
             />
-            {errors.email && <p className="text-small text-[var(--destructive)] mt-1">{errors.email}</p>}
+            {errors.email && <p className="text-xs text-[var(--destructive)] mt-1 font-semibold">{errors.email}</p>}
           </div>
         )}
 
         {/* Full Name Field */}
-        <div className="form-group">
-          <label htmlFor="fullName" className="text-small uppercase text-[var(--text-secondary)] font-semibold block mb-2">
+        <div className="space-y-1.5">
+          <label htmlFor="fullName" className="text-xs uppercase text-[var(--text-secondary)] font-bold tracking-wider cursor-pointer">
             Full Name
           </label>
           <input
@@ -232,16 +235,16 @@ export default function UserDetailPage() {
             value={formData.fullName}
             onChange={handleChange}
             placeholder="John Doe"
-            className="w-full"
+            className="w-full bg-[#09090b] border-[#27272a] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-lg text-sm transition-all"
             required
           />
-          {errors.fullName && <p className="text-small text-[var(--destructive)] mt-1">{errors.fullName}</p>}
+          {errors.fullName && <p className="text-xs text-[var(--destructive)] mt-1 font-semibold">{errors.fullName}</p>}
         </div>
 
         {/* Password Field (Create only) */}
         {isNewUser && (
-          <div className="form-group">
-            <label htmlFor="password" className="text-small uppercase text-[var(--text-secondary)] font-semibold block mb-2">
+          <div className="space-y-1.5">
+            <label htmlFor="password" className="text-xs uppercase text-[var(--text-secondary)] font-bold tracking-wider cursor-pointer">
               Initial Password
             </label>
             <input
@@ -251,41 +254,43 @@ export default function UserDetailPage() {
               value={formData.password}
               onChange={handleChange}
               placeholder="Min 8 chars, upper, lower, number"
-              className="w-full"
+              className="w-full bg-[#09090b] border-[#27272a] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-lg text-sm transition-all"
               required
             />
-            {errors.password && <p className="text-small text-[var(--destructive)] mt-1">{errors.password}</p>}
-            <p className="text-small text-[var(--text-muted)] mt-1">
+            {errors.password && <p className="text-xs text-[var(--destructive)] mt-1 font-semibold">{errors.password}</p>}
+            <p className="text-xs text-[var(--text-muted)] mt-1.5 font-medium">
               Set the initial password for this staff member.
             </p>
           </div>
         )}
 
         {/* Role Field */}
-        <div className="form-group">
-          <label htmlFor="role" className="text-small uppercase text-[var(--text-secondary)] font-semibold block mb-2">
+        <div className="space-y-1.5">
+          <label htmlFor="role" className="text-xs uppercase text-[var(--text-secondary)] font-bold tracking-wider cursor-pointer">
             Role
           </label>
-          <select
-            id="role"
-            name="role"
-            value={formData.role}
-            onChange={handleChange}
-            className="w-full"
-            required
-          >
-            <option value="staff">Staff</option>
-            <option value="admin">Admin</option>
-          </select>
-          {errors.role && <p className="text-small text-[var(--destructive)] mt-1">{errors.role}</p>}
-          <p className="text-small text-[var(--text-muted)] mt-1">
+          <div className="relative">
+            <select
+              id="role"
+              name="role"
+              value={formData.role}
+              onChange={handleChange}
+              className="w-full bg-[#09090b] border-[#27272a] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-lg text-sm h-10 px-3 outline-none transition-all"
+              required
+            >
+              <option value="staff">Staff</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          {errors.role && <p className="text-xs text-[var(--destructive)] mt-1 font-semibold">{errors.role}</p>}
+          <p className="text-xs text-[var(--text-muted)] mt-1.5 font-medium">
             Admins can manage staff, inventory, and view dashboard metrics.
           </p>
         </div>
 
         {/* Phone Field */}
-        <div className="form-group">
-          <label htmlFor="phone" className="text-small uppercase text-[var(--text-secondary)] font-semibold block mb-2">
+        <div className="space-y-1.5">
+          <label htmlFor="phone" className="text-xs uppercase text-[var(--text-secondary)] font-bold tracking-wider cursor-pointer">
             Phone
           </label>
           <input
@@ -295,17 +300,17 @@ export default function UserDetailPage() {
             value={formData.phone}
             onChange={handleChange}
             placeholder="e.g. +15551234567"
-            className="w-full"
+            className="w-full bg-[#09090b] border-[#27272a] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-lg text-sm transition-all"
           />
-          {errors.phone && <p className="text-small text-[var(--destructive)] mt-1">{errors.phone}</p>}
+          {errors.phone && <p className="text-xs text-[var(--destructive)] mt-1 font-semibold">{errors.phone}</p>}
         </div>
 
         {/* Buttons */}
-        <div className="flex gap-3 pt-4">
+        <div className="flex gap-4 pt-4 border-t border-[#27272a]">
           <button
             type="submit"
             disabled={formLoading}
-            className="btn btn-primary flex-1 flex items-center justify-center gap-2"
+            className="btn btn-primary btn-premium flex-1 flex items-center justify-center gap-2 rounded-xl font-bold cursor-pointer"
           >
             {formLoading ? (
               <>
@@ -316,7 +321,7 @@ export default function UserDetailPage() {
               'Save Changes'
             )}
           </button>
-          <Link href="/users" className="btn btn-ghost flex-1">
+          <Link href="/users" className="btn btn-ghost bg-[#09090b] border-[#27272a] hover:bg-[#18181b] flex-1 rounded-xl font-bold text-center">
             Cancel
           </Link>
         </div>
@@ -324,32 +329,33 @@ export default function UserDetailPage() {
 
       {/* Password Reset Section (Edit only) */}
       {!isNewUser && (
-        <div className="card border-[var(--border)]">
-          <div className="flex items-start justify-between mb-4">
+        <div className="card bg-[#18181b] border border-[#27272a] p-8 rounded-2xl shadow-lg">
+          <div className="flex items-start justify-between">
             <div>
-              <h3 className="text-heading text-[var(--text-primary)] mb-1">Reset Password</h3>
-              <p className="text-body text-[var(--text-secondary)]">
+              <h3 className="text-md font-bold text-[var(--text-primary)] mb-1 uppercase tracking-wider">Reset Password</h3>
+              <p className="text-xs text-[var(--text-secondary)] font-medium">
                 Set a new password for this staff member.
               </p>
             </div>
             <button
               onClick={() => setShowResetForm(!showResetForm)}
-              className="btn btn-ghost text-[var(--accent)] hover:text-[var(--accent)]"
+              className="btn btn-ghost bg-[#09090b] border-[#27272a] hover:bg-[#18181b] text-[var(--accent)] hover:text-[var(--accent)] p-2 rounded-xl cursor-pointer"
             >
               <Key size={18} />
             </button>
           </div>
 
           {showResetForm && (
-            <form onSubmit={handlePasswordReset} className="space-y-4 pt-4 border-t border-[var(--border)]">
+            <form onSubmit={handlePasswordReset} className="space-y-4 pt-6 mt-6 border-t border-[#27272a] animate-fade-in">
               {resetError && (
-                <div className="bg-[var(--destructive-bg)] border border-[var(--destructive-border)] rounded p-3">
-                  <p className="text-small text-[var(--destructive)]">⚠️ {resetError}</p>
+                <div className="flex items-start gap-2 bg-[#2a1010] border border-[#5a2020] text-[#c45a5a] text-sm p-4 rounded-xl">
+                  <span className="shrink-0 mt-0.5">⚠️</span>
+                  <span>{resetError}</span>
                 </div>
               )}
 
-              <div className="form-group">
-                <label htmlFor="resetPassword" className="text-small uppercase text-[var(--text-secondary)] font-semibold block mb-2">
+              <div className="space-y-1.5">
+                <label htmlFor="resetPassword" className="text-xs uppercase text-[var(--text-secondary)] font-bold tracking-wider cursor-pointer">
                   New Password
                 </label>
                 <input
@@ -358,13 +364,13 @@ export default function UserDetailPage() {
                   value={resetPassword}
                   onChange={(e) => setResetPassword(e.target.value)}
                   placeholder="Min 8 chars, upper, lower, number"
-                  className="w-full"
+                  className="w-full bg-[#09090b] border-[#27272a] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-lg text-sm transition-all"
                   required
                 />
               </div>
 
-              <div className="form-group">
-                <label htmlFor="resetConfirm" className="text-small uppercase text-[var(--text-secondary)] font-semibold block mb-2">
+              <div className="space-y-1.5">
+                <label htmlFor="resetConfirm" className="text-xs uppercase text-[var(--text-secondary)] font-bold tracking-wider cursor-pointer">
                   Confirm Password
                 </label>
                 <input
@@ -373,16 +379,16 @@ export default function UserDetailPage() {
                   value={resetConfirm}
                   onChange={(e) => setResetConfirm(e.target.value)}
                   placeholder="Repeat password"
-                  className="w-full"
+                  className="w-full bg-[#09090b] border-[#27272a] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-lg text-sm transition-all"
                   required
                 />
               </div>
 
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-4 pt-4 border-t border-[#27272a]">
                 <button
                   type="submit"
                   disabled={resetLoading}
-                  className="btn btn-primary flex items-center justify-center gap-2"
+                  className="btn btn-primary btn-premium flex-1 flex items-center justify-center gap-2 rounded-xl font-bold cursor-pointer"
                 >
                   {resetLoading ? (
                     <>
@@ -396,7 +402,7 @@ export default function UserDetailPage() {
                 <button
                   type="button"
                   onClick={() => setShowResetForm(false)}
-                  className="btn btn-ghost"
+                  className="btn btn-ghost bg-[#09090b] border-[#27272a] hover:bg-[#18181b] flex-1 rounded-xl font-bold cursor-pointer"
                 >
                   Cancel
                 </button>
