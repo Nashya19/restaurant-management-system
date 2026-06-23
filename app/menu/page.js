@@ -1,26 +1,6 @@
-/**
- * /app/menu/page.js
- * 
- * Menu items list page (admin view)
- * Displays all menu items with:
- * - Table: Name, Category, Price, Prep Time, Availability, Archived, Actions
- * - Filter by category (dropdown)
- * - Search by name
- * - Create button
- * - Edit/Archive/Delete (toggle availability) actions
- * 
- * DESIGN COMPLIANCE:
- * - Dark theme
- * - Prices in `.text-data` (JetBrains Mono)
- * - Availability shown as `.badge-open` (available) or `.badge-inactive` (unavailable)
- * - Archived items dimmed (text-muted, strikethrough name)
- * - Category shown as category name
- * - Prep time in minutes
- */
-
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -32,7 +12,7 @@ import {
   restoreMenuItem,
 } from '@/lib/api/menu';
 import { formatCurrency, getStatusBadgeClass } from '@/lib/utils/formatters';
-import { Edit2, Archive, RotateCcw, ToggleLeft, Plus, Search } from 'lucide-react';
+import { Edit2, Archive, RotateCcw, ToggleLeft, ToggleRight, Plus, Search, Loader2, ChevronDown, ChevronRight } from 'lucide-react';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import CustomSelect from '@/components/ui/CustomSelect';
 
@@ -44,6 +24,10 @@ export default function MenuPage() {
   const [filteredItems, setFilteredItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Accordion collapsed state: keys are category IDs, values are boolean
+  const [collapsedCategories, setCollapsedCategories] = useState({});
+
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', message: '', onConfirm: () => {}, confirmStyle: 'btn-danger', confirmText: 'Confirm' });
   const router = useRouter();
 
@@ -90,6 +74,40 @@ export default function MenuPage() {
 
     setFilteredItems(result);
   }, [selectedCategory, searchQuery, items]);
+
+  // Group items by category
+  const groupedItems = useMemo(() => {
+    const groups = {};
+
+    categories.forEach((cat) => {
+      groups[cat.id] = {
+        category: cat,
+        items: []
+      };
+    });
+
+    groups['uncategorized'] = {
+      category: { id: 'uncategorized', name: 'Uncategorized' },
+      items: []
+    };
+
+    filteredItems.forEach((item) => {
+      const catId = item.category_id || 'uncategorized';
+      if (!groups[catId]) {
+        groups[catId] = {
+          category: item.categories || { id: catId, name: 'Uncategorized' },
+          items: []
+        };
+      }
+      groups[catId].items.push(item);
+    });
+
+    if (groups['uncategorized'].items.length === 0) {
+      delete groups['uncategorized'];
+    }
+
+    return Object.values(groups).sort((a, b) => a.category.name.localeCompare(b.category.name));
+  }, [filteredItems, categories]);
 
   // Handle toggle availability
   const handleToggleAvailability = async (itemId) => {
@@ -144,17 +162,24 @@ export default function MenuPage() {
     });
   };
 
+  const toggleCategoryCollapse = (catId) => {
+    setCollapsedCategories((prev) => ({
+      ...prev,
+      [catId]: !prev[catId]
+    }));
+  };
+
   return (
-    <div className="w-full max-w-6xl mx-auto">
+    <div className="w-full max-w-7xl mx-auto space-y-8 animate-fade-in">
       {/* Page Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pb-4 border-b border-[#27272a]">
         <div>
-          <h1 className="text-display text-[var(--text-primary)] mb-2">Menu Items</h1>
-          <p className="text-body text-[var(--text-secondary)]">
-            Create and manage menu items. Set pricing, prep times, and availability.
+          <h1 className="text-display text-2xl font-bold tracking-tight text-[var(--text-primary)]">Menu Items</h1>
+          <p className="text-sm text-[var(--text-secondary)] mt-1">
+            Create, update, and manage menu items. Set pricing, prep times, and availability states.
           </p>
         </div>
-        <Link href="/menu/new" className="btn btn-primary flex items-center gap-2">
+        <Link href="/menu/new" className="btn btn-primary btn-premium flex items-center justify-center gap-2 rounded-xl font-bold shadow-md shadow-[var(--accent)]/5">
           <Plus size={18} />
           Create Item
         </Link>
@@ -162,17 +187,18 @@ export default function MenuPage() {
 
       {/* Error Alert */}
       {error && (
-        <div className="card bg-[var(--destructive-bg)] border-[var(--destructive-border)] text-[var(--destructive)] p-4 mb-6">
-          <p className="text-body">⚠️ {error}</p>
+        <div className="flex items-start gap-2 bg-[#2a1010] border border-[#5a2020] text-[#c45a5a] text-sm p-4 rounded-xl animate-fade-in">
+          <span className="shrink-0 mt-0.5">⚠️</span>
+          <span>{error}</span>
         </div>
       )}
 
-      {/* Filters */}
-      <div className="card mb-6 space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Filters Card */}
+      <div className="card bg-[#18181b] border border-[#27272a] p-6 rounded-2xl shadow-lg">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Category Filter */}
-          <div>
-            <label htmlFor="category" className="text-small uppercase text-[var(--text-secondary)] font-semibold block mb-2">
+          <div className="space-y-2">
+            <label htmlFor="category" className="text-xs uppercase text-[var(--text-secondary)] font-bold tracking-wider block">
               Filter by Category
             </label>
             <CustomSelect
@@ -186,141 +212,177 @@ export default function MenuPage() {
           </div>
 
           {/* Search */}
-          <div>
-            <label htmlFor="search" className="text-small uppercase text-[var(--text-secondary)] font-semibold block mb-2">
+          <div className="space-y-2">
+            <label htmlFor="search" className="text-xs uppercase text-[var(--text-secondary)] font-bold tracking-wider block">
               Search Items
             </label>
-            <div className="flex items-center gap-2 bg-[var(--surface-raised)] border border-[var(--border)] rounded px-3 py-2">
+            <div className="flex items-center gap-2.5 bg-[#09090b] border border-[#27272a] rounded-xl px-3.5 h-10 transition-colors focus-within:border-[var(--accent)]">
               <Search size={16} className="text-[var(--text-secondary)]" />
               <input
                 id="search"
                 type="text"
-                placeholder="By name…"
+                placeholder="Search by name…"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1 bg-transparent outline-none text-[var(--text-primary)] placeholder-[var(--text-muted)]"
+                className="flex-1 bg-transparent border-none p-0 outline-none text-[var(--text-primary)] placeholder-[var(--text-muted)] text-sm h-full"
               />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Menu Items Table */}
-      <div className="card overflow-hidden">
+      {/* Menu Groups */}
+      <div className="space-y-6">
         {isLoading ? (
-          <div className="p-8 text-center">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--accent)]"></div>
-            <p className="mt-4 text-[var(--text-secondary)]">Loading menu items…</p>
+          <div className="card bg-[#18181b] border border-[#27272a] p-16 text-center rounded-2xl shadow-lg">
+            <Loader2 size={36} className="animate-spin text-[var(--accent)] inline-block" />
+            <p className="mt-4 text-sm text-[var(--text-secondary)] font-medium">Loading menu items…</p>
           </div>
-        ) : filteredItems.length === 0 ? (
-          <div className="p-8 text-center">
-            <p className="text-[var(--text-secondary)]">
-              {items.length === 0 ? 'No menu items yet.' : 'No items match your filters.'}
+        ) : groupedItems.length === 0 ? (
+          <div className="card bg-[#18181b] border border-[#27272a] p-16 text-center rounded-2xl shadow-lg">
+            <p className="text-sm text-[var(--text-secondary)] font-medium">
+              {items.length === 0 ? 'No menu items configured yet.' : 'No items match your selected filters.'}
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              {/* Table Header */}
-              <thead className="bg-[var(--surface-raised)] border-b border-[var(--border)]">
-                <tr>
-                  <th className="text-left text-subheading uppercase text-[var(--text-secondary)] font-semibold px-6 py-3">
-                    Name
-                  </th>
-                  <th className="text-left text-subheading uppercase text-[var(--text-secondary)] font-semibold px-6 py-3">
-                    Category
-                  </th>
-                  <th className="text-left text-subheading uppercase text-[var(--text-secondary)] font-semibold px-6 py-3">
-                    Price
-                  </th>
-                  <th className="text-left text-subheading uppercase text-[var(--text-secondary)] font-semibold px-6 py-3">
-                    Prep Time
-                  </th>
-                  <th className="text-left text-subheading uppercase text-[var(--text-secondary)] font-semibold px-6 py-3">
-                    Status
-                  </th>
-                  <th className="text-right text-subheading uppercase text-[var(--text-secondary)] font-semibold px-6 py-3">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
+          groupedItems.map(({ category, items: groupItems }) => {
+            const isCollapsed = !!collapsedCategories[category.id];
+            
+            // If filtering by category, don't show empty categories
+            if (groupItems.length === 0 && selectedCategory !== 'all') {
+              return null;
+            }
+            if (groupItems.length === 0 && selectedCategory === 'all') {
+              return null;
+            }
 
-              {/* Table Body */}
-              <tbody>
-                {filteredItems.map((item) => (
-                  <tr
-                    key={item.id}
-                    className={`border-b border-[var(--border)] hover:bg-[var(--surface-raised)] transition-colors ${
-                      item.is_archived ? 'opacity-60' : ''
-                    }`}
-                  >
-                    <td className={`text-body px-6 py-4 ${item.is_archived ? 'line-through text-[var(--text-muted)]' : 'text-[var(--text-primary)]'}`}>
-                      {item.name}
-                    </td>
-                    <td className="text-body text-[var(--text-secondary)] px-6 py-4">
-                      {item.categories?.name || '—'}
-                    </td>
-                    <td className="text-data px-6 py-4 font-mono text-[var(--text-primary)]">
-                      {formatCurrency(item.price)}
-                    </td>
-                    <td className="text-body text-[var(--text-secondary)] px-6 py-4">
-                      {item.prep_time_minutes} min
-                    </td>
-                    <td className="text-body px-6 py-4">
-                      {item.is_archived ? (
-                        <span className="badge badge-inactive">Archived</span>
-                      ) : (
-                        <span className={`badge ${item.is_available ? 'badge-open' : 'badge-inactive'}`}>
-                          {item.is_available ? 'Available' : 'Unavailable'}
-                        </span>
-                      )}
-                    </td>
-                    <td className="text-body px-6 py-4 flex justify-end gap-2">
-                      <Link
-                        href={`/menu/${item.id}`}
-                        className="btn btn-ghost inline-flex items-center gap-1 px-3 py-2"
-                      >
-                        <Edit2 size={16} />
-                        Edit
-                      </Link>
-                      {!item.is_archived && (
-                        <button
-                          onClick={() => handleToggleAvailability(item.id)}
-                          className="btn btn-ghost inline-flex items-center gap-1 px-3 py-2"
-                        >
-                          <ToggleLeft size={16} />
-                        </button>
-                      )}
-                      {!item.is_archived ? (
-                        <button
-                          onClick={() => handleArchive(item.id, item.name)}
-                          className="btn btn-danger inline-flex items-center gap-1 px-3 py-2"
-                        >
-                          <Archive size={16} />
-                          Archive
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => handleRestore(item.id, item.name)}
-                          className="btn btn-success inline-flex items-center gap-1 px-3 py-2"
-                        >
-                          <RotateCcw size={16} />
-                          Restore
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+            return (
+              <div key={category.id} className="card bg-[#18181b] border border-[#27272a] rounded-2xl shadow-lg overflow-hidden p-0 transition-all duration-300">
+                {/* Collapsible Category Header */}
+                <button
+                  type="button"
+                  onClick={() => toggleCategoryCollapse(category.id)}
+                  className="w-full flex items-center justify-between p-5 bg-[#09090b]/40 hover:bg-[#09090b]/80 transition-colors text-left cursor-pointer border-b border-[#27272a]/60"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-md font-bold text-[var(--text-primary)] capitalize">
+                      {category.name}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#27272a] text-[var(--text-secondary)]">
+                      {groupItems.length} item{groupItems.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  <div className="text-[var(--text-secondary)] flex items-center gap-1.5 text-xs font-semibold hover:text-[var(--accent)]">
+                    <span>{isCollapsed ? 'Expand' : 'Collapse'}</span>
+                    {isCollapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+                  </div>
+                </button>
+
+                {/* Collapsible Items Table */}
+                {!isCollapsed && (
+                  <div className="overflow-x-auto animate-fade-in">
+                    <table className="w-full">
+                      <thead className="bg-[#09090b]/30 border-b border-[#27272a]">
+                        <tr>
+                          <th className="text-left text-xs uppercase text-[var(--text-secondary)] font-bold px-6 py-4 tracking-wider">
+                            Name
+                          </th>
+                          <th className="text-left text-xs uppercase text-[var(--text-secondary)] font-bold px-6 py-4 tracking-wider">
+                            Price
+                          </th>
+                          <th className="text-left text-xs uppercase text-[var(--text-secondary)] font-bold px-6 py-4 tracking-wider">
+                            Prep Time
+                          </th>
+                          <th className="text-left text-xs uppercase text-[var(--text-secondary)] font-bold px-6 py-4 tracking-wider">
+                            Status
+                          </th>
+                          <th className="text-right text-xs uppercase text-[var(--text-secondary)] font-bold px-6 py-4 tracking-wider">
+                            Actions
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#27272a]/60">
+                        {groupItems.map((item) => (
+                          <tr
+                            key={item.id}
+                            className={`hover:bg-[#09090b]/20 transition-colors ${
+                              item.is_archived ? 'opacity-50' : ''
+                            }`}
+                          >
+                            <td className={`px-6 py-4 text-sm font-semibold ${item.is_archived ? 'line-through text-[var(--text-muted)]' : 'text-[var(--text-primary)]'}`}>
+                              {item.name}
+                            </td>
+                            <td className="px-6 py-4 font-mono text-sm font-semibold text-[var(--accent)]">
+                              {formatCurrency(item.price)}
+                            </td>
+                            <td className="px-6 py-4 text-sm font-medium text-[var(--text-secondary)]">
+                              {item.prep_time_minutes} min
+                            </td>
+                            <td className="px-6 py-4">
+                              {item.is_archived ? (
+                                <span className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase bg-[#242424] text-[var(--text-secondary)]">Archived</span>
+                              ) : (
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase ${item.is_available ? 'bg-[#0f2318] text-[#4a9b6a]' : 'bg-[#2a1010] text-[#c45a5a]'}`}>
+                                  {item.is_available ? 'Available' : 'Unavailable'}
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              <div className="inline-flex items-center gap-2">
+                                <Link
+                                  href={`/menu/${item.id}`}
+                                  className="btn bg-[#09090b] border-[#27272a] hover:bg-[#18181b] text-xs px-3 py-1.5 h-8 rounded-lg font-bold inline-flex items-center gap-1.5 cursor-pointer"
+                                >
+                                  <Edit2 size={13} />
+                                  <span>Edit</span>
+                                </Link>
+                                {!item.is_archived && (
+                                  <button
+                                    onClick={() => handleToggleAvailability(item.id)}
+                                    title="Toggle Availability"
+                                    className="btn bg-[#09090b] border-[#27272a] hover:bg-[#18181b] text-xs px-3 py-1.5 h-8 rounded-lg font-bold inline-flex items-center cursor-pointer"
+                                  >
+                                    {item.is_available ? (
+                                      <ToggleRight size={15} className="text-green-500" />
+                                    ) : (
+                                      <ToggleLeft size={15} className="text-gray-500" />
+                                    )}
+                                  </button>
+                                )}
+                                {!item.is_archived ? (
+                                  <button
+                                    onClick={() => handleArchive(item.id, item.name)}
+                                    className="btn border border-red-950 bg-[#2a1010] text-[#c45a5a] hover:bg-red-900 text-xs px-3 py-1.5 h-8 rounded-lg font-bold inline-flex items-center gap-1.5 cursor-pointer"
+                                  >
+                                    <Archive size={13} />
+                                    <span>Archive</span>
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={() => handleRestore(item.id, item.name)}
+                                    className="btn border border-green-950 bg-[#0f2318] text-[#4a9b6a] hover:bg-green-900 text-xs px-3 py-1.5 h-8 rounded-lg font-bold inline-flex items-center gap-1.5 cursor-pointer"
+                                  >
+                                    <RotateCcw size={13} />
+                                    <span>Restore</span>
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            );
+          })
         )}
       </div>
 
       {/* Footer Info */}
-      <div className="mt-6 text-small text-[var(--text-muted)]">
-        Showing <span className="font-semibold">{filteredItems.length}</span> of{' '}
-        <span className="font-semibold">{items.length}</span> items
+      <div className="flex justify-between items-center text-xs text-[var(--text-muted)] font-semibold px-2">
+        <span>Showing {filteredItems.length} of {items.length} menu items</span>
       </div>
 
       <ConfirmDialog 

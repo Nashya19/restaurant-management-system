@@ -78,7 +78,7 @@ export default function CategoriesPage() {
       }
 
       const newCategory = await createCategory(createName);
-      setCategories([...categories, newCategory]);
+      setCategories([...categories, { ...newCategory, menu_items: [] }]);
       setCreateName('');
       setShowCreateForm(false);
     } catch (err) {
@@ -110,7 +110,7 @@ export default function CategoriesPage() {
       }
 
       const updated = await updateCategory(editingId, editName);
-      setCategories(categories.map((c) => (c.id === editingId ? updated : c)));
+      setCategories(categories.map((c) => (c.id === editingId ? { ...updated, menu_items: c.menu_items || [] } : c)));
       setEditingId(null);
       setEditName('');
     } catch (err) {
@@ -145,19 +145,19 @@ export default function CategoriesPage() {
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto">
+    <div className="w-full max-w-7xl mx-auto space-y-8 animate-fade-in">
       {/* Page Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pb-4 border-b border-[#27272a]">
         <div>
-          <h1 className="text-display text-[var(--text-primary)] mb-2">Categories</h1>
-          <p className="text-body text-[var(--text-secondary)]">
+          <h1 className="text-display text-2xl font-bold tracking-tight text-[var(--text-primary)]">Categories</h1>
+          <p className="text-sm text-[var(--text-secondary)] mt-1">
             Manage menu categories. Menu items must belong to a category.
           </p>
         </div>
         {!showCreateForm && (
           <button
             onClick={() => setShowCreateForm(true)}
-            className="btn btn-primary flex items-center gap-2"
+            className="btn btn-primary btn-premium flex items-center justify-center gap-2 rounded-xl font-bold shadow-md shadow-[var(--accent)]/5 cursor-pointer"
           >
             <Plus size={18} />
             Create Category
@@ -167,17 +167,18 @@ export default function CategoriesPage() {
 
       {/* Error Alert */}
       {error && (
-        <div className="card bg-[var(--destructive-bg)] border-[var(--destructive-border)] text-[var(--destructive)] p-4 mb-6">
-          <p className="text-body">⚠️ {error}</p>
+        <div className="flex items-start gap-2 bg-[#2a1010] border border-[#5a2020] text-[#c45a5a] text-sm p-4 rounded-xl animate-fade-in">
+          <span className="shrink-0 mt-0.5">⚠️</span>
+          <span>{error}</span>
         </div>
       )}
 
       {/* Create Form */}
       {showCreateForm && (
-        <form onSubmit={handleCreate} className="card mb-6 space-y-4">
-          <div className="flex items-end gap-3">
-            <div className="flex-1">
-              <label htmlFor="createName" className="text-small uppercase text-[var(--text-secondary)] font-semibold block mb-2">
+        <form onSubmit={handleCreate} className="card bg-[#18181b] border border-[#27272a] p-6 rounded-2xl shadow-lg animate-fade-in">
+          <div className="flex flex-col sm:flex-row items-end gap-4">
+            <div className="flex-1 w-full space-y-1.5">
+              <label htmlFor="createName" className="text-xs uppercase text-[var(--text-secondary)] font-bold tracking-wider cursor-pointer">
                 Category Name
               </label>
               <input
@@ -186,23 +187,23 @@ export default function CategoriesPage() {
                 value={createName}
                 onChange={(e) => setCreateName(e.target.value)}
                 placeholder="e.g., Main Courses"
-                className="w-full"
+                className="w-full bg-[#09090b] border-[#27272a] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-lg text-sm transition-all"
                 required
               />
-              {createError && <p className="text-small text-[var(--destructive)] mt-1">{createError}</p>}
+              {createError && <p className="text-xs text-[var(--destructive)] mt-1 font-semibold">{createError}</p>}
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 w-full sm:w-auto">
               <button
                 type="submit"
                 disabled={createLoading}
-                className="btn btn-primary flex items-center gap-1 px-4"
+                className="btn btn-primary btn-premium flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 rounded-xl font-bold cursor-pointer"
               >
                 {createLoading ? (
-                  <Loader2 size={16} className="animate-spin" />
+                  <Loader2 size={15} className="animate-spin" />
                 ) : (
-                  <Check size={16} />
+                  <Check size={15} />
                 )}
-                Create
+                <span>Create</span>
               </button>
               <button
                 type="button"
@@ -211,73 +212,76 @@ export default function CategoriesPage() {
                   setCreateName('');
                   setCreateError(null);
                 }}
-                className="btn btn-ghost flex items-center gap-1 px-4"
+                className="btn btn-ghost bg-[#09090b] border-[#27272a] hover:bg-[#18181b] flex-1 sm:flex-initial flex items-center justify-center gap-1 px-4 rounded-xl font-bold cursor-pointer"
               >
-                <X size={16} />
+                <X size={15} />
               </button>
             </div>
           </div>
         </form>
       )}
 
-      {/* Categories Table */}
-      <div className="card overflow-hidden">
+      {/* Categories Table Card */}
+      <div className="card bg-[#18181b] border border-[#27272a] overflow-hidden rounded-2xl shadow-lg">
         {isLoading ? (
-          <div className="p-8 text-center">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--accent)]"></div>
-            <p className="mt-4 text-[var(--text-secondary)]">Loading categories…</p>
+          <div className="p-16 text-center">
+            <Loader2 size={36} className="animate-spin text-[var(--accent)] inline-block" />
+            <p className="mt-4 text-sm text-[var(--text-secondary)] font-medium">Loading categories…</p>
           </div>
         ) : categories.length === 0 ? (
-          <div className="p-8 text-center">
-            <p className="text-[var(--text-secondary)]">No categories yet. Create one to get started.</p>
+          <div className="p-16 text-center">
+            <p className="text-sm text-[var(--text-secondary)] font-medium">No categories configured yet. Create one to get started.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-[var(--surface-raised)] border-b border-[var(--border)]">
+              <thead className="bg-[#09090b] border-b border-[#27272a]">
                 <tr>
-                  <th className="text-left text-subheading uppercase text-[var(--text-secondary)] font-semibold px-6 py-3">
+                  <th className="text-left text-xs uppercase text-[var(--text-secondary)] font-bold px-6 py-4 tracking-wider">
                     Name
                   </th>
-                  <th className="text-left text-subheading uppercase text-[var(--text-secondary)] font-semibold px-6 py-3">
+                  <th className="text-left text-xs uppercase text-[var(--text-secondary)] font-bold px-6 py-4 tracking-wider">
+                    Items
+                  </th>
+                  <th className="text-left text-xs uppercase text-[var(--text-secondary)] font-bold px-6 py-4 tracking-wider">
                     Created
                   </th>
-                  <th className="text-right text-subheading uppercase text-[var(--text-secondary)] font-semibold px-6 py-3">
+                  <th className="text-right text-xs uppercase text-[var(--text-secondary)] font-bold px-6 py-4 tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-[#27272a]">
                 {categories.map((category) =>
                   editingId === category.id ? (
                     // Edit form row
-                    <tr key={category.id} className="border-b border-[var(--border)] bg-[var(--surface-raised)]">
-                      <td colSpan="3" className="px-6 py-4">
-                        <div className="flex items-end gap-3">
-                          <div className="flex-1">
+                    <tr key={category.id} className="bg-[#09090b]/40">
+                      <td colSpan="4" className="px-6 py-4">
+                        <div className="flex flex-col sm:flex-row items-end gap-4 w-full">
+                          <div className="flex-1 w-full space-y-1">
                             <input
                               type="text"
                               value={editName}
                               onChange={(e) => setEditName(e.target.value)}
-                              className="w-full"
+                              className="w-full bg-[#09090b] border-[#27272a] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-lg text-sm transition-all"
                               required
                             />
                             {editError && (
-                              <p className="text-small text-[var(--destructive)] mt-1">{editError}</p>
+                              <p className="text-xs text-[var(--destructive)] mt-1 font-semibold">{editError}</p>
                             )}
                           </div>
-                          <div className="flex gap-2">
+                          <div className="flex gap-2 w-full sm:w-auto">
                             <button
                               onClick={handleEditSave}
                               disabled={editLoading}
-                              className="btn btn-primary flex items-center gap-1 px-4"
+                              className="btn btn-primary btn-premium flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 rounded-xl font-bold cursor-pointer text-xs h-9"
                             >
                               {editLoading ? (
-                                <Loader2 size={16} className="animate-spin" />
+                                <Loader2 size={13} className="animate-spin" />
                               ) : (
-                                <Check size={16} />
+                                <Check size={13} />
                               )}
-                              Save
+                              <span>Save</span>
                             </button>
                             <button
                               onClick={() => {
@@ -285,9 +289,9 @@ export default function CategoriesPage() {
                                 setEditName('');
                                 setEditError(null);
                               }}
-                              className="btn btn-ghost flex items-center gap-1 px-4"
+                              className="btn btn-ghost bg-[#09090b] border-[#27272a] hover:bg-[#18181b] flex-1 sm:flex-initial flex items-center justify-center gap-1 px-4 rounded-xl font-bold cursor-pointer text-xs h-9"
                             >
-                              <X size={16} />
+                              <X size={13} />
                             </button>
                           </div>
                         </div>
@@ -297,29 +301,34 @@ export default function CategoriesPage() {
                     // Display row
                     <tr
                       key={category.id}
-                      className="border-b border-[var(--border)] hover:bg-[var(--surface-raised)] transition-colors"
+                      className="hover:bg-[#09090b]/40 transition-colors"
                     >
-                      <td className="text-body text-[var(--text-primary)] px-6 py-4">
+                      <td className="px-6 py-4 text-sm font-semibold text-[var(--text-primary)] capitalize">
                         {category.name}
                       </td>
-                      <td className="text-small text-[var(--text-secondary)] px-6 py-4">
+                      <td className="px-6 py-4 text-sm font-medium text-[var(--text-primary)] font-mono">
+                        {category.menu_items?.filter(item => !item.is_archived).length || 0}
+                      </td>
+                      <td className="px-6 py-4 text-sm font-medium text-[var(--text-secondary)]">
                         {formatDate(category.created_at, 'short')}
                       </td>
-                      <td className="text-body px-6 py-4 flex justify-end gap-2">
-                        <button
-                          onClick={() => handleEditStart(category)}
-                          className="btn btn-ghost inline-flex items-center gap-1 px-3 py-2"
-                        >
-                          <Edit2 size={16} />
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleArchive(category.id, category.name)}
-                          className="btn btn-danger inline-flex items-center gap-1 px-3 py-2"
-                        >
-                          <Archive size={16} />
-                          Archive
-                        </button>
+                      <td className="px-6 py-4 text-right">
+                        <div className="inline-flex items-center gap-2">
+                          <button
+                            onClick={() => handleEditStart(category)}
+                            className="btn bg-[#09090b] border-[#27272a] hover:bg-[#18181b] text-xs px-3 py-1.5 h-8 rounded-lg font-bold inline-flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <Edit2 size={13} />
+                            <span>Edit</span>
+                          </button>
+                          <button
+                            onClick={() => handleArchive(category.id, category.name)}
+                            className="btn border border-red-950 bg-[#2a1010] text-[#c45a5a] hover:bg-red-900 text-xs px-3 py-1.5 h-8 rounded-lg font-bold inline-flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <Archive size={13} />
+                            <span>Archive</span>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   )
@@ -331,8 +340,8 @@ export default function CategoriesPage() {
       </div>
 
       {/* Footer Info */}
-      <div className="mt-6 text-small text-[var(--text-muted)]">
-        Total categories: <span className="font-semibold">{categories.length}</span>
+      <div className="flex justify-between items-center text-xs text-[var(--text-muted)] font-semibold px-2">
+        <span>Total categories: {categories.length}</span>
       </div>
 
       <ConfirmDialog 
