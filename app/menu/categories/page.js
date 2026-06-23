@@ -53,8 +53,8 @@ export default function CategoriesPage() {
       try {
         const role = localStorage.getItem('dev-role') || 'admin';
         setDevRole(role);
-        if (role === 'customer') {
-          // Block customers from categories tab
+        if (role !== 'admin') {
+          // Block customers & staff from categories tab
           window.location.href = '/menu';
           return;
         }

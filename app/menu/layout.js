@@ -36,7 +36,7 @@ export default function MenuLayout({ children }) {
         {/* Content Page area */}
         <main className="flex-1 flex flex-col p-6 md:p-10 md:overflow-y-auto">
           {/* Sub Navigation Bar on Top */}
-          {devRole !== 'customer' && (
+          {devRole === 'admin' && (
             <div className="flex items-center gap-3 border-b border-[#27272a] pb-4 mb-8">
               <Link
                 href="/menu"

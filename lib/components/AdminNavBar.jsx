@@ -122,25 +122,25 @@ export function AdminNavBar({ title, subtitle }) {
     <>
       {/* Top Banner Notification for ended ordering */}
       {toast && (
-        <div className="fixed top-4 left-4 right-4 z-[100] bg-zinc-950/95 border border-[var(--accent)] px-6 py-4 shadow-2xl rounded-2xl backdrop-blur-md max-w-7xl mx-auto animate-slide-down">
-          <div className="flex items-center justify-between gap-4 text-sm">
+        <div className="fixed top-4 left-4 right-4 z-[100] bg-zinc-950/95 border border-[var(--accent)] px-4 py-3.5 sm:px-6 sm:py-4 shadow-2xl rounded-2xl backdrop-blur-md max-w-7xl mx-auto animate-slide-down">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm">
             <div className="flex items-center gap-3">
               <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse shrink-0" />
               <p className="font-semibold text-zinc-100">{toast.message}</p>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center justify-end gap-3 shrink-0">
               <button 
                 onClick={() => {
                   window.location.href = `/orders?session=${toast.sessionId}`;
                   setToast(null);
                 }}
-                className="btn btn-primary btn-premium px-4 py-1.5 h-8 text-xs font-bold rounded-lg cursor-pointer"
+                className="btn btn-primary btn-premium px-4 py-1.5 h-8 text-xs font-bold rounded-lg cursor-pointer whitespace-nowrap"
               >
                 View Table Bill
               </button>
               <button 
                 onClick={() => setToast(null)}
-                className="text-zinc-400 hover:text-zinc-200 transition-colors p-1 hover:bg-zinc-900 rounded-lg cursor-pointer"
+                className="text-zinc-400 hover:text-zinc-200 transition-colors p-1 hover:bg-zinc-900 rounded-lg cursor-pointer shrink-0"
               >
                 <X size={16} />
               </button>

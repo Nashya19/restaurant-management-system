@@ -26,7 +26,7 @@ This checklist tracks the assignment and completion of all system modules. Pleas
 - [x] **9. Order Management** (Must build after: *Table Management, Menu*)
 - [ ] **10. Kitchen Display** (Must build after: *Order Management*)
 - [ ] **11. Wait Time Estimation** (Must build after: *Order Management, Kitchen Display*)
-- [ ]**12. Billing** (Must build after: *Order Management*)
+- [ ] **12. Billing** (Must build after: *Order Management*)
 
 ---
 

@@ -138,7 +138,7 @@ export default function MenuPage() {
   // Filter / search
   useEffect(() => {
     let result = items;
-    if (devRole === 'customer') result = result.filter(item => !item.is_archived);
+    if (devRole !== 'admin') result = result.filter(item => !item.is_archived);
     if (selectedCategory !== 'all') result = result.filter(item => item.category_id === selectedCategory);
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
