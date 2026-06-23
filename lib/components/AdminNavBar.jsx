@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { LogOut, LayoutDashboard, Users, ListChecks } from 'lucide-react';
+import { LogOut, LayoutDashboard, Users, ListChecks, Grid3x3 } from 'lucide-react';
 
 export function AdminNavBar({ title, subtitle }) {
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -39,6 +39,10 @@ export function AdminNavBar({ title, subtitle }) {
           <Link href="/dashboard" className={buttonClasses}>
             <LayoutDashboard size={16} />
             Dashboard
+          </Link>
+          <Link href="/tables" className={buttonClasses}>
+            <Grid3x3 size={16} />
+            Table Management
           </Link>
           <Link href="/users" className={buttonClasses}>
             <Users size={16} />
