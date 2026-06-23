@@ -19,4 +19,3 @@ export async function GET() {
     return new Response(JSON.stringify({ error: 'Unknown error' }), { status: 500 });
   }
 }
-

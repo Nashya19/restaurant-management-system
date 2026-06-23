@@ -33,6 +33,8 @@ import {
 } from '@/lib/api/menu';
 import { formatCurrency, getStatusBadgeClass } from '@/lib/utils/formatters';
 import { Edit2, Archive, RotateCcw, ToggleLeft, Plus, Search } from 'lucide-react';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import CustomSelect from '@/components/ui/CustomSelect';
 
 export default function MenuPage() {
   const [items, setItems] = useState([]);
@@ -42,7 +44,10 @@ export default function MenuPage() {
   const [filteredItems, setFilteredItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', message: '', onConfirm: () => {}, confirmStyle: 'btn-danger', confirmText: 'Confirm' });
   const router = useRouter();
+
+  const closeConfirm = () => setConfirmDialog(prev => ({ ...prev, isOpen: false }));
 
   // Fetch categories and items on mount
   useEffect(() => {
@@ -98,29 +103,45 @@ export default function MenuPage() {
   };
 
   // Handle archive
-  const handleArchive = async (itemId, itemName) => {
-    if (!confirm(`Archive "${itemName}"?`)) return;
-
-    try {
-      const updated = await archiveMenuItem(itemId);
-      setItems(items.map((item) => (item.id === itemId ? updated : item)));
-    } catch (err) {
-      setError(err.message);
-      console.error('Failed to archive item:', err);
-    }
+  const handleArchive = (itemId, itemName) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Archive Item',
+      message: `Archive "${itemName}"?`,
+      confirmText: 'Archive',
+      confirmStyle: 'btn-danger',
+      onConfirm: async () => {
+        closeConfirm();
+        try {
+          const updated = await archiveMenuItem(itemId);
+          setItems(items.map((item) => (item.id === itemId ? updated : item)));
+        } catch (err) {
+          setError(err.message);
+          console.error('Failed to archive item:', err);
+        }
+      }
+    });
   };
 
   // Handle restore
-  const handleRestore = async (itemId, itemName) => {
-    if (!confirm(`Restore "${itemName}"?`)) return;
-
-    try {
-      const updated = await restoreMenuItem(itemId);
-      setItems(items.map((item) => (item.id === itemId ? updated : item)));
-    } catch (err) {
-      setError(err.message);
-      console.error('Failed to restore item:', err);
-    }
+  const handleRestore = (itemId, itemName) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Restore Item',
+      message: `Restore "${itemName}"?`,
+      confirmText: 'Restore',
+      confirmStyle: 'btn-success',
+      onConfirm: async () => {
+        closeConfirm();
+        try {
+          const updated = await restoreMenuItem(itemId);
+          setItems(items.map((item) => (item.id === itemId ? updated : item)));
+        } catch (err) {
+          setError(err.message);
+          console.error('Failed to restore item:', err);
+        }
+      }
+    });
   };
 
   return (
@@ -154,19 +175,14 @@ export default function MenuPage() {
             <label htmlFor="category" className="text-small uppercase text-[var(--text-secondary)] font-semibold block mb-2">
               Filter by Category
             </label>
-            <select
-              id="category"
+            <CustomSelect
               value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full"
-            >
-              <option value="all">All Categories</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
+              onChange={setSelectedCategory}
+              options={[
+                { value: 'all', label: 'All Categories' },
+                ...categories.map((cat) => ({ value: cat.id, label: cat.name }))
+              ]}
+            />
           </div>
 
           {/* Search */}
@@ -306,6 +322,11 @@ export default function MenuPage() {
         Showing <span className="font-semibold">{filteredItems.length}</span> of{' '}
         <span className="font-semibold">{items.length}</span> items
       </div>
+
+      <ConfirmDialog 
+        {...confirmDialog} 
+        onCancel={closeConfirm} 
+      />
     </div>
   );
 }
