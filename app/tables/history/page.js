@@ -74,6 +74,11 @@ export default function SessionHistoryPage() {
     setPageError(null);
 
     try {
+      const role = localStorage.getItem('dev-role') || 'admin';
+      if (role === 'staff') {
+        window.location.href = '/tables';
+        return;
+      }
       const data = await getAllSessions();
       setSessions(data || []);
     } catch (err) {

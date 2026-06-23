@@ -57,7 +57,7 @@ CREATE POLICY "menu_items_delete" ON menu_items
 ALTER TABLE tables ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "tables_select" ON tables
-    FOR SELECT USING (get_user_role() IN ('admin', 'staff'));
+    FOR SELECT USING (true);
 
 CREATE POLICY "tables_insert" ON tables
     FOR INSERT WITH CHECK (get_user_role() = 'admin');
@@ -79,6 +79,9 @@ CREATE POLICY "table_sessions_select_customer" ON table_sessions
         SELECT 1 FROM session_devices WHERE session_id = table_sessions.id
         AND device_fingerprint = current_setting('app.device_fingerprint', true)
     ));
+
+CREATE POLICY "table_sessions_select_anonymous" ON table_sessions
+    FOR SELECT USING (status IN ('open', 'locked', 'completed', 'cleared'));
 
 CREATE POLICY "table_sessions_insert" ON table_sessions
     FOR INSERT WITH CHECK (get_user_role() IN ('admin', 'staff'));
@@ -191,3 +194,43 @@ CREATE POLICY "surplus_update" ON surplus_items
 
 CREATE POLICY "surplus_delete" ON surplus_items
     FOR DELETE USING (get_user_role() = 'admin');
+
+-- cart_items
+ALTER TABLE public.cart_items ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "cart_items_select" ON public.cart_items
+    FOR SELECT USING (
+        get_user_role() IN ('admin', 'staff') OR
+        EXISTS (
+            SELECT 1 FROM public.session_devices
+            WHERE session_devices.session_id = cart_items.session_id
+            AND session_devices.device_fingerprint = current_setting('app.device_fingerprint', true)
+        )
+    );
+
+CREATE POLICY "cart_items_insert" ON public.cart_items
+    FOR INSERT WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM public.session_devices
+            WHERE session_devices.session_id = cart_items.session_id
+            AND session_devices.device_fingerprint = current_setting('app.device_fingerprint', true)
+        )
+    );
+
+CREATE POLICY "cart_items_update" ON public.cart_items
+    FOR UPDATE USING (
+        EXISTS (
+            SELECT 1 FROM public.session_devices
+            WHERE session_devices.session_id = cart_items.session_id
+            AND session_devices.device_fingerprint = current_setting('app.device_fingerprint', true)
+        )
+    );
+
+CREATE POLICY "cart_items_delete" ON public.cart_items
+    FOR DELETE USING (
+        EXISTS (
+            SELECT 1 FROM public.session_devices
+            WHERE session_devices.session_id = cart_items.session_id
+            AND session_devices.device_fingerprint = current_setting('app.device_fingerprint', true)
+        )
+    );

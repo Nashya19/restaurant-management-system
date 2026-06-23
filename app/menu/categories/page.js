@@ -33,6 +33,7 @@ export default function CategoriesPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', message: '', onConfirm: () => {}, confirmStyle: 'btn-danger', confirmText: 'Confirm' });
+  const [devRole, setDevRole] = useState('admin');
 
   const closeConfirm = () => setConfirmDialog(prev => ({ ...prev, isOpen: false }));
 
@@ -50,6 +51,14 @@ export default function CategoriesPage() {
       setIsLoading(true);
       setError(null);
       try {
+        const role = localStorage.getItem('dev-role') || 'admin';
+        setDevRole(role);
+        if (role === 'customer') {
+          // Block customers from categories tab
+          window.location.href = '/menu';
+          return;
+        }
+
         const data = await listCategories();
         setCategories(data);
       } catch (err) {
@@ -154,7 +163,7 @@ export default function CategoriesPage() {
             Manage menu categories. Menu items must belong to a category.
           </p>
         </div>
-        {!showCreateForm && (
+        {devRole === 'admin' && !showCreateForm && (
           <button
             onClick={() => setShowCreateForm(true)}
             className="btn btn-primary btn-premium flex items-center justify-center gap-2 rounded-xl font-bold shadow-md shadow-[var(--accent)]/5 cursor-pointer"
@@ -246,9 +255,11 @@ export default function CategoriesPage() {
                   <th className="text-left text-xs uppercase text-[var(--text-secondary)] font-bold px-6 py-4 tracking-wider">
                     Created
                   </th>
-                  <th className="text-right text-xs uppercase text-[var(--text-secondary)] font-bold px-6 py-4 tracking-wider">
-                    Actions
-                  </th>
+                  {devRole === 'admin' && (
+                    <th className="text-right text-xs uppercase text-[var(--text-secondary)] font-bold px-6 py-4 tracking-wider">
+                      Actions
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#27272a]">
@@ -256,7 +267,7 @@ export default function CategoriesPage() {
                   editingId === category.id ? (
                     // Edit form row
                     <tr key={category.id} className="bg-[#09090b]/40">
-                      <td colSpan="4" className="px-6 py-4">
+                      <td colSpan={devRole === 'admin' ? "4" : "3"} className="px-6 py-4">
                         <div className="flex flex-col sm:flex-row items-end gap-4 w-full">
                           <div className="flex-1 w-full space-y-1">
                             <input
@@ -312,24 +323,26 @@ export default function CategoriesPage() {
                       <td className="px-6 py-4 text-sm font-medium text-[var(--text-secondary)]">
                         {formatDate(category.created_at, 'short')}
                       </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="inline-flex items-center gap-2">
-                          <button
-                            onClick={() => handleEditStart(category)}
-                            className="btn bg-[#09090b] border-[#27272a] hover:bg-[#18181b] text-xs px-3 py-1.5 h-8 rounded-lg font-bold inline-flex items-center gap-1.5 cursor-pointer"
-                          >
-                            <Edit2 size={13} />
-                            <span>Edit</span>
-                          </button>
-                          <button
-                            onClick={() => handleArchive(category.id, category.name)}
-                            className="btn border border-red-950 bg-[#2a1010] text-[#c45a5a] hover:bg-red-900 text-xs px-3 py-1.5 h-8 rounded-lg font-bold inline-flex items-center gap-1.5 cursor-pointer"
-                          >
-                            <Archive size={13} />
-                            <span>Archive</span>
-                          </button>
-                        </div>
-                      </td>
+                      {devRole === 'admin' && (
+                        <td className="px-6 py-4 text-right">
+                          <div className="inline-flex items-center gap-2">
+                            <button
+                              onClick={() => handleEditStart(category)}
+                              className="btn bg-[#09090b] border-[#27272a] hover:bg-[#18181b] text-xs px-3 py-1.5 h-8 rounded-lg font-bold inline-flex items-center gap-1.5 cursor-pointer"
+                            >
+                              <Edit2 size={13} />
+                              <span>Edit</span>
+                            </button>
+                            <button
+                              onClick={() => handleArchive(category.id, category.name)}
+                              className="btn border border-red-950 bg-[#2a1010] text-[#c45a5a] hover:bg-red-900 text-xs px-3 py-1.5 h-8 rounded-lg font-bold inline-flex items-center gap-1.5 cursor-pointer"
+                            >
+                              <Archive size={13} />
+                              <span>Archive</span>
+                            </button>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   )
                 )}

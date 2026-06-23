@@ -14,12 +14,64 @@ export function AdminNavBar({ title, subtitle }) {
   const pathname = usePathname();
   const supabase = createClient();
 
+  const [devRole, setDevRole] = useState('admin');
+  const [tableNum, setTableNum] = useState('1');
+  const [toast, setToast] = useState(null);
+  const [isLocalhost, setIsLocalhost] = useState(false);
+
   useEffect(() => {
     const stored = localStorage.getItem('sidebar-collapsed');
     if (stored === 'true') {
       setIsCollapsed(true);
     }
+    setDevRole(localStorage.getItem('dev-role') || 'admin');
+    setTableNum(localStorage.getItem('tableNumber') || '1');
+    if (typeof window !== 'undefined') {
+      setIsLocalhost(
+        window.location.hostname === 'localhost' || 
+        window.location.hostname === '127.0.0.1'
+      );
+    }
   }, []);
+
+  useEffect(() => {
+    if (devRole === 'customer') return;
+
+    const sessionSubscription = supabase
+      .channel('navbar_table_sessions')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'table_sessions' },
+        async (payload) => {
+          if (payload.new && payload.new.status === 'completed') {
+            try {
+              const { data: tbl } = await supabase
+                .from('tables')
+                .select('table_number')
+                .eq('id', payload.new.table_id)
+                .single();
+              if (tbl) {
+                setToast({
+                  message: `Table ${tbl.table_number} ended ordering and is proceeding to pay!`,
+                  sessionId: payload.new.id
+                });
+                // Auto-dismiss toast after 15 seconds
+                setTimeout(() => {
+                  setToast(prev => prev?.sessionId === payload.new.id ? null : prev);
+                }, 15000);
+              }
+            } catch (err) {
+              console.error(err);
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      sessionSubscription.unsubscribe();
+    };
+  }, [supabase, devRole]);
 
   const toggleCollapse = () => {
     const nextState = !isCollapsed;
@@ -38,15 +90,65 @@ export function AdminNavBar({ title, subtitle }) {
     }
   };
 
-  const navLinks = [
-    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/tables', label: 'Tables', icon: Grid3x3 },
-    { href: '/users', label: 'Users', icon: Users },
-    { href: '/menu', label: 'Menu', icon: ListChecks },
-  ];
+  const getNavLinks = () => {
+    if (devRole === 'customer') {
+      return [
+        { href: '/menu', label: 'Menu', icon: ListChecks },
+        { href: `/table/${tableNum}/order`, label: 'Order', icon: Grid3x3 },
+      ];
+    } else if (devRole === 'staff') {
+      return [
+        { href: '/tables', label: 'Tables', icon: Grid3x3 },
+        { href: '/orders', label: 'Order Management', icon: Shield },
+        { href: '/menu', label: 'Menu', icon: ListChecks },
+      ];
+    } else {
+      return [
+        { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { href: '/tables', label: 'Tables', icon: Grid3x3 },
+        { href: '/orders', label: 'Order Management', icon: Shield },
+        { href: '/users', label: 'Users', icon: Users },
+        { href: '/menu', label: 'Menu', icon: ListChecks },
+      ];
+    }
+  };
+
+  const navLinks = getNavLinks();
+
+  const displayTitle = devRole === 'customer' ? 'Order' : (devRole === 'staff' ? 'Order Management' : title);
+  const displaySubtitle = devRole === 'customer' ? 'View your table session and order details.' : subtitle;
 
   return (
     <>
+      {/* Top Banner Notification for ended ordering */}
+      {toast && (
+        <div className="fixed top-4 left-4 right-4 z-[100] bg-zinc-950/95 border border-[var(--accent)] px-6 py-4 shadow-2xl rounded-2xl backdrop-blur-md max-w-7xl mx-auto animate-slide-down">
+          <div className="flex items-center justify-between gap-4 text-sm">
+            <div className="flex items-center gap-3">
+              <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse shrink-0" />
+              <p className="font-semibold text-zinc-100">{toast.message}</p>
+            </div>
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={() => {
+                  window.location.href = `/orders?session=${toast.sessionId}`;
+                  setToast(null);
+                }}
+                className="btn btn-primary btn-premium px-4 py-1.5 h-8 text-xs font-bold rounded-lg cursor-pointer"
+              >
+                View Table Bill
+              </button>
+              <button 
+                onClick={() => setToast(null)}
+                className="text-zinc-400 hover:text-zinc-200 transition-colors p-1 hover:bg-zinc-900 rounded-lg cursor-pointer"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Mobile Top Bar */}
       <div className="md:hidden flex items-center justify-between p-4 bg-[#18181b] border-b border-[#27272a] w-full z-40">
         <div className="flex items-center gap-2 text-[var(--accent)]">
@@ -107,10 +209,10 @@ export function AdminNavBar({ title, subtitle }) {
             {/* Page specific Header (shown in sidebar) */}
             {!isCollapsed && (
               <div className="space-y-1 py-3 border-b border-[#27272a]">
-                <h3 className="text-sm font-bold text-[var(--text-primary)]">{title}</h3>
-                {subtitle && (
+                <h3 className="text-sm font-bold text-[var(--text-primary)]">{displayTitle}</h3>
+                {displaySubtitle && (
                   <p className="text-xs text-[var(--text-secondary)] font-medium leading-relaxed">
-                    {subtitle}
+                    {displaySubtitle}
                   </p>
                 )}
               </div>
@@ -143,7 +245,46 @@ export function AdminNavBar({ title, subtitle }) {
           </div>
 
           {/* Logout Action at bottom */}
-          <div className="pt-6 border-t border-[#27272a] mt-auto">
+          <div className="pt-6 border-t border-[#27272a] mt-auto space-y-4">
+            {/* Developer Mode Switcher */}
+            {isLocalhost && (
+              !isCollapsed ? (
+                <div className="space-y-1.5 px-4 py-3 bg-[#09090b]/40 rounded-xl border border-[#27272a]/60">
+                  <label className="text-[10px] uppercase text-[var(--text-secondary)] font-bold tracking-wider block">
+                    Dev Mode Role
+                  </label>
+                  <select
+                    value={devRole}
+                    onChange={(e) => {
+                      localStorage.setItem('dev-role', e.target.value);
+                      window.location.reload();
+                    }}
+                    className="w-full bg-[#09090b] border border-[#27272a] focus:border-[var(--accent)] rounded-lg text-xs h-8 text-[var(--text-primary)] outline-none cursor-pointer px-2"
+                  >
+                    <option value="admin">Admin</option>
+                    <option value="staff">Staff</option>
+                    <option value="customer">Customer</option>
+                  </select>
+                </div>
+              ) : (
+                <div className="flex justify-center py-2 bg-[#09090b]/40 rounded-xl border border-[#27272a]/60">
+                  <select
+                    value={devRole}
+                    onChange={(e) => {
+                      localStorage.setItem('dev-role', e.target.value);
+                      window.location.reload();
+                    }}
+                    className="bg-transparent border-none rounded-lg text-xs h-8 text-[var(--text-primary)] font-bold text-center outline-none cursor-pointer w-10 px-0"
+                    title="Dev Mode Role"
+                  >
+                    <option value="admin">A</option>
+                    <option value="staff">S</option>
+                    <option value="customer">C</option>
+                  </select>
+                </div>
+              )
+            )}
+
             <button
               type="button; submit"
               onClick={handleLogout}

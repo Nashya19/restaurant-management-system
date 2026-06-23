@@ -116,3 +116,13 @@ CREATE TABLE surplus_items (
     total_given_away integer NOT NULL DEFAULT 0,
     created_at timestamptz NOT NULL DEFAULT now()
 );
+
+CREATE TABLE public.cart_items (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_id uuid NOT NULL REFERENCES public.table_sessions(id) ON DELETE CASCADE,
+    menu_item_id uuid NOT NULL REFERENCES public.menu_items(id) ON DELETE CASCADE,
+    quantity integer NOT NULL DEFAULT 1 CHECK (quantity > 0),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    
+    CONSTRAINT cart_items_session_menu_item_unique UNIQUE (session_id, menu_item_id)
+);

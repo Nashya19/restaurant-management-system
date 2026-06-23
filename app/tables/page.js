@@ -43,7 +43,7 @@ export default function TablesPage() {
   }
   const supabase = supabaseRef.current;
   
-   const [tables, setTables] = useState([]);
+const [tables, setTables] = useState([]);
 const [isLoading, setIsLoading] = useState(true);
 const [pageError, setPageError] = useState(null);
 const [operatingTableId, setOperatingTableId] = useState(null);
@@ -51,6 +51,24 @@ const [selectedSession, setSelectedSession] = useState(null);
 const [showSessionModal, setShowSessionModal] = useState(false);
 const [confirmAction, setConfirmAction] = useState(null);
 const [sessionRunningTotal, setSessionRunningTotal] = useState(0);
+
+// Select session from query parameter on mount/URL change
+useEffect(() => {
+  if (typeof window !== 'undefined') {
+    const handleQueryParam = () => {
+      const params = new URLSearchParams(window.location.search);
+      const sessionParam = params.get('session');
+      if (sessionParam) {
+        handleViewSession(sessionParam);
+      }
+    };
+    if (tables.length > 0) {
+      handleQueryParam();
+    }
+    window.addEventListener('popstate', handleQueryParam);
+    return () => window.removeEventListener('popstate', handleQueryParam);
+  }
+}, [tables]);
 
 const [showAddTableModal, setShowAddTableModal] = useState(false);
 
@@ -97,7 +115,7 @@ const [editingTable, setEditingTable] = useState(null);
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'table_sessions' },
-        () => {
+        async (payload) => {
           fetchTables(false);
         }
       )
@@ -357,6 +375,14 @@ fetchTables();
     alert(err.message);
   }
 };
+const [devRole, setDevRole] = useState('admin');
+
+useEffect(() => {
+  if (typeof window !== 'undefined') {
+    setDevRole(localStorage.getItem('dev-role') || 'admin');
+  }
+}, []);
+
   return (
     <div className="w-full max-w-7xl mx-auto space-y-8 animate-fade-in">
       {/* Header Controls */}
@@ -369,12 +395,14 @@ fetchTables();
           >
             Live Status
           </Link>
-          <Link
-            href="/tables/history"
-            className="px-4 py-2 rounded-xl text-sm font-semibold border transition-all duration-200 border-[#27272a] bg-[#09090b] text-[var(--text-secondary)] hover:border-[#3f3f46] hover:text-[var(--text-primary)]"
-          >
-            Session History
-          </Link>
+          {devRole !== 'staff' && (
+            <Link
+              href="/tables/history"
+              className="px-4 py-2 rounded-xl text-sm font-semibold border transition-all duration-200 border-[#27272a] bg-[#09090b] text-[var(--text-secondary)] hover:border-[#3f3f46] hover:text-[var(--text-primary)]"
+            >
+              Session History
+            </Link>
+          )}
         </div>
 
         {/* Right: Actions */}
@@ -387,32 +415,36 @@ fetchTables();
             <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
             <span>Refresh</span>
           </button>
-          <button
-            type="button"
-            onClick={() => {
-              setEditingTable(null);
-              setTableNumber('');
-              setCapacity('');
-              setShowAddTableModal(true);
-            }}
-            className="btn btn-primary btn-premium flex items-center justify-center gap-2 rounded-xl font-bold shadow-md shadow-[var(--accent)]/5 cursor-pointer text-xs h-10"
-          >
-            <Plus size={18} />
-            Add New Table
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedTableId('');
-              setSelectedTable(null);
-              setManageTableNumber('');
-              setManageCapacity('');
-              setShowManageTableModal(true);
-            }}
-            className="btn btn-ghost flex items-center justify-center gap-2 rounded-xl bg-[#18181b] border-[#27272a] hover:border-[#3f3f46] hover:bg-[#27272a] text-[var(--text-primary)] font-bold cursor-pointer text-xs h-10"
-          >
-            Manage Tables
-          </button>
+          {devRole === 'admin' && (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingTable(null);
+                  setTableNumber('');
+                  setCapacity('');
+                  setShowAddTableModal(true);
+                }}
+                className="btn btn-primary btn-premium flex items-center justify-center gap-2 rounded-xl font-bold shadow-md shadow-[var(--accent)]/5 cursor-pointer text-xs h-10"
+              >
+                <Plus size={18} />
+                Add New Table
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedTableId('');
+                  setSelectedTable(null);
+                  setManageTableNumber('');
+                  setManageCapacity('');
+                  setShowManageTableModal(true);
+                }}
+                className="btn btn-ghost flex items-center justify-center gap-2 rounded-xl bg-[#18181b] border-[#27272a] hover:border-[#3f3f46] hover:bg-[#27272a] text-[var(--text-primary)] font-bold cursor-pointer text-xs h-10"
+              >
+                Manage Tables
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -476,7 +508,7 @@ fetchTables();
               {table.current_status !== 'inactive' && table.session_id && (
                 <div className="space-y-2 mb-4 text-small text-[var(--text-secondary)]">
                   <div className="flex items-center gap-2">
-                    <Zap size={14} /> PIN: <span className="font-mono font-bold text-[var(--accent)]">{table.current_pin}</span>
+                    <Zap size={14} /> PIN: <span className="font-sans font-bold text-[var(--accent)]">{table.current_pin}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span>🆔 ID:</span>
@@ -545,70 +577,28 @@ fetchTables();
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleLockSession(table.session_id);
-                      }}
-                      disabled={operatingTableId === table.session_id || !table.connected_devices_count || table.connected_devices_count === 0}
-                      className="btn btn-ghost text-orange-400 text-small w-full flex items-center justify-center gap-2"
-                    >
-                      {operatingTableId === table.session_id ? <Loader2 size={14} className="animate-spin" /> : <Lock size={14} />}
-                      End Ordering
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
                         handleViewSession(table.session_id);
-                      }}
-                      className="btn btn-ghost text-small w-full flex items-center justify-center gap-2"
-                    >
-                      <Eye size={14} />
-                      View Details
-                    </button>
-                  </>
-                )}
-
-                {table.current_status === 'locked' && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setConfirmAction({ action: 'complete', sessionId: table.session_id });
                       }}
                       className="btn btn-primary text-small w-full flex items-center justify-center gap-2"
                     >
-                      <Check size={14} />
-                      Complete & Bill
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleViewSession(table.session_id);
-                      }}
-                      className="btn btn-ghost text-small w-full flex items-center justify-center gap-2"
-                    >
                       <Eye size={14} />
                       View Details
                     </button>
                   </>
                 )}
-               
 
-
-                {table.current_status === 'completed' && (
+                {(table.current_status === 'completed' || table.current_status === 'locked') && (
                   <>
                     <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         setConfirmAction({ action: 'clear', sessionId: table.session_id });
-                      }
-                    }
-                      className="btn btn-ghost text-gray-400 text-small w-full flex items-center justify-center gap-2"
+                      }}
+                      className="btn btn-primary text-small w-full flex items-center justify-center gap-2"
                     >
-                      <Trash2 size={14} />
-                      Clear Table
+                      <Check size={14} />
+                      Confirm & Clear
                     </button>
                     <button
                       type="button"
@@ -742,51 +732,31 @@ fetchTables();
             </div>
 
             {/* Action Buttons */}
-            {selectedSession.status === 'open' && (
+
+
+            {(selectedSession.status === 'completed' || selectedSession.status === 'locked') && (
               <div className="flex gap-3">
                 <button
                   type="button"
                   onClick={() => {
-                    handleLockSession(selectedSession.id);
+                    setConfirmAction({ action: 'clear', sessionId: selectedSession.id });
                     setShowSessionModal(false);
                   }}
-                  disabled={!selectedSession.connected_devices_count || selectedSession.connected_devices_count === 0}
-                  className="flex-1 btn btn-ghost text-orange-400"
-                >
-                  <Lock size={16} /> End Ordering
-                </button>
-              </div>
-            )}
-
-            {selectedSession.status === 'locked' && (
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setConfirmAction({ action: 'complete', sessionId: selectedSession.id })}
                   className="flex-1 btn btn-primary"
                 >
-                  <Check size={16} /> Complete & Bill
+                  <Check size={16} /> Confirm & Clear
                 </button>
               </div>
             )}
 
-            {selectedSession.status === 'completed' && (
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setConfirmAction({ action: 'clear', sessionId: selectedSession.id })}
-                  className="flex-1 btn btn-ghost"
-                >
-                  <Trash2 size={16} /> Clear Table
-                </button>
-              </div>
-            )}
-
-            {(selectedSession.status === 'open' || selectedSession.status === 'locked') && (
+            {devRole !== 'staff' && (selectedSession.status === 'open' || selectedSession.status === 'completed' || selectedSession.status === 'locked') && (
               <div className="mt-3 flex gap-3">
                 <button
                   type="button"
-                  onClick={() => setConfirmAction({ action: 'cancel', sessionId: selectedSession.id })}
+                  onClick={() => {
+                    setConfirmAction({ action: 'cancel', sessionId: selectedSession.id });
+                    setShowSessionModal(false);
+                  }}
                   className="flex-1 btn btn-ghost text-[var(--destructive)]"
                 >
                   <AlertCircle size={16} /> Cancel Session (Admin)
@@ -1012,6 +982,7 @@ fetchTables();
           </div>
         </div>
       )}
+
     </div>
   );
 }
