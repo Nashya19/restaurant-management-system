@@ -6,7 +6,7 @@
  * - Table with columns: Name, Email (TBD), Role, Created Date, Actions
  * - Search bar for real-time filtering
  * - Create button linking to /users/new
- * - Edit/Delete actions per row
+ * - Edit/Archive actions per row
  * 
  * DESIGN COMPLIANCE:
  * - Dark theme (`.dark` class on root)
@@ -23,21 +23,26 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { listUsers, searchUsers } from '@/lib/api/users';
-import { deleteUser } from '@/lib/actions/users';
+import { listUsers } from '@/lib/api/users';
+import { archiveUser, restoreUser } from '@/lib/actions/users';
 import { formatRole, getStatusBadgeClass, formatDate } from '@/lib/utils/formatters';
-import { Edit2, Trash2, Plus, Search } from 'lucide-react';
+import { Edit2, Archive, RefreshCw, Plus, Search, Filter } from 'lucide-react';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import CustomSelect from '@/components/ui/CustomSelect';
 
 export default function UsersPage() {
   const [users, setUsers] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredUsers, setFilteredUsers] = useState([]);
+  const [roleFilter, setRoleFilter] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', message: '', onConfirm: () => {}, confirmStyle: 'btn-danger', confirmText: 'Confirm' });
   const router = useRouter();
+
+  const closeConfirm = () => setConfirmDialog(prev => ({ ...prev, isOpen: false }));
 
   // Fetch all users on mount
   useEffect(() => {
@@ -47,7 +52,6 @@ export default function UsersPage() {
       try {
         const { users: data } = await listUsers();
         setUsers(data);
-        setFilteredUsers(data);
       } catch (err) {
         setError(err.message);
         console.error('Failed to fetch users:', err);
@@ -59,39 +63,55 @@ export default function UsersPage() {
     fetchUsers();
   }, []);
 
-  // Handle search (debounced in real app; here simplified)
-  const handleSearch = async (query) => {
+  const handleSearch = (query) => {
     setSearchQuery(query);
-
-    if (!query.trim()) {
-      setFilteredUsers(users);
-      return;
-    }
-
-    try {
-      const results = await searchUsers(query);
-      setFilteredUsers(results);
-    } catch (err) {
-      console.error('Search failed:', err);
-      setError('Search failed. Please try again.');
-    }
   };
 
-  // Handle delete with confirmation
-  const handleDelete = async (userId, userName) => {
-    if (!confirm(`Delete staff member "${userName}"? This cannot be undone.`)) {
-      return;
-    }
+  // Handle archive with custom confirmation
+  const handleArchive = (userId, userName) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Archive Staff',
+      message: `Archive staff member "${userName}"? This can be restored later.`,
+      confirmText: 'Archive',
+      confirmStyle: 'btn-warning',
+      onConfirm: async () => {
+        closeConfirm();
+        try {
+          await archiveUser(userId);
+          setUsers(users.map((u) => u.id === userId ? { ...u, is_archived: true } : u));
+        } catch (err) {
+          setError(err.message);
+          console.error('Failed to archive user:', err);
+        }
+      }
+    });
+  };
 
+  const handleRestore = async (userId) => {
     try {
-      await deleteUser(userId);
-      setUsers(users.filter((u) => u.id !== userId));
-      setFilteredUsers(filteredUsers.filter((u) => u.id !== userId));
+      await restoreUser(userId);
+      setUsers(users.map((u) => u.id === userId ? { ...u, is_archived: false } : u));
     } catch (err) {
       setError(err.message);
-      console.error('Failed to delete user:', err);
+      console.error('Failed to restore user:', err);
     }
   };
+
+  // Derive lists
+  const filteredUsers = useMemo(() => {
+    return users.filter((u) => {
+      const matchesSearch = u.full_name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesRole = roleFilter === 'all' || u.role === roleFilter;
+      return matchesSearch && matchesRole;
+    });
+  }, [users, searchQuery, roleFilter]);
+
+  const normalUsers = filteredUsers.filter((u) => !u.is_archived);
+  const archivedUsers = filteredUsers.filter((u) => u.is_archived);
+
+  const staffCount = normalUsers.filter(u => u.role === 'staff').length;
+  const adminCount = normalUsers.filter(u => u.role === 'admin').length;
 
   return (
     <div className="w-full max-w-6xl mx-auto">
@@ -120,8 +140,8 @@ export default function UsersPage() {
       )}
 
       {/* Search Bar */}
-      <div className="card mb-6">
-        <div className="flex items-center gap-3 bg-[var(--surface-raised)] border border-[var(--border)] rounded px-4 py-2">
+      <div className="card mb-6 flex flex-col sm:flex-row gap-4">
+        <div className="flex-1 flex items-center gap-3 bg-[var(--surface-raised)] border border-[var(--border)] rounded px-4 py-2">
           <Search size={18} className="text-[var(--text-secondary)]" />
           <input
             type="text"
@@ -129,6 +149,18 @@ export default function UsersPage() {
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
             className="flex-1 bg-transparent outline-none text-[var(--text-primary)] placeholder-[var(--text-muted)]"
+          />
+        </div>
+        <div className="flex-1 max-w-xs">
+          <CustomSelect
+            value={roleFilter}
+            onChange={setRoleFilter}
+            icon={Filter}
+            options={[
+              { value: 'all', label: 'All Roles' },
+              { value: 'admin', label: 'Admin' },
+              { value: 'staff', label: 'Staff' }
+            ]}
           />
         </div>
       </div>
@@ -140,10 +172,10 @@ export default function UsersPage() {
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--accent)]"></div>
             <p className="mt-4 text-[var(--text-secondary)]">Loading staff members…</p>
           </div>
-        ) : filteredUsers.length === 0 ? (
+        ) : normalUsers.length === 0 ? (
           <div className="p-8 text-center">
             <p className="text-[var(--text-secondary)]">
-              {users.length === 0 ? 'No staff members yet.' : 'No results match your search.'}
+              {users.filter(u => !u.is_archived).length === 0 ? 'No staff members yet.' : 'No results match your search.'}
             </p>
           </div>
         ) : (
@@ -159,6 +191,9 @@ export default function UsersPage() {
                     Role
                   </th>
                   <th className="text-left text-subheading uppercase text-[var(--text-secondary)] font-semibold px-6 py-3">
+                    Phone
+                  </th>
+                  <th className="text-left text-subheading uppercase text-[var(--text-secondary)] font-semibold px-6 py-3">
                     Created
                   </th>
                   <th className="text-right text-subheading uppercase text-[var(--text-secondary)] font-semibold px-6 py-3">
@@ -169,7 +204,7 @@ export default function UsersPage() {
 
               {/* Table Body */}
               <tbody>
-                {filteredUsers.map((user) => (
+                {normalUsers.map((user) => (
                   <tr
                     key={user.id}
                     className="border-b border-[var(--border)] hover:bg-[var(--surface-raised)] transition-colors"
@@ -183,6 +218,9 @@ export default function UsersPage() {
                       </span>
                     </td>
                     <td className="text-small text-[var(--text-secondary)] px-6 py-4">
+                      {user.phone || '—'}
+                    </td>
+                    <td className="text-body px-6 py-4">
                       {formatDate(user.created_at, 'short')}
                     </td>
                     <td className="text-body px-6 py-4 flex justify-end gap-2">
@@ -194,11 +232,11 @@ export default function UsersPage() {
                         Edit
                       </Link>
                       <button
-                        onClick={() => handleDelete(user.id, user.full_name)}
-                        className="btn btn-danger inline-flex items-center gap-1 px-3 py-2"
+                        onClick={() => handleArchive(user.id, user.full_name)}
+                        className="btn btn-warning inline-flex items-center gap-1 px-3 py-2"
                       >
-                        <Trash2 size={16} />
-                        Delete
+                        <Archive size={16} />
+                        Archive
                       </button>
                     </td>
                   </tr>
@@ -211,9 +249,45 @@ export default function UsersPage() {
 
       {/* Footer Info */}
       <div className="mt-6 text-small text-[var(--text-muted)]">
-        Showing <span className="font-semibold">{filteredUsers.length}</span> of{' '}
-        <span className="font-semibold">{users.length}</span> staff members
+        Showing <span className="font-semibold">{staffCount}</span> staff and{' '}
+        <span className="font-semibold">{adminCount}</span> admin{adminCount !== 1 ? 's' : ''}
       </div>
+
+      {/* Archived staff section */}
+      <div className="mt-8">
+        <h2 className="text-subheading mb-3">Archived Staff</h2>
+        <ArchivedList archived={archivedUsers} onRestore={handleRestore} />
+      </div>
+
+      <ConfirmDialog 
+        {...confirmDialog} 
+        onCancel={closeConfirm} 
+      />
+    </div>
+  );
+}
+
+function ArchivedList({ archived, onRestore }) {
+  if (archived.length === 0) return <p className="text-[var(--text-secondary)]">No archived staff.</p>;
+
+  return (
+    <div className="card p-4">
+      <ul>
+        {archived.map((u) => (
+          <li key={u.id} className="flex items-center justify-between py-2">
+            <div>
+              <div className="font-semibold">{u.full_name}</div>
+              <div className="text-small text-[var(--text-secondary)]">{u.phone || '—'}</div>
+            </div>
+            <div>
+              <button onClick={() => onRestore(u.id)} className="btn btn-ghost inline-flex items-center gap-2">
+                <RefreshCw size={14} />
+                Restore
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

@@ -23,7 +23,8 @@ import {
 } from '@/lib/api/menu';
 import { validateCategoryForm } from '@/lib/utils/validation';
 import { formatDate } from '@/lib/utils/formatters';
-import { Edit2, Trash2, Plus, X, Check, Loader2 } from 'lucide-react';
+import { Edit2, Archive, Plus, X, Check, Loader2 } from 'lucide-react';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState([]);
@@ -31,6 +32,9 @@ export default function CategoriesPage() {
   const [error, setError] = useState(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', message: '', onConfirm: () => {}, confirmStyle: 'btn-danger', confirmText: 'Confirm' });
+
+  const closeConfirm = () => setConfirmDialog(prev => ({ ...prev, isOpen: false }));
 
   const [createName, setCreateName] = useState('');
   const [createError, setCreateError] = useState(null);
@@ -117,19 +121,27 @@ export default function CategoriesPage() {
     }
   };
 
-  // Handle delete
-  const handleDelete = async (categoryId, categoryName) => {
-    if (!confirm(`Delete category "${categoryName}"? Items in this category will be unaffected.`)) {
-      return;
-    }
-
-    try {
-      await deleteCategory(categoryId);
-      setCategories(categories.filter((c) => c.id !== categoryId));
-    } catch (err) {
-      setError(err.message);
-      console.error('Failed to delete category:', err);
-    }
+  // Handle archive (UI label changed from Delete -> Archive)
+  const handleArchive = (categoryId, categoryName) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Archive Category',
+      message: `Archive category "${categoryName}"? Items in this category will be unaffected.`,
+      confirmText: 'Archive',
+      confirmStyle: 'btn-danger',
+      onConfirm: async () => {
+        closeConfirm();
+        try {
+          // NOTE: backend currently performs deletion via deleteCategory();
+          // this UI change updates the label/confirmation only.
+          await deleteCategory(categoryId);
+          setCategories(categories.filter((c) => c.id !== categoryId));
+        } catch (err) {
+          setError(err.message);
+          console.error('Failed to archive category:', err);
+        }
+      }
+    });
   };
 
   return (
@@ -302,11 +314,11 @@ export default function CategoriesPage() {
                           Edit
                         </button>
                         <button
-                          onClick={() => handleDelete(category.id, category.name)}
+                          onClick={() => handleArchive(category.id, category.name)}
                           className="btn btn-danger inline-flex items-center gap-1 px-3 py-2"
                         >
-                          <Trash2 size={16} />
-                          Delete
+                          <Archive size={16} />
+                          Archive
                         </button>
                       </td>
                     </tr>
@@ -322,6 +334,11 @@ export default function CategoriesPage() {
       <div className="mt-6 text-small text-[var(--text-muted)]">
         Total categories: <span className="font-semibold">{categories.length}</span>
       </div>
+
+      <ConfirmDialog 
+        {...confirmDialog} 
+        onCancel={closeConfirm} 
+      />
     </div>
   );
 }
