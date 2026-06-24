@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import CustomSelect from '@/components/ui/CustomSelect';
 import Link from 'next/link';
+import { useAlertConfirm } from '@/lib/hooks/useAlertConfirm';
 
 
 const STATUS_COLORS = {
@@ -43,6 +44,7 @@ const STATUS_LABELS = {
 };
 
 export default function SessionHistoryPage() {
+  const { showAlert, showConfirm, AlertConfirmComponent } = useAlertConfirm();
   const [sessions, setSessions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -74,6 +76,11 @@ export default function SessionHistoryPage() {
     setPageError(null);
 
     try {
+      const role = localStorage.getItem('dev-role') || 'admin';
+      if (role === 'staff') {
+        window.location.href = '/tables';
+        return;
+      }
       const data = await getAllSessions();
       setSessions(data || []);
     } catch (err) {
@@ -239,19 +246,19 @@ export default function SessionHistoryPage() {
       setSelectedSession(details);
       setShowSessionModal(true);
     } catch (err) {
-      alert(err.message || 'Failed to load session details.');
+      await showAlert(err.message || 'Failed to load session details.');
     } finally {
       setIsDetailLoading(false);
     }
   };
 
-  const handleDotClick = () => {
+  const handleDotClick = async () => {
     const input = prompt(`Enter page number (1 to ${totalPages}):`);
     if (input === null) return;
     const pageNum = parseInt(input, 10);
     if (!isNaN(pageNum)) {
       if (pageNum <= 0) {
-        alert("Minimum page number is 1");
+        await showAlert("Minimum page number is 1");
         return;
       }
       const targetPage = Math.min(pageNum, totalPages);
@@ -262,12 +269,12 @@ export default function SessionHistoryPage() {
   return (
     <div className="w-full max-w-7xl mx-auto space-y-6 animate-fade-in pb-12">
       {/* Header controls */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between pb-4 border-b border-[#27272a] mb-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between pb-4 border-b border-border mb-6">
         {/* Left: Sub-navigation Tabs */}
         <div className="flex items-center gap-3">
           <Link
             href="/tables"
-            className="px-4 py-2 rounded-xl text-sm font-semibold border transition-all duration-200 border-[#27272a] bg-[#09090b] text-[var(--text-secondary)] hover:border-[#3f3f46] hover:text-[var(--text-primary)]"
+            className="px-4 py-2 rounded-xl text-sm font-semibold border transition-all duration-200 border-border bg-background text-[var(--text-secondary)] hover:border-border hover:text-[var(--text-primary)]"
           >
             Live Status
           </Link>
@@ -285,7 +292,7 @@ export default function SessionHistoryPage() {
             type="button"
             onClick={() => fetchSessions(false)}
             disabled={isRefreshing}
-            className="btn btn-ghost bg-[#09090b] border-[#27272a] hover:bg-[#18181b] hover:text-[var(--accent)] flex items-center justify-center gap-2 rounded-xl font-bold cursor-pointer text-xs h-10 px-4 transition-all"
+            className="btn btn-ghost bg-background border-border hover:bg-surface hover:text-[var(--accent)] flex items-center justify-center gap-2 rounded-xl font-bold cursor-pointer text-xs h-10 px-4 transition-all"
           >
             <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : ''} />
             <span>Refresh</span>
@@ -295,14 +302,14 @@ export default function SessionHistoryPage() {
 
       {/* Error Alert */}
       {pageError && (
-        <div className="flex items-start gap-2 bg-[#2a1010] border border-[#5a2020] text-[#c45a5a] text-sm p-4 rounded-xl animate-fade-in">
+        <div className="flex items-start gap-2 bg-destructive-bg border border-destructive-border text-destructive text-sm p-4 rounded-xl animate-fade-in">
           <span className="shrink-0 mt-0.5">⚠️</span>
           <span>{pageError}</span>
         </div>
       )}
 
       {/* Advanced Filters Block */}
-      <div className="bg-[#18181b] border border-[#27272a] rounded-2xl p-6 space-y-4">
+      <div className="bg-surface border border-border rounded-2xl p-6 space-y-4">
         <h3 className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-2 mb-2">
           <span>🔍</span> Filter Records
         </h3>
@@ -341,7 +348,7 @@ export default function SessionHistoryPage() {
 
         {/* Custom Price Inputs (Conditionally rendered) */}
         {priceFilter === 'custom' && (
-          <div className="grid gap-4 sm:grid-cols-2 p-4 bg-[#09090b] rounded-xl border border-[#27272a] animate-fade-in">
+          <div className="grid gap-4 sm:grid-cols-2 p-4 bg-background rounded-xl border border-border animate-fade-in">
             <div className="space-y-1.5">
               <label className="text-xs uppercase text-[var(--text-secondary)] font-bold tracking-wider">Min Price ($)</label>
               <input
@@ -349,7 +356,7 @@ export default function SessionHistoryPage() {
                 placeholder="e.g. 100"
                 value={customMinPrice}
                 onChange={(e) => setCustomMinPrice(e.target.value)}
-                className="w-full bg-[#18181b] border-[#27272a] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-xl h-10 px-3.5 text-sm transition-all"
+                className="w-full bg-surface border-border focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-xl h-10 px-3.5 text-sm transition-all"
               />
             </div>
             <div className="space-y-1.5">
@@ -359,7 +366,7 @@ export default function SessionHistoryPage() {
                 placeholder="e.g. 1000"
                 value={customMaxPrice}
                 onChange={(e) => setCustomMaxPrice(e.target.value)}
-                className="w-full bg-[#18181b] border-[#27272a] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-xl h-10 px-3.5 text-sm transition-all"
+                className="w-full bg-surface border-border focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-xl h-10 px-3.5 text-sm transition-all"
               />
             </div>
           </div>
@@ -367,14 +374,14 @@ export default function SessionHistoryPage() {
 
         {/* Custom Date Inputs (Conditionally rendered) */}
         {dateFilter === 'custom' && (
-          <div className="grid gap-4 sm:grid-cols-2 p-4 bg-[#09090b] rounded-xl border border-[#27272a] animate-fade-in">
+          <div className="grid gap-4 sm:grid-cols-2 p-4 bg-background rounded-xl border border-border animate-fade-in">
             <div className="space-y-1.5">
               <label className="text-xs uppercase text-[var(--text-secondary)] font-bold tracking-wider">Start Date</label>
               <input
                 type="date"
                 value={customStartDate}
                 onChange={(e) => setCustomStartDate(e.target.value)}
-                className="w-full bg-[#18181b] border-[#27272a] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-xl h-10 px-3.5 text-sm transition-all"
+                className="w-full bg-surface border-border focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-xl h-10 px-3.5 text-sm transition-all"
               />
             </div>
             <div className="space-y-1.5">
@@ -383,20 +390,20 @@ export default function SessionHistoryPage() {
                 type="date"
                 value={customEndDate}
                 onChange={(e) => setCustomEndDate(e.target.value)}
-                className="w-full bg-[#18181b] border-[#27272a] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-xl h-10 px-3.5 text-sm transition-all"
+                className="w-full bg-surface border-border focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-xl h-10 px-3.5 text-sm transition-all"
               />
             </div>
           </div>
         )}
 
         {/* Exclude Fake Sessions toggle */}
-        <div className="flex flex-wrap items-center justify-between gap-4 pt-2 border-t border-[#27272a]/50">
+        <div className="flex flex-wrap items-center justify-between gap-4 pt-2 border-t border-border/50">
           <label className="flex items-center gap-2.5 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={hideZeroAmount}
               onChange={(e) => setHideZeroAmount(e.target.checked)}
-              className="w-4 h-4 rounded border-[#27272a] bg-[#09090b] text-[var(--accent)] focus:ring-[var(--accent)] focus:ring-offset-0 focus:outline-none"
+              className="w-4 h-4 rounded border-border bg-background text-[var(--accent)] focus:ring-[var(--accent)] focus:ring-offset-0 focus:outline-none"
             />
             <span className="text-xs font-bold uppercase text-[var(--text-secondary)] tracking-wider">Hide Zero-Value Sessions (Fake Sessions)</span>
           </label>
@@ -410,12 +417,12 @@ export default function SessionHistoryPage() {
         </div>
       ) : (
         <div className="space-y-6 animate-fade-in">
-          <div className="bg-[#18181b] border border-[#27272a] rounded-2xl overflow-hidden shadow-lg">
+          <div className="bg-surface border border-border rounded-2xl overflow-hidden shadow-lg">
             {/* Scrollable Data Table Container */}
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-[#27272a] bg-[#09090b]/40 text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">
+                  <tr className="border-b border-border bg-background/40 text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">
                     <th className="p-4 pl-6">Session ID</th>
                     <th className="p-4">Table</th>
                     <th className="p-4">PIN</th>
@@ -428,21 +435,21 @@ export default function SessionHistoryPage() {
                     <th className="p-4 pr-6 text-center">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#27272a]/60 text-sm text-[var(--text-primary)]">
+                <tbody className="divide-y divide-border/60 text-sm text-[var(--text-primary)]">
                   {paginatedSessions.length > 0 ? (
                     paginatedSessions.map((session) => {
                       const devicesCount = session.session_devices?.length || 0;
                       const ordersCount = session.orders?.length || 0;
                       return (
-                        <tr key={session.id} className="hover:bg-[#27272a]/30 transition-colors group">
+                        <tr key={session.id} className="hover:bg-surface-raised/30 transition-colors group">
                           <td className="p-4 pl-6 font-mono text-xs text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors">
                             <span title={session.id}>{session.id.substring(0, 8)}...</span>
                             <button
                               type="button"
-                              onClick={(e) => {
+                              onClick={async (e) => {
                                 e.stopPropagation();
                                 navigator.clipboard.writeText(session.id);
-                                alert('Session ID copied!');
+                                await showAlert('Session ID copied!');
                               }}
                               className="ml-2 text-[10px] bg-[#27272a]/80 px-1 py-0.5 rounded border border-[#3f3f46] hover:bg-[#3f3f46] hover:text-[var(--accent)] transition-all cursor-pointer"
                             >
@@ -473,7 +480,7 @@ export default function SessionHistoryPage() {
                             <button
                               type="button"
                               onClick={() => handleViewSession(session.id)}
-                              className="btn btn-ghost hover:bg-[#09090b] hover:text-[var(--accent)] rounded-lg p-2 h-9 w-9 flex items-center justify-center transition-all cursor-pointer"
+                              className="btn btn-ghost hover:bg-background hover:text-[var(--accent)] rounded-lg p-2 h-9 w-9 flex items-center justify-center transition-all cursor-pointer"
                               title="View Session Details"
                             >
                               {isDetailLoading ? <Loader2 size={14} className="animate-spin" /> : <Eye size={14} />}
@@ -496,7 +503,7 @@ export default function SessionHistoryPage() {
 
           {/* Pagination Controls */}
           {!isLoading && filteredSessions.length > 0 && (
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-[#18181b] border border-[#27272a] rounded-2xl p-4">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-surface border border-border rounded-2xl p-4">
               {/* Left side: Items per page selector */}
               <div className="flex items-center gap-3">
                 <span className="text-xs text-[var(--text-secondary)] font-semibold uppercase tracking-wider">Show per page:</span>
@@ -547,7 +554,7 @@ export default function SessionHistoryPage() {
                       className={`btn h-9 w-9 text-xs rounded-xl font-bold transition-all ${
                         currentPage === p
                           ? 'bg-[var(--accent)] text-[#0F0F0F]'
-                          : 'btn-ghost hover:bg-[#27272a]'
+                          : 'btn-ghost hover:bg-surface-raised'
                       }`}
                     >
                       {p}
@@ -572,8 +579,8 @@ export default function SessionHistoryPage() {
       {/* Session Details Modal (Reused) */}
       {showSessionModal && selectedSession && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="card bg-[#18181b] border border-[#27272a] w-full max-w-2xl max-h-[90vh] overflow-y-auto p-8 rounded-2xl shadow-2xl relative">
-            <div className="flex items-center justify-between mb-6 pb-2 border-b border-[#27272a]">
+          <div className="card bg-surface border border-border w-full max-w-2xl max-h-[90vh] overflow-y-auto p-8 rounded-2xl shadow-2xl relative">
+            <div className="flex items-center justify-between mb-6 pb-2 border-b border-border">
               <h2 className="text-lg font-bold text-[var(--text-primary)]">
                 Table {selectedSession.tables?.table_number} - Session Details
               </h2>
@@ -588,21 +595,21 @@ export default function SessionHistoryPage() {
 
             {/* Session Info Grid */}
             <div className="grid gap-4 sm:grid-cols-2 mb-6">
-              <div className="bg-[#09090b] border border-[#27272a] p-4 rounded-xl">
+              <div className="bg-background border border-border p-4 rounded-xl">
                 <p className="text-xs text-[var(--text-secondary)] mb-1 font-semibold uppercase">PIN</p>
                 <p className="font-mono font-bold text-lg text-[var(--accent)]">{selectedSession.pin}</p>
               </div>
-              <div className="bg-[#09090b] border border-[#27272a] p-4 rounded-xl">
+              <div className="bg-background border border-border p-4 rounded-xl">
                 <p className="text-xs text-[var(--text-secondary)] mb-1 font-semibold uppercase">Status</p>
                 <span className={`inline-block px-2.5 py-1 rounded text-xs font-bold uppercase ${STATUS_COLORS[selectedSession.status]}`}>
                   {STATUS_LABELS[selectedSession.status]}
                 </span>
               </div>
-              <div className="bg-[#09090b] border border-[#27272a] p-4 rounded-xl">
+              <div className="bg-background border border-border p-4 rounded-xl">
                 <p className="text-xs text-[var(--text-secondary)] mb-1 font-semibold uppercase">Opened At</p>
                 <p className="text-sm font-semibold">{formatDate(selectedSession.started_at)}</p>
               </div>
-              <div className="bg-[#09090b] border border-[#27272a] p-4 rounded-xl">
+              <div className="bg-background border border-border p-4 rounded-xl">
                 <p className="text-xs text-[var(--text-secondary)] mb-1 font-semibold uppercase">Connected Devices</p>
                 <p className="text-sm font-bold">{selectedSession.connected_devices_count}</p>
               </div>
@@ -614,7 +621,7 @@ export default function SessionHistoryPage() {
               {selectedSession.orders && selectedSession.orders.length > 0 ? (
                 <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                   {selectedSession.orders.map((order) => (
-                    <div key={order.id} className="flex justify-between items-center bg-[#09090b] border border-[#27272a] p-3 rounded-xl">
+                    <div key={order.id} className="flex justify-between items-center bg-background border border-border p-3 rounded-xl">
                       <div>
                         <p className="text-body font-semibold">{order.item_name}</p>
                         <p className="text-xs text-[var(--text-secondary)] mt-0.5">Qty: {order.quantity} | Status: <span className="font-bold text-[var(--accent)]">{order.status}</span></p>
@@ -624,14 +631,14 @@ export default function SessionHistoryPage() {
                   ))}
                 </div>
               ) : (
-                <p className="text-xs text-[var(--text-secondary)] bg-[#09090b] border border-[#27272a] p-4 rounded-xl text-center">No orders registered during this session.</p>
+                <p className="text-xs text-[var(--text-secondary)] bg-background border border-border p-4 rounded-xl text-center">No orders registered during this session.</p>
               )}
             </div>
 
             {/* Total */}
-            <div className="bg-[#0f2318] border border-[#2a5c3a]/50 text-[#4a9b6a] p-4 rounded-xl mb-6 flex items-center justify-between">
+            <div className="bg-success-bg border border-[#2a5c3a]/50 text-success p-4 rounded-xl mb-6 flex items-center justify-between">
               <div>
-                <p className="text-xs uppercase font-bold tracking-wider text-[#4a9b6a]/80">Running / Total Amount</p>
+                <p className="text-xs uppercase font-bold tracking-wider text-success/80">Running / Total Amount</p>
                 <p className="text-2xl font-mono font-bold mt-1">${(selectedSession.running_total || 0).toFixed(2)}</p>
               </div>
               <DollarSign size={28} />
@@ -643,7 +650,7 @@ export default function SessionHistoryPage() {
               {selectedSession.session_devices && selectedSession.session_devices.length > 0 ? (
                 <div className="space-y-2">
                   {selectedSession.session_devices.map((device) => (
-                    <div key={device.id} className="bg-[#09090b] border border-[#27272a] p-3 rounded-xl text-xs">
+                    <div key={device.id} className="bg-background border border-border p-3 rounded-xl text-xs">
                       <p className="text-[var(--text-secondary)] font-mono truncate">{device.device_fingerprint}</p>
                       <p className="text-[10px] text-[var(--text-secondary)] mt-0.5">
                         Joined: {formatDate(device.joined_at)}
@@ -652,20 +659,21 @@ export default function SessionHistoryPage() {
                   ))}
                 </div>
               ) : (
-                <p className="text-xs text-[var(--text-secondary)] bg-[#09090b] border border-[#27272a] p-4 rounded-xl text-center">No devices connected.</p>
+                <p className="text-xs text-[var(--text-secondary)] bg-background border border-border p-4 rounded-xl text-center">No devices connected.</p>
               )}
             </div>
 
             <button
               type="button"
               onClick={() => setShowSessionModal(false)}
-              className="mt-4 w-full btn btn-ghost bg-[#09090b] border-[#27272a] hover:bg-[#18181b] rounded-xl font-bold cursor-pointer text-xs h-10 transition-all"
+              className="mt-4 w-full btn btn-ghost bg-background border-border hover:bg-surface rounded-xl font-bold cursor-pointer text-xs h-10 transition-all"
             >
               Close Details
             </button>
           </div>
         </div>
       )}
+      {AlertConfirmComponent}
     </div>
   );
 }

@@ -30,6 +30,7 @@
 import { useDashboard } from '@/lib/hooks/useDashboard';
 import { formatCurrency, formatWaitTime, getWaitTimeClass, formatCount } from '@/lib/utils/formatters';
 import { TrendingUp, Clock, DollarSign, TableProperties, ShoppingCart, Users, Loader2, RefreshCw } from 'lucide-react';
+import Link from 'next/link';
 
 export default function DashboardPage() {
   const { metrics, isLoading, error, refresh } = useDashboard();
@@ -37,7 +38,7 @@ export default function DashboardPage() {
   return (
     <div className="w-full max-w-7xl mx-auto space-y-8 animate-fade-in">
       {/* Page Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pb-4 border-b border-[#27272a]">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pb-4 border-b border-border">
         <div>
           <h1 className="text-display text-2xl font-bold tracking-tight text-[var(--text-primary)]">Dashboard</h1>
           <p className="text-sm text-[var(--text-secondary)] mt-1">
@@ -46,7 +47,7 @@ export default function DashboardPage() {
         </div>
         <button
           onClick={refresh}
-          className="btn btn-ghost bg-[#09090b] border-[#27272a] hover:bg-[#18181b] hover:text-[var(--accent)] flex items-center justify-center gap-2 rounded-xl font-bold cursor-pointer text-xs self-start sm:self-auto h-9"
+          className="btn btn-ghost bg-background border-border hover:bg-surface hover:text-[var(--accent)] flex items-center justify-center gap-2 rounded-xl font-bold cursor-pointer text-xs self-start sm:self-auto h-9"
         >
           <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />
           <span>Refresh</span>
@@ -55,7 +56,7 @@ export default function DashboardPage() {
 
       {/* Error Alert */}
       {error && (
-        <div className="flex items-start gap-2 bg-[#2a1010] border border-[#5a2020] text-[#c45a5a] text-sm p-4 rounded-xl animate-fade-in">
+        <div className="flex items-start gap-2 bg-destructive-bg border border-destructive-border text-destructive text-sm p-4 rounded-xl animate-fade-in">
           <span className="shrink-0 mt-0.5">⚠️</span>
           <span>{error}</span>
         </div>
@@ -74,7 +75,7 @@ export default function DashboardPage() {
           {/* Stat Cards Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Card 1: Active Orders (HIGHLIGHTED - one accent element) */}
-            <div className="stat-card bg-[#18181b] border border-[#27272a] border-l-4 border-l-[var(--accent)] p-6 rounded-2xl shadow-lg hover:border-l-[var(--accent)] transition-all duration-300 relative overflow-hidden group">
+            <Link href="/orders" className="stat-card bg-surface border border-border border-l-4 border-l-[var(--accent)] p-6 rounded-2xl shadow-lg hover:border-l-[var(--accent)] transition-all duration-300 relative overflow-hidden group block hover:no-underline cursor-pointer">
               <div className="absolute top-0 right-0 w-24 h-24 bg-[var(--accent)] opacity-5 rounded-full blur-2xl pointer-events-none" />
               <div className="flex items-start justify-between mb-4">
                 <div>
@@ -86,10 +87,10 @@ export default function DashboardPage() {
               <p className="text-xs text-[var(--text-secondary)] font-semibold mt-6">
                 Orders in progress (placed, preparing, ready)
               </p>
-            </div>
+            </Link>
 
             {/* Card 2: Average Wait Time */}
-            <div className="stat-card bg-[#18181b] border border-[#27272a] p-6 rounded-2xl shadow-lg hover:border-[var(--accent)] transition-all duration-300 relative overflow-hidden group">
+            <div className="stat-card bg-surface border border-border p-6 rounded-2xl shadow-lg hover:border-[var(--accent)] transition-all duration-300 relative overflow-hidden group">
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <p className="text-xs uppercase text-[var(--text-secondary)] font-bold tracking-wider">Avg Wait Time</p>
@@ -105,15 +106,15 @@ export default function DashboardPage() {
             </div>
 
             {/* Card 3: Revenue Today */}
-            <div className="stat-card bg-[#18181b] border border-[#27272a] p-6 rounded-2xl shadow-lg hover:border-[var(--accent)] transition-all duration-300 relative overflow-hidden group">
+            <div className="stat-card bg-surface border border-border p-6 rounded-2xl shadow-lg hover:border-[var(--accent)] transition-all duration-300 relative overflow-hidden group">
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <p className="text-xs uppercase text-[var(--text-secondary)] font-bold tracking-wider">Revenue Today</p>
-                  <p className="text-4xl font-extrabold font-mono text-[#4a9b6a] mt-2">
+                  <p className="text-4xl font-extrabold font-mono text-success mt-2">
                     {formatCurrency(metrics.revenueToday)}
                   </p>
                 </div>
-                <DollarSign size={24} className="text-[#4a9b6a] opacity-50 group-hover:scale-110 transition-transform duration-300" />
+                <DollarSign size={24} className="text-success opacity-50 group-hover:scale-110 transition-transform duration-300" />
               </div>
               <p className="text-xs text-[var(--text-secondary)] font-semibold mt-6">
                 Total from completed billing sessions
@@ -121,7 +122,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Card 4: Open Tables */}
-            <div className="stat-card bg-[#18181b] border border-[#27272a] p-6 rounded-2xl shadow-lg hover:border-[var(--accent)] transition-all duration-300 relative overflow-hidden group">
+            <Link href="/tables" className="stat-card bg-surface border border-border p-6 rounded-2xl shadow-lg hover:border-[var(--accent)] transition-all duration-300 relative overflow-hidden group block hover:no-underline cursor-pointer">
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <p className="text-xs uppercase text-[var(--text-secondary)] font-bold tracking-wider">Open Tables</p>
@@ -132,10 +133,10 @@ export default function DashboardPage() {
               <p className="text-xs text-[var(--text-secondary)] font-semibold mt-6">
                 {metrics.occupiedTables} currently occupied dining tables
               </p>
-            </div>
+            </Link>
 
             {/* Card 5: Avg Order Value */}
-            <div className="stat-card bg-[#18181b] border border-[#27272a] p-6 rounded-2xl shadow-lg hover:border-[var(--accent)] transition-all duration-300 relative overflow-hidden group">
+            <div className="stat-card bg-surface border border-border p-6 rounded-2xl shadow-lg hover:border-[var(--accent)] transition-all duration-300 relative overflow-hidden group">
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <p className="text-xs uppercase text-[var(--text-secondary)] font-bold tracking-wider">Avg Order Value</p>
@@ -151,7 +152,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Card 6: Staff Online */}
-            <div className="stat-card bg-[#18181b] border border-[#27272a] p-6 rounded-2xl shadow-lg hover:border-[var(--accent)] transition-all duration-300 relative overflow-hidden group">
+            <Link href="/users" className="stat-card bg-surface border border-border p-6 rounded-2xl shadow-lg hover:border-[var(--accent)] transition-all duration-300 relative overflow-hidden group block hover:no-underline cursor-pointer">
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <p className="text-xs uppercase text-[var(--text-secondary)] font-bold tracking-wider">Staff Online</p>
@@ -162,11 +163,11 @@ export default function DashboardPage() {
               <p className="text-xs text-[var(--text-secondary)] font-semibold mt-6">
                 Active staff shifts logged in now
               </p>
-            </div>
+            </Link>
           </div>
 
           {/* Footer Info */}
-          <div className="card bg-[#18181b] border border-[#27272a] p-4 rounded-xl flex items-center justify-between text-xs text-[var(--text-muted)] font-semibold">
+          <div className="card bg-surface border border-border p-4 rounded-xl flex items-center justify-between text-xs text-[var(--text-muted)] font-semibold">
             <span>✓ Metrics update automatically via real-time stream.</span>
             <span>Last sync: just now</span>
           </div>

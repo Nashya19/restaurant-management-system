@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { getSessionDetails } from '@/lib/api/table-sessions';
+import { getSessionDetailsAction } from '@/lib/actions/orders';
 
 export default function CustomerSessionPage() {
   const params = useParams();
@@ -20,7 +20,7 @@ export default function CustomerSessionPage() {
     if (!sessionId) return;
 
     const data =
-      await getSessionDetails(sessionId);
+      await getSessionDetailsAction(sessionId);
 
     setSession(data);
   }

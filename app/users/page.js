@@ -116,7 +116,7 @@ export default function UsersPage() {
   return (
     <div className="w-full max-w-7xl mx-auto space-y-8 animate-fade-in">
       {/* Page Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pb-4 border-b border-[#27272a]">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pb-4 border-b border-border">
         <div>
           <h1 className="text-display text-2xl font-bold tracking-tight text-[var(--text-primary)]">Staff Management</h1>
           <p className="text-sm text-[var(--text-secondary)] mt-1">
@@ -127,15 +127,15 @@ export default function UsersPage() {
 
       {/* Error Alert */}
       {error && (
-        <div className="flex items-start gap-2 bg-[#2a1010] border border-[#5a2020] text-[#c45a5a] text-sm p-4 rounded-xl animate-fade-in">
+        <div className="flex items-start gap-2 bg-destructive-bg border border-destructive-border text-destructive text-sm p-4 rounded-xl animate-fade-in">
           <span className="shrink-0 mt-0.5">⚠️</span>
           <span>{error}</span>
         </div>
       )}
 
       {/* Search & Filter Bar */}
-      <div className="card bg-[#18181b] border border-[#27272a] p-6 rounded-2xl shadow-lg flex flex-col sm:flex-row gap-4">
-        <div className="flex-1 flex items-center gap-2.5 bg-[#09090b] border border-[#27272a] rounded-xl px-3.5 h-10 transition-colors focus-within:border-[var(--accent)]">
+      <div className="card bg-surface border border-border p-6 rounded-2xl shadow-lg flex flex-col sm:flex-row gap-4">
+        <div className="flex-1 flex items-center gap-2.5 bg-background border border-border rounded-xl px-3.5 h-10 transition-colors focus-within:border-[var(--accent)]">
           <Search size={16} className="text-[var(--text-secondary)]" />
           <input
             type="text"
@@ -160,7 +160,7 @@ export default function UsersPage() {
       </div>
 
       {/* Users Table Card */}
-      <div className="card bg-[#18181b] border border-[#27272a] overflow-hidden rounded-2xl shadow-lg">
+      <div className="card bg-surface border border-border overflow-hidden rounded-2xl shadow-lg">
         {isLoading ? (
           <div className="p-16 text-center">
             <Loader2 size={36} className="animate-spin text-[var(--accent)] inline-block" />
@@ -176,7 +176,7 @@ export default function UsersPage() {
           <div className="overflow-x-auto">
             <table className="w-full">
               {/* Table Header */}
-              <thead className="bg-[#09090b] border-b border-[#27272a]">
+              <thead className="bg-background border-b border-border">
                 <tr>
                   <th className="text-left text-xs uppercase text-[var(--text-secondary)] font-bold px-6 py-4 tracking-wider">
                     Name
@@ -197,17 +197,17 @@ export default function UsersPage() {
               </thead>
 
               {/* Table Body */}
-              <tbody className="divide-y divide-[#27272a]">
+              <tbody className="divide-y divide-border">
                 {normalUsers.map((user) => (
                   <tr
                     key={user.id}
-                    className="hover:bg-[#09090b]/40 transition-colors"
+                    className="hover:bg-background/40 transition-colors"
                   >
                     <td className="px-6 py-4 text-sm font-semibold text-[var(--text-primary)]">
                       {user.full_name}
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase ${user.role === 'admin' ? 'bg-[#2a1f0a] text-[#d4862a]' : 'bg-[#1e1e1e] text-[#8a8480]'}`}>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase ${user.role === 'admin' ? 'bg-warning-bg text-warning' : 'bg-[#1e1e1e] text-[#8a8480]'}`}>
                         {formatRole(user.role)}
                       </span>
                     </td>
@@ -221,14 +221,14 @@ export default function UsersPage() {
                       <div className="inline-flex items-center gap-2">
                         <Link
                           href={`/users/${user.id}`}
-                          className="btn bg-[#09090b] border-[#27272a] hover:bg-[#18181b] text-xs px-3 py-1.5 h-8 rounded-lg font-bold inline-flex items-center gap-1.5 cursor-pointer"
+                          className="btn bg-background border-border hover:bg-surface text-xs px-3 py-1.5 h-8 rounded-lg font-bold inline-flex items-center gap-1.5 cursor-pointer"
                         >
                           <Edit2 size={13} />
                           <span>Edit</span>
                         </Link>
                         <button
                           onClick={() => handleArchive(user.id, user.full_name)}
-                          className="btn border border-red-950 bg-[#2a1010] text-[#c45a5a] hover:bg-red-900 text-xs px-3 py-1.5 h-8 rounded-lg font-bold inline-flex items-center gap-1.5 cursor-pointer"
+                          className="btn border border-destructive-border bg-destructive-bg text-destructive hover:bg-red-900 text-xs px-3 py-1.5 h-8 rounded-lg font-bold inline-flex items-center gap-1.5 cursor-pointer"
                         >
                           <Archive size={13} />
                           <span>Archive</span>
@@ -249,7 +249,7 @@ export default function UsersPage() {
       </div>
 
       {/* Archived staff section */}
-      <div className="space-y-4 pt-4 border-t border-[#27272a]">
+      <div className="space-y-4 pt-4 border-t border-border">
         <h2 className="text-md font-bold text-[var(--text-primary)] uppercase tracking-wider">Archived Staff</h2>
         <ArchivedList archived={archivedUsers} onRestore={handleRestore} />
       </div>
@@ -265,15 +265,15 @@ export default function UsersPage() {
 function ArchivedList({ archived, onRestore }) {
   if (archived.length === 0) {
     return (
-      <p className="text-xs text-[var(--text-secondary)] font-medium py-3 px-4 border border-dashed border-[#27272a] rounded-xl bg-[#09090b]/20">
+      <p className="text-xs text-[var(--text-secondary)] font-medium py-3 px-4 border border-dashed border-border rounded-xl bg-background/20">
         No archived staff members.
       </p>
     );
   }
 
   return (
-    <div className="card bg-[#18181b] border border-[#27272a] p-4 rounded-2xl shadow-lg">
-      <ul className="divide-y divide-[#27272a]">
+    <div className="card bg-surface border border-border p-4 rounded-2xl shadow-lg">
+      <ul className="divide-y divide-border">
         {archived.map((u) => (
           <li key={u.id} className="flex items-center justify-between py-3">
             <div>
@@ -283,7 +283,7 @@ function ArchivedList({ archived, onRestore }) {
             <div>
               <button 
                 onClick={() => onRestore(u.id)} 
-                className="btn bg-[#09090b] border-[#27272a] hover:bg-[#18181b] text-xs px-3 py-1.5 h-8 rounded-lg font-bold inline-flex items-center gap-1.5 cursor-pointer text-green-500 hover:text-green-400"
+                className="btn bg-background border-border hover:bg-surface text-xs px-3 py-1.5 h-8 rounded-lg font-bold inline-flex items-center gap-1.5 cursor-pointer text-green-500 hover:text-green-400"
               >
                 <RefreshCw size={12} className="animate-spin-hover" />
                 <span>Restore</span>

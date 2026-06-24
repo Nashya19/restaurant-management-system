@@ -19,20 +19,20 @@ export default function UsersLayout({ children }) {
 
   return (
     <AdminGuard>
-      <div className="dark min-h-screen bg-[var(--background)] text-[var(--text-primary)] flex flex-col md:flex-row">
+      <div className="min-h-screen bg-[var(--background)] text-[var(--text-primary)] flex flex-col md:flex-row">
         {/* Main Admin Sidebar */}
         <AdminNavBar title="User Management" subtitle="Manage staff accounts and user access from one place." />
 
         {/* Content Page area */}
         <main className="flex-1 flex flex-col p-6 md:p-10 md:overflow-y-auto">
           {/* Sub Navigation Bar on Top */}
-          <div className="flex items-center gap-3 border-b border-[#27272a] pb-4 mb-8">
+          <div className="flex items-center gap-3 border-b border-border pb-4 mb-8">
             <Link
               href="/users"
               className={`px-4 py-2 rounded-xl text-sm font-semibold border transition-all duration-200 ${
                 isAllStaffActive
                   ? 'border-[var(--accent)] bg-[var(--surface-raised)] text-[var(--accent)]'
-                  : 'border-[#27272a] bg-[#09090b] text-[var(--text-secondary)] hover:border-[#3f3f46] hover:text-[var(--text-primary)]'
+                  : 'border-border bg-background text-[var(--text-secondary)] hover:border-border hover:text-[var(--text-primary)]'
               }`}
             >
               All Staff
@@ -42,7 +42,7 @@ export default function UsersLayout({ children }) {
               className={`px-4 py-2 rounded-xl text-sm font-semibold border transition-all duration-200 ${
                 isCreateStaffActive
                   ? 'border-[var(--accent)] bg-[var(--surface-raised)] text-[var(--accent)]'
-                  : 'border-[#27272a] bg-[#09090b] text-[var(--text-secondary)] hover:border-[#3f3f46] hover:text-[var(--text-primary)]'
+                  : 'border-border bg-background text-[var(--text-secondary)] hover:border-border hover:text-[var(--text-primary)]'
               }`}
             >
               + Create Staff

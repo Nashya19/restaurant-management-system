@@ -11,10 +11,12 @@
     getSessionDetails,
   } from '@/lib/api/table-sessions';
   import { formatDate } from '@/lib/utils/formatters';
+  import { temporarilyUnlockSessionAction } from '@/lib/actions/orders';
   import { Plus, Lock, Check, Trash2, AlertCircle, X, Eye, Loader2, Clock, Users, DollarSign, Zap, RefreshCw } from 'lucide-react';
   import { createClient } from '@/lib/supabase/client';
   import CustomSelect from '@/components/ui/CustomSelect';
   import Link from 'next/link';
+  import { useAlertConfirm } from '@/lib/hooks/useAlertConfirm';
 
 const STATUS_COLORS = {
   inactive: 'bg-gray-700 text-gray-200',
@@ -37,13 +39,14 @@ const STATUS_LABELS = {
 };
 
 export default function TablesPage() {
+  const { showAlert, showConfirm, AlertConfirmComponent } = useAlertConfirm();
   const supabaseRef = useRef(null);
   if (!supabaseRef.current) {
     supabaseRef.current = createClient();
   }
   const supabase = supabaseRef.current;
   
-   const [tables, setTables] = useState([]);
+const [tables, setTables] = useState([]);
 const [isLoading, setIsLoading] = useState(true);
 const [pageError, setPageError] = useState(null);
 const [operatingTableId, setOperatingTableId] = useState(null);
@@ -51,6 +54,26 @@ const [selectedSession, setSelectedSession] = useState(null);
 const [showSessionModal, setShowSessionModal] = useState(false);
 const [confirmAction, setConfirmAction] = useState(null);
 const [sessionRunningTotal, setSessionRunningTotal] = useState(0);
+const [unlockCountdown, setUnlockCountdown] = useState(0);
+const [isUnlocking, setIsUnlocking] = useState(false);
+
+// Select session from query parameter on mount/URL change
+useEffect(() => {
+  if (typeof window !== 'undefined') {
+    const handleQueryParam = () => {
+      const params = new URLSearchParams(window.location.search);
+      const sessionParam = params.get('session');
+      if (sessionParam) {
+        handleViewSession(sessionParam);
+      }
+    };
+    if (tables.length > 0) {
+      handleQueryParam();
+    }
+    window.addEventListener('popstate', handleQueryParam);
+    return () => window.removeEventListener('popstate', handleQueryParam);
+  }
+}, [tables]);
 
 const [showAddTableModal, setShowAddTableModal] = useState(false);
 
@@ -97,7 +120,7 @@ const [editingTable, setEditingTable] = useState(null);
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'table_sessions' },
-        () => {
+        async (payload) => {
           fetchTables(false);
         }
       )
@@ -138,7 +161,7 @@ const [editingTable, setEditingTable] = useState(null);
 const handleToggleTableStatus = async (table) => {
   const action = table.is_active ? 'deactivate' : 'activate';
 
-  const confirmed = window.confirm(
+  const confirmed = await showConfirm(
     `Are you sure you want to ${action} Table ${table.table_number}?`
   );
 
@@ -168,7 +191,7 @@ const handleToggleTableStatus = async (table) => {
 fetchTables();
   } catch (err) {
     console.error(err);
-    alert(err.message);
+    await showAlert(err.message);
   }
 };
   // Handle start session
@@ -263,15 +286,57 @@ fetchTables();
       setPageError(err.message || 'Failed to load session details.');
     }
   };
+
+  useEffect(() => {
+    if (selectedSession?.unlock_until) {
+      const calculateRemaining = () => {
+        const diff = Math.ceil((new Date(selectedSession.unlock_until).getTime() - Date.now()) / 1000);
+        return diff > 0 ? diff : 0;
+      };
+      
+      setUnlockCountdown(calculateRemaining());
+      
+      const interval = setInterval(() => {
+        const remaining = calculateRemaining();
+        setUnlockCountdown(remaining);
+        if (remaining <= 0) {
+          clearInterval(interval);
+        }
+      }, 1000);
+      
+      return () => clearInterval(interval);
+    } else {
+      setUnlockCountdown(0);
+    }
+  }, [selectedSession]);
+
+  const handleTemporarilyUnlock = async (sessionId) => {
+    setIsUnlocking(true);
+    try {
+      const res = await temporarilyUnlockSessionAction(sessionId);
+      if (res?.success) {
+        setSelectedSession(prev => ({
+          ...prev,
+          unlock_until: res.data.unlock_until
+        }));
+        await fetchTables();
+      }
+    } catch (err) {
+      await showAlert(err.message || 'Failed to unlock session');
+    } finally {
+      setIsUnlocking(false);
+    }
+  };
   const handleAddTable = async () => {
   try {
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
     if (editingTable) {
       const { error } = await supabase
         .from('tables')
         .update({
           table_number: Number(tableNumber),
           capacity: Number(capacity),
-          qr_code_url: `http://localhost:3000/table/${tableNumber}`,
+          qr_code_url: `${origin}/table/${tableNumber}`,
         })
         .eq('id', editingTable.id);
 
@@ -284,7 +349,7 @@ fetchTables();
       {
         table_number: Number(tableNumber),
         capacity: Number(capacity),
-        qr_code_url: `http://localhost:3000/table/${tableNumber}`,
+        qr_code_url: `${origin}/table/${tableNumber}`,
       },
     ])
     .select()
@@ -320,11 +385,11 @@ fetchTables();
     fetchTables();
   } catch (err) {
     console.error(err);
-    alert(err.message);
+    await showAlert(err.message);
   }
 };
  const handleSaveTableChanges = async () => {
-  const confirmed = window.confirm(
+  const confirmed = await showConfirm(
     'Are you sure you want to save these changes?'
   );
 
@@ -341,7 +406,7 @@ fetchTables();
 
     if (error) throw error;
 
-    alert('Table updated successfully');
+    await showAlert('Table updated successfully');
     setSelectedTable({
   ...selectedTable,
   table_number: Number(manageTableNumber),
@@ -354,13 +419,21 @@ fetchTables();
     fetchTables();
   } catch (err) {
     console.error(err);
-    alert(err.message);
+    await showAlert(err.message);
   }
 };
+const [devRole, setDevRole] = useState('admin');
+
+useEffect(() => {
+  if (typeof window !== 'undefined') {
+    setDevRole(localStorage.getItem('dev-role') || 'admin');
+  }
+}, []);
+
   return (
     <div className="w-full max-w-7xl mx-auto space-y-8 animate-fade-in">
       {/* Header Controls */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between pb-4 border-b border-[#27272a] mb-8">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between pb-4 border-b border-border mb-8">
         {/* Left: Sub-navigation Tabs */}
         <div className="flex items-center gap-3">
           <Link
@@ -369,12 +442,14 @@ fetchTables();
           >
             Live Status
           </Link>
-          <Link
-            href="/tables/history"
-            className="px-4 py-2 rounded-xl text-sm font-semibold border transition-all duration-200 border-[#27272a] bg-[#09090b] text-[var(--text-secondary)] hover:border-[#3f3f46] hover:text-[var(--text-primary)]"
-          >
-            Session History
-          </Link>
+          {devRole !== 'staff' && (
+            <Link
+              href="/tables/history"
+              className="px-4 py-2 rounded-xl text-sm font-semibold border transition-all duration-200 border-border bg-background text-[var(--text-secondary)] hover:border-border hover:text-[var(--text-primary)]"
+            >
+              Session History
+            </Link>
+          )}
         </div>
 
         {/* Right: Actions */}
@@ -382,43 +457,47 @@ fetchTables();
           <button
             type="button"
             onClick={fetchTables}
-            className="btn btn-ghost bg-[#09090b] border-[#27272a] hover:bg-[#18181b] hover:text-[var(--accent)] flex items-center justify-center gap-2 rounded-xl font-bold cursor-pointer text-xs h-10 animate-fade-in"
+            className="btn btn-ghost bg-background border-border hover:bg-surface hover:text-[var(--accent)] flex items-center justify-center gap-2 rounded-xl font-bold cursor-pointer text-xs h-10 animate-fade-in"
           >
             <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
             <span>Refresh</span>
           </button>
-          <button
-            type="button"
-            onClick={() => {
-              setEditingTable(null);
-              setTableNumber('');
-              setCapacity('');
-              setShowAddTableModal(true);
-            }}
-            className="btn btn-primary btn-premium flex items-center justify-center gap-2 rounded-xl font-bold shadow-md shadow-[var(--accent)]/5 cursor-pointer text-xs h-10"
-          >
-            <Plus size={18} />
-            Add New Table
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedTableId('');
-              setSelectedTable(null);
-              setManageTableNumber('');
-              setManageCapacity('');
-              setShowManageTableModal(true);
-            }}
-            className="btn btn-ghost flex items-center justify-center gap-2 rounded-xl bg-[#18181b] border-[#27272a] hover:border-[#3f3f46] hover:bg-[#27272a] text-[var(--text-primary)] font-bold cursor-pointer text-xs h-10"
-          >
-            Manage Tables
-          </button>
+          {devRole === 'admin' && (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingTable(null);
+                  setTableNumber('');
+                  setCapacity('');
+                  setShowAddTableModal(true);
+                }}
+                className="btn btn-primary btn-premium flex items-center justify-center gap-2 rounded-xl font-bold shadow-md shadow-[var(--accent)]/5 cursor-pointer text-xs h-10"
+              >
+                <Plus size={18} />
+                Add New Table
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedTableId('');
+                  setSelectedTable(null);
+                  setManageTableNumber('');
+                  setManageCapacity('');
+                  setShowManageTableModal(true);
+                }}
+                className="btn btn-ghost flex items-center justify-center gap-2 rounded-xl bg-surface border-border hover:border-border hover:bg-surface-raised text-[var(--text-primary)] font-bold cursor-pointer text-xs h-10"
+              >
+                Manage Tables
+              </button>
+            </>
+          )}
         </div>
       </div>
 
       {/* Error Alert */}
       {pageError && (
-        <div className="flex items-start gap-2 bg-[#2a1010] border border-[#5a2020] text-[#c45a5a] text-sm p-4 rounded-xl animate-fade-in mb-6">
+        <div className="flex items-start gap-2 bg-destructive-bg border border-destructive-border text-destructive text-sm p-4 rounded-xl animate-fade-in mb-6">
           <span className="shrink-0 mt-0.5">⚠️</span>
           <span>{pageError}</span>
         </div>
@@ -437,7 +516,7 @@ fetchTables();
           {tables.map((table) => (
             <div
               key={table.id}
-              className={`card bg-[#18181b] border border-[#27272a] p-6 rounded-2xl transition-all duration-300 relative overflow-hidden group shadow-lg ${
+              className={`card bg-surface border border-border p-6 rounded-2xl transition-all duration-300 relative overflow-hidden group shadow-lg ${
                 table.is_active
                   ? 'hover:border-[var(--accent)] cursor-pointer hover:-translate-y-1 hover:shadow-xl hover:shadow-[var(--accent)]/5'
                   : 'opacity-50 cursor-not-allowed'
@@ -476,7 +555,7 @@ fetchTables();
               {table.current_status !== 'inactive' && table.session_id && (
                 <div className="space-y-2 mb-4 text-small text-[var(--text-secondary)]">
                   <div className="flex items-center gap-2">
-                    <Zap size={14} /> PIN: <span className="font-mono font-bold text-[var(--accent)]">{table.current_pin}</span>
+                    <Zap size={14} /> PIN: <span className="font-sans font-bold text-[var(--accent)]">{table.current_pin}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span>🆔 ID:</span>
@@ -485,10 +564,10 @@ fetchTables();
                     </span>
                     <button
                       type="button"
-                      onClick={(e) => {
+                      onClick={async (e) => {
                         e.stopPropagation();
                         navigator.clipboard.writeText(table.session_id);
-                        alert('Session ID copied to clipboard!');
+                        await showAlert('Session ID copied to clipboard!');
                       }}
                       className="text-[10px] hover:text-[var(--accent)] cursor-pointer select-none bg-[#27272a]/60 px-1 py-0.5 rounded border border-[#3f3f46] hover:bg-[#3f3f46]/60 transition-all"
                       title="Copy Full Session ID"
@@ -539,20 +618,21 @@ fetchTables();
                   </button>
                 )}
 
-                {table.current_status === 'open' && (
+                {(table.current_status === 'open' || table.current_status === 'locked') && (
                   <>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleLockSession(table.session_id);
-                      }}
-                      disabled={operatingTableId === table.session_id || !table.connected_devices_count || table.connected_devices_count === 0}
-                      className="btn btn-ghost text-orange-400 text-small w-full flex items-center justify-center gap-2"
-                    >
-                      {operatingTableId === table.session_id ? <Loader2 size={14} className="animate-spin" /> : <Lock size={14} />}
-                      End Ordering
-                    </button>
+                    {table.current_status === 'locked' && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setConfirmAction({ action: 'complete', sessionId: table.session_id });
+                        }}
+                        className="btn btn-primary text-small w-full flex items-center justify-center gap-2"
+                      >
+                        <Check size={14} />
+                        End Ordering & Bill
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={(e) => {
@@ -566,35 +646,6 @@ fetchTables();
                     </button>
                   </>
                 )}
-
-                {table.current_status === 'locked' && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setConfirmAction({ action: 'complete', sessionId: table.session_id });
-                      }}
-                      className="btn btn-primary text-small w-full flex items-center justify-center gap-2"
-                    >
-                      <Check size={14} />
-                      Complete & Bill
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleViewSession(table.session_id);
-                      }}
-                      className="btn btn-ghost text-small w-full flex items-center justify-center gap-2"
-                    >
-                      <Eye size={14} />
-                      View Details
-                    </button>
-                  </>
-                )}
-               
-
 
                 {table.current_status === 'completed' && (
                   <>
@@ -603,12 +654,11 @@ fetchTables();
                       onClick={(e) => {
                         e.stopPropagation();
                         setConfirmAction({ action: 'clear', sessionId: table.session_id });
-                      }
-                    }
-                      className="btn btn-ghost text-gray-400 text-small w-full flex items-center justify-center gap-2"
+                      }}
+                      className="btn btn-primary text-small w-full flex items-center justify-center gap-2"
                     >
-                      <Trash2 size={14} />
-                      Clear Table
+                      <Check size={14} />
+                      Confirm Payment & Clear
                     </button>
                     <button
                       type="button"
@@ -669,11 +719,11 @@ fetchTables();
 
             {/* Session Info */}
             <div className="grid gap-4 sm:grid-cols-2 mb-6">
-              <div className="bg-[#09090b] border border-[#27272a] p-4 rounded-xl">
+              <div className="bg-background border border-border p-4 rounded-xl">
                 <p className="text-xs text-[var(--text-secondary)] mb-1 font-semibold uppercase">PIN</p>
                 <p className="font-mono font-bold text-lg text-[var(--accent)]">{selectedSession.pin}</p>
               </div>
-              <div className="bg-[#09090b] border border-[#27272a] p-4 rounded-xl">
+              <div className="bg-background border border-border p-4 rounded-xl">
                 <p className="text-xs text-[var(--text-secondary)] mb-1 font-semibold uppercase">Status</p>
                 {(() => {
                   const isOccupied = selectedSession.status === 'open' && selectedSession.connected_devices_count > 0;
@@ -686,11 +736,11 @@ fetchTables();
                   );
                 })()}
               </div>
-              <div className="bg-[#09090b] border border-[#27272a] p-4 rounded-xl">
+              <div className="bg-background border border-border p-4 rounded-xl">
                 <p className="text-xs text-[var(--text-secondary)] mb-1 font-semibold uppercase">Started At</p>
                 <p className="text-sm font-semibold">{formatDate(selectedSession.started_at)}</p>
               </div>
-              <div className="bg-[#09090b] border border-[#27272a] p-4 rounded-xl">
+              <div className="bg-background border border-border p-4 rounded-xl">
                 <p className="text-xs text-[var(--text-secondary)] mb-1 font-semibold uppercase">Connected Devices</p>
                 <p className="text-sm font-bold">{selectedSession.connected_devices_count}</p>
               </div>
@@ -742,51 +792,88 @@ fetchTables();
             </div>
 
             {/* Action Buttons */}
-            {selectedSession.status === 'open' && (
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleLockSession(selectedSession.id);
-                    setShowSessionModal(false);
-                  }}
-                  disabled={!selectedSession.connected_devices_count || selectedSession.connected_devices_count === 0}
-                  className="flex-1 btn btn-ghost text-orange-400"
-                >
-                  <Lock size={16} /> End Ordering
-                </button>
-              </div>
-            )}
 
-            {selectedSession.status === 'locked' && (
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setConfirmAction({ action: 'complete', sessionId: selectedSession.id })}
-                  className="flex-1 btn btn-primary"
-                >
-                  <Check size={16} /> Complete & Bill
-                </button>
+
+            {(selectedSession.status === 'open' || selectedSession.status === 'locked') && (
+              <div className="flex flex-col gap-3">
+                {selectedSession.status === 'locked' && (
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setConfirmAction({ action: 'complete', sessionId: selectedSession.id });
+                        setShowSessionModal(false);
+                      }}
+                      className="flex-1 btn btn-primary"
+                    >
+                      <Check size={16} /> End Ordering & Bill
+                    </button>
+                  </div>
+                )}
+                
+                <div className="flex gap-3">
+                  {unlockCountdown > 0 ? (
+                    <div className="w-full flex flex-col sm:flex-row items-center gap-2 py-2 px-4 rounded-xl bg-green-950/40 border border-green-800 text-green-300 font-semibold text-xs justify-between">
+                      <div className="flex items-center gap-2">
+                        <Clock size={14} className="animate-pulse" />
+                        <span>Unlock active ({unlockCountdown}s remaining)</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            await lockTableSession(selectedSession.id);
+                            setSelectedSession(prev => ({ ...prev, unlock_until: null }));
+                            await fetchTables();
+                          } catch (err) {
+                            await showAlert(err.message || 'Failed to lock session');
+                          }
+                        }}
+                        className="btn btn-ghost hover:bg-red-950/40 text-[var(--destructive)] border border-destructive-border/60 rounded-lg text-[10px] font-bold px-2 py-1 h-7 cursor-pointer"
+                      >
+                        Lock Now
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleTemporarilyUnlock(selectedSession.id)}
+                      disabled={isUnlocking}
+                      className="w-full btn btn-ghost border-border hover:bg-surface flex items-center justify-center gap-2 rounded-xl text-xs font-bold h-10"
+                    >
+                      {isUnlocking ? <Loader2 size={14} className="animate-spin" /> : <Clock size={14} />}
+                      <span>Unlock Session (30s)</span>
+                    </button>
+                  )}
+                </div>
               </div>
             )}
 
             {selectedSession.status === 'completed' && (
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setConfirmAction({ action: 'clear', sessionId: selectedSession.id })}
-                  className="flex-1 btn btn-ghost"
-                >
-                  <Trash2 size={16} /> Clear Table
-                </button>
+              <div className="flex flex-col gap-3">
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setConfirmAction({ action: 'clear', sessionId: selectedSession.id });
+                      setShowSessionModal(false);
+                    }}
+                    className="flex-1 btn btn-primary"
+                  >
+                    <Check size={16} /> Confirm Payment & Clear Table
+                  </button>
+                </div>
               </div>
             )}
 
-            {(selectedSession.status === 'open' || selectedSession.status === 'locked') && (
+            {devRole !== 'staff' && (selectedSession.status === 'open' || selectedSession.status === 'completed' || selectedSession.status === 'locked') && (
               <div className="mt-3 flex gap-3">
                 <button
                   type="button"
-                  onClick={() => setConfirmAction({ action: 'cancel', sessionId: selectedSession.id })}
+                  onClick={() => {
+                    setConfirmAction({ action: 'cancel', sessionId: selectedSession.id });
+                    setShowSessionModal(false);
+                  }}
                   className="flex-1 btn btn-ghost text-[var(--destructive)]"
                 >
                   <AlertCircle size={16} /> Cancel Session (Admin)
@@ -807,8 +894,8 @@ fetchTables();
       {/* Add New Table Modal */}
       {showAddTableModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="card bg-[#18181b] border border-[#27272a] w-full max-w-md p-8 rounded-2xl shadow-2xl relative">
-            <div className="flex items-center justify-between mb-6 pb-2 border-b border-[#27272a]">
+          <div className="card bg-surface border border-border w-full max-w-md p-8 rounded-2xl shadow-2xl relative">
+            <div className="flex items-center justify-between mb-6 pb-2 border-b border-border">
               <h3 className="text-lg font-bold text-[var(--text-primary)] uppercase tracking-wider">
                 {editingTable ? 'Edit Table Settings' : 'Add New Table'}
               </h3>
@@ -828,7 +915,7 @@ fetchTables();
                   placeholder="e.g., 5"
                   value={tableNumber}
                   onChange={(e) => setTableNumber(e.target.value)}
-                  className="w-full bg-[#09090b] border-[#27272a] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-xl h-10 px-3.5 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-all"
+                  className="w-full bg-background border-border focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-xl h-10 px-3.5 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-all"
                 />
               </div>
 
@@ -839,15 +926,15 @@ fetchTables();
                   placeholder="e.g., 4"
                   value={capacity}
                   onChange={(e) => setCapacity(e.target.value)}
-                  className="w-full bg-[#09090b] border-[#27272a] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-xl h-10 px-3.5 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-all"
+                  className="w-full bg-background border-border focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-xl h-10 px-3.5 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-all"
                 />
               </div>
 
-              <div className="flex gap-3 pt-4 border-t border-[#27272a] mt-4">
+              <div className="flex gap-3 pt-4 border-t border-border mt-4">
                 <button
                   type="button"
                   onClick={() => setShowAddTableModal(false)}
-                  className="btn btn-ghost bg-[#09090b] border-[#27272a] hover:bg-[#18181b] flex-1 rounded-xl font-bold cursor-pointer text-xs h-10"
+                  className="btn btn-ghost bg-background border-border hover:bg-surface flex-1 rounded-xl font-bold cursor-pointer text-xs h-10"
                 >
                   Cancel
                 </button>
@@ -867,8 +954,8 @@ fetchTables();
       {/* Confirmation Dialog */}
       {confirmAction && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="card bg-[#18181b] border border-[#27272a] w-full max-w-md p-8 rounded-2xl shadow-2xl text-center">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[#2a1f0a] border border-[#5a3a10] text-[var(--accent)] mb-4 animate-pulse">
+          <div className="card bg-surface border border-border w-full max-w-md p-8 rounded-2xl shadow-2xl text-center">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-warning-bg border border-warning-border text-[var(--accent)] mb-4 animate-pulse">
               <AlertCircle size={24} />
             </div>
             <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">Confirm Action</h3>
@@ -882,7 +969,7 @@ fetchTables();
               <button
                 type="button"
                 onClick={() => setConfirmAction(null)}
-                className="flex-1 btn btn-ghost bg-[#09090b] border-[#27272a] hover:bg-[#18181b] rounded-xl font-bold cursor-pointer text-xs h-10"
+                className="flex-1 btn btn-ghost bg-background border-border hover:bg-surface rounded-xl font-bold cursor-pointer text-xs h-10"
               >
                 Cancel
               </button>
@@ -906,8 +993,8 @@ fetchTables();
       {/* Manage Tables Modal */}
       {showManageTableModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="card bg-[#18181b] border border-[#27272a] w-full max-w-md p-8 rounded-2xl shadow-2xl relative">
-            <div className="flex items-center justify-between mb-6 pb-2 border-b border-[#27272a]">
+          <div className="card bg-surface border border-border w-full max-w-md p-8 rounded-2xl shadow-2xl relative">
+            <div className="flex items-center justify-between mb-6 pb-2 border-b border-border">
               <h2 className="text-lg font-bold text-[var(--text-primary)]">Manage Tables</h2>
               <button
                 type="button"
@@ -960,7 +1047,7 @@ fetchTables();
                       value={manageTableNumber}
                       onChange={(e) => setManageTableNumber(e.target.value)}
                       placeholder="e.g., 10"
-                      className="w-full bg-[#09090b] border-[#27272a] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-xl h-10 px-3.5 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-all"
+                      className="w-full bg-background border-border focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-xl h-10 px-3.5 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-all"
                     />
                   </div>
 
@@ -971,17 +1058,17 @@ fetchTables();
                       value={manageCapacity}
                       onChange={(e) => setManageCapacity(e.target.value)}
                       placeholder="e.g., 6"
-                      className="w-full bg-[#09090b] border-[#27272a] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-xl h-10 px-3.5 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-all"
+                      className="w-full bg-background border-border focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-xl h-10 px-3.5 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-all"
                     />
                   </div>
                 </>
               )}
 
-              <div className="flex flex-col gap-2.5 pt-4 border-t border-[#27272a] mt-4">
+              <div className="flex flex-col gap-2.5 pt-4 border-t border-border mt-4">
                 <div className="flex gap-3">
                   <button
                     onClick={() => setShowManageTableModal(false)}
-                    className="btn btn-ghost bg-[#09090b] border-[#27272a] hover:bg-[#18181b] flex-1 rounded-xl font-bold cursor-pointer text-xs h-10"
+                    className="btn btn-ghost bg-background border-border hover:bg-surface flex-1 rounded-xl font-bold cursor-pointer text-xs h-10"
                   >
                     Cancel
                   </button>
@@ -1000,8 +1087,8 @@ fetchTables();
                     onClick={() => handleToggleTableStatus(selectedTable)}
                     className={`btn text-xs font-bold rounded-xl flex items-center justify-center gap-2 cursor-pointer w-full h-10 transition-all ${
                       selectedTable.is_active
-                        ? 'border border-red-950 bg-[#2a1010] text-[#c45a5a] hover:bg-red-900'
-                        : 'border border-green-950 bg-[#0f2318] text-[#4a9b6a] hover:bg-green-900'
+                        ? 'border border-destructive-border bg-destructive-bg text-destructive hover:bg-red-900'
+                        : 'border border-green-950 bg-success-bg text-success hover:bg-green-900'
                     }`}
                   >
                     {selectedTable.is_active ? 'Deactivate Table' : 'Activate Table'}
@@ -1012,6 +1099,7 @@ fetchTables();
           </div>
         </div>
       )}
+      {AlertConfirmComponent}
     </div>
   );
 }

@@ -33,6 +33,7 @@ export default function CategoriesPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', message: '', onConfirm: () => {}, confirmStyle: 'btn-danger', confirmText: 'Confirm' });
+  const [devRole, setDevRole] = useState('admin');
 
   const closeConfirm = () => setConfirmDialog(prev => ({ ...prev, isOpen: false }));
 
@@ -50,6 +51,14 @@ export default function CategoriesPage() {
       setIsLoading(true);
       setError(null);
       try {
+        const role = localStorage.getItem('dev-role') || 'admin';
+        setDevRole(role);
+        if (role !== 'admin') {
+          // Block customers & staff from categories tab
+          window.location.href = '/menu';
+          return;
+        }
+
         const data = await listCategories();
         setCategories(data);
       } catch (err) {
@@ -147,14 +156,14 @@ export default function CategoriesPage() {
   return (
     <div className="w-full max-w-7xl mx-auto space-y-8 animate-fade-in">
       {/* Page Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pb-4 border-b border-[#27272a]">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pb-4 border-b border-border">
         <div>
           <h1 className="text-display text-2xl font-bold tracking-tight text-[var(--text-primary)]">Categories</h1>
           <p className="text-sm text-[var(--text-secondary)] mt-1">
             Manage menu categories. Menu items must belong to a category.
           </p>
         </div>
-        {!showCreateForm && (
+        {devRole === 'admin' && !showCreateForm && (
           <button
             onClick={() => setShowCreateForm(true)}
             className="btn btn-primary btn-premium flex items-center justify-center gap-2 rounded-xl font-bold shadow-md shadow-[var(--accent)]/5 cursor-pointer"
@@ -167,7 +176,7 @@ export default function CategoriesPage() {
 
       {/* Error Alert */}
       {error && (
-        <div className="flex items-start gap-2 bg-[#2a1010] border border-[#5a2020] text-[#c45a5a] text-sm p-4 rounded-xl animate-fade-in">
+        <div className="flex items-start gap-2 bg-destructive-bg border border-destructive-border text-destructive text-sm p-4 rounded-xl animate-fade-in">
           <span className="shrink-0 mt-0.5">⚠️</span>
           <span>{error}</span>
         </div>
@@ -175,7 +184,7 @@ export default function CategoriesPage() {
 
       {/* Create Form */}
       {showCreateForm && (
-        <form onSubmit={handleCreate} className="card bg-[#18181b] border border-[#27272a] p-6 rounded-2xl shadow-lg animate-fade-in">
+        <form onSubmit={handleCreate} className="card bg-surface border border-border p-6 rounded-2xl shadow-lg animate-fade-in">
           <div className="flex flex-col sm:flex-row items-end gap-4">
             <div className="flex-1 w-full space-y-1.5">
               <label htmlFor="createName" className="text-xs uppercase text-[var(--text-secondary)] font-bold tracking-wider cursor-pointer">
@@ -187,7 +196,7 @@ export default function CategoriesPage() {
                 value={createName}
                 onChange={(e) => setCreateName(e.target.value)}
                 placeholder="e.g., Main Courses"
-                className="w-full bg-[#09090b] border-[#27272a] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-lg text-sm transition-all"
+                className="w-full bg-background border-border focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-lg text-sm transition-all"
                 required
               />
               {createError && <p className="text-xs text-[var(--destructive)] mt-1 font-semibold">{createError}</p>}
@@ -212,7 +221,7 @@ export default function CategoriesPage() {
                   setCreateName('');
                   setCreateError(null);
                 }}
-                className="btn btn-ghost bg-[#09090b] border-[#27272a] hover:bg-[#18181b] flex-1 sm:flex-initial flex items-center justify-center gap-1 px-4 rounded-xl font-bold cursor-pointer"
+                className="btn btn-ghost bg-background border-border hover:bg-surface flex-1 sm:flex-initial flex items-center justify-center gap-1 px-4 rounded-xl font-bold cursor-pointer"
               >
                 <X size={15} />
               </button>
@@ -222,7 +231,7 @@ export default function CategoriesPage() {
       )}
 
       {/* Categories Table Card */}
-      <div className="card bg-[#18181b] border border-[#27272a] overflow-hidden rounded-2xl shadow-lg">
+      <div className="card bg-surface border border-border overflow-hidden rounded-2xl shadow-lg">
         {isLoading ? (
           <div className="p-16 text-center">
             <Loader2 size={36} className="animate-spin text-[var(--accent)] inline-block" />
@@ -235,7 +244,7 @@ export default function CategoriesPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-[#09090b] border-b border-[#27272a]">
+              <thead className="bg-background border-b border-border">
                 <tr>
                   <th className="text-left text-xs uppercase text-[var(--text-secondary)] font-bold px-6 py-4 tracking-wider">
                     Name
@@ -246,24 +255,26 @@ export default function CategoriesPage() {
                   <th className="text-left text-xs uppercase text-[var(--text-secondary)] font-bold px-6 py-4 tracking-wider">
                     Created
                   </th>
-                  <th className="text-right text-xs uppercase text-[var(--text-secondary)] font-bold px-6 py-4 tracking-wider">
-                    Actions
-                  </th>
+                  {devRole === 'admin' && (
+                    <th className="text-right text-xs uppercase text-[var(--text-secondary)] font-bold px-6 py-4 tracking-wider">
+                      Actions
+                    </th>
+                  )}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#27272a]">
+              <tbody className="divide-y divide-border">
                 {categories.map((category) =>
                   editingId === category.id ? (
                     // Edit form row
-                    <tr key={category.id} className="bg-[#09090b]/40">
-                      <td colSpan="4" className="px-6 py-4">
+                    <tr key={category.id} className="bg-background/40">
+                      <td colSpan={devRole === 'admin' ? "4" : "3"} className="px-6 py-4">
                         <div className="flex flex-col sm:flex-row items-end gap-4 w-full">
                           <div className="flex-1 w-full space-y-1">
                             <input
                               type="text"
                               value={editName}
                               onChange={(e) => setEditName(e.target.value)}
-                              className="w-full bg-[#09090b] border-[#27272a] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-lg text-sm transition-all"
+                              className="w-full bg-background border-border focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-lg text-sm transition-all"
                               required
                             />
                             {editError && (
@@ -289,7 +300,7 @@ export default function CategoriesPage() {
                                 setEditName('');
                                 setEditError(null);
                               }}
-                              className="btn btn-ghost bg-[#09090b] border-[#27272a] hover:bg-[#18181b] flex-1 sm:flex-initial flex items-center justify-center gap-1 px-4 rounded-xl font-bold cursor-pointer text-xs h-9"
+                              className="btn btn-ghost bg-background border-border hover:bg-surface flex-1 sm:flex-initial flex items-center justify-center gap-1 px-4 rounded-xl font-bold cursor-pointer text-xs h-9"
                             >
                               <X size={13} />
                             </button>
@@ -301,7 +312,7 @@ export default function CategoriesPage() {
                     // Display row
                     <tr
                       key={category.id}
-                      className="hover:bg-[#09090b]/40 transition-colors"
+                      className="hover:bg-background/40 transition-colors"
                     >
                       <td className="px-6 py-4 text-sm font-semibold text-[var(--text-primary)] capitalize">
                         {category.name}
@@ -312,24 +323,26 @@ export default function CategoriesPage() {
                       <td className="px-6 py-4 text-sm font-medium text-[var(--text-secondary)]">
                         {formatDate(category.created_at, 'short')}
                       </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="inline-flex items-center gap-2">
-                          <button
-                            onClick={() => handleEditStart(category)}
-                            className="btn bg-[#09090b] border-[#27272a] hover:bg-[#18181b] text-xs px-3 py-1.5 h-8 rounded-lg font-bold inline-flex items-center gap-1.5 cursor-pointer"
-                          >
-                            <Edit2 size={13} />
-                            <span>Edit</span>
-                          </button>
-                          <button
-                            onClick={() => handleArchive(category.id, category.name)}
-                            className="btn border border-red-950 bg-[#2a1010] text-[#c45a5a] hover:bg-red-900 text-xs px-3 py-1.5 h-8 rounded-lg font-bold inline-flex items-center gap-1.5 cursor-pointer"
-                          >
-                            <Archive size={13} />
-                            <span>Archive</span>
-                          </button>
-                        </div>
-                      </td>
+                      {devRole === 'admin' && (
+                        <td className="px-6 py-4 text-right">
+                          <div className="inline-flex items-center gap-2">
+                            <button
+                              onClick={() => handleEditStart(category)}
+                              className="btn bg-background border-border hover:bg-surface text-xs px-3 py-1.5 h-8 rounded-lg font-bold inline-flex items-center gap-1.5 cursor-pointer"
+                            >
+                              <Edit2 size={13} />
+                              <span>Edit</span>
+                            </button>
+                            <button
+                              onClick={() => handleArchive(category.id, category.name)}
+                              className="btn border border-destructive-border bg-destructive-bg text-destructive hover:bg-red-900 text-xs px-3 py-1.5 h-8 rounded-lg font-bold inline-flex items-center gap-1.5 cursor-pointer"
+                            >
+                              <Archive size={13} />
+                              <span>Archive</span>
+                            </button>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   )
                 )}

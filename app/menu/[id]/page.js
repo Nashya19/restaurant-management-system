@@ -130,7 +130,7 @@ export default function MenuItemDetailPage() {
       <div>
         <Link
           href="/menu"
-          className="btn btn-ghost bg-[#09090b] border-[#27272a] hover:bg-[#18181b] hover:text-[var(--accent)] inline-flex items-center gap-2 font-bold px-4 py-2 rounded-xl cursor-pointer text-xs"
+          className="btn btn-ghost bg-background border-border hover:bg-surface hover:text-[var(--accent)] inline-flex items-center gap-2 font-bold px-4 py-2 rounded-xl cursor-pointer text-xs"
         >
           <ArrowLeft size={14} />
           <span>Back to Menu</span>
@@ -138,7 +138,7 @@ export default function MenuItemDetailPage() {
       </div>
 
       {/* Page Header */}
-      <div className="pb-4 border-b border-[#27272a]">
+      <div className="pb-4 border-b border-border">
         <h1 className="text-display text-2xl font-bold tracking-tight text-[var(--text-primary)]">
           {isNewItem ? 'Create Menu Item' : 'Edit Menu Item'}
         </h1>
@@ -150,10 +150,10 @@ export default function MenuItemDetailPage() {
       </div>
 
       {/* Form */}
-      <form onSubmit={handleFormSubmit} className="card bg-[#18181b] border border-[#27272a] p-8 rounded-2xl shadow-lg space-y-6">
+      <form onSubmit={handleFormSubmit} className="card bg-surface border border-border p-8 rounded-2xl shadow-lg space-y-6">
         {/* Submit Error */}
         {errors.submit && (
-          <div className="flex items-start gap-2 bg-[#2a1010] border border-[#5a2020] text-[#c45a5a] text-sm p-4 rounded-xl">
+          <div className="flex items-start gap-2 bg-destructive-bg border border-destructive-border text-destructive text-sm p-4 rounded-xl">
             <span className="shrink-0 mt-0.5">⚠️</span>
             <span>{errors.submit}</span>
           </div>
@@ -171,7 +171,7 @@ export default function MenuItemDetailPage() {
             value={formData.name}
             onChange={handleChange}
             placeholder="e.g., Grilled Salmon"
-            className="w-full bg-[#09090b] border-[#27272a] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-lg text-sm transition-all"
+            className="w-full bg-background border-border focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-lg text-sm transition-all"
             required
           />
           {errors.name && <p className="text-xs text-[var(--destructive)] mt-1 font-semibold">{errors.name}</p>}
@@ -188,7 +188,7 @@ export default function MenuItemDetailPage() {
               name="categoryId"
               value={formData.categoryId}
               onChange={handleChange}
-              className="w-full bg-[#09090b] border-[#27272a] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-lg text-sm h-10 px-3 outline-none transition-all"
+              className="w-full bg-background border-border focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-lg text-sm h-10 px-3 outline-none transition-all"
               required
             >
               <option value="">Select a category…</option>
@@ -224,7 +224,7 @@ export default function MenuItemDetailPage() {
             value={formData.price}
             onChange={handleChange}
             placeholder="e.g., 18.99"
-            className="w-full bg-[#09090b] border-[#27272a] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-lg text-sm transition-all"
+            className="w-full bg-background border-border focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-lg text-sm transition-all"
             required
           />
           {errors.price && <p className="text-xs text-[var(--destructive)] mt-1 font-semibold">{errors.price}</p>}
@@ -247,7 +247,7 @@ export default function MenuItemDetailPage() {
             value={formData.prepTime}
             onChange={handleChange}
             placeholder="e.g., 15"
-            className="w-full bg-[#09090b] border-[#27272a] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-lg text-sm transition-all"
+            className="w-full bg-background border-border focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-lg text-sm transition-all"
             required
           />
           {errors.prepTime && (
@@ -259,7 +259,7 @@ export default function MenuItemDetailPage() {
         </div>
 
         {/* Buttons */}
-        <div className="flex gap-4 pt-4 border-t border-[#27272a]">
+        <div className="flex gap-4 pt-4 border-t border-border">
           <button
             type="submit"
             disabled={formLoading}
@@ -274,7 +274,7 @@ export default function MenuItemDetailPage() {
               'Save Item'
             )}
           </button>
-          <Link href="/menu" className="btn btn-ghost bg-[#09090b] border-[#27272a] hover:bg-[#18181b] flex-1 rounded-xl font-bold text-center">
+          <Link href="/menu" className="btn btn-ghost bg-background border-border hover:bg-surface flex-1 rounded-xl font-bold text-center">
             Cancel
           </Link>
         </div>
