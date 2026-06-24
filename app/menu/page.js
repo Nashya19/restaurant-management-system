@@ -17,8 +17,10 @@ import { Edit2, Archive, RotateCcw, ToggleLeft, ToggleRight, Plus, Search, Loade
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import CustomSelect from '@/components/ui/CustomSelect';
 import { createClient } from '@/lib/supabase/client';
+import { useHeartbeat } from '@/lib/hooks/useHeartbeat';
 
 export default function MenuPage() {
+  useHeartbeat();
   const supabase = createClient();
   const [items, setItems] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -75,7 +77,7 @@ export default function MenuPage() {
           if (sessionId && tableNumber) {
             const { getSessionDetailsAction } = await import('@/lib/actions/orders');
             const sessionData = await getSessionDetailsAction(sessionId);
-            if (sessionData.status === 'completed' || sessionData.status === 'locked') {
+            if (sessionData.status === 'completed') {
               window.location.href = `/table/${tableNumber}/order`;
               return;
             }
@@ -119,7 +121,7 @@ export default function MenuPage() {
         (payload) => {
           if (payload.new) {
             const newStatus = payload.new.status;
-            if (newStatus === 'locked' || newStatus === 'completed') {
+            if (newStatus === 'completed') {
               window.location.href = `/table/${tableNumber}/order`;
             } else if (newStatus === 'cleared') {
               localStorage.removeItem('sessionId');

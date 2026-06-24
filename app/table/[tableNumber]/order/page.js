@@ -10,8 +10,10 @@ import { formatCurrency } from '@/lib/utils/formatters';
 import { AdminNavBar } from '@/lib/components/AdminNavBar';
 import { Clock, RefreshCw, ChefHat, CheckCircle2, ArrowLeft, ShieldAlert, Loader2, ShoppingCart, Plus, Minus, Trash2, UtensilsCrossed } from 'lucide-react';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import { useHeartbeat } from '@/lib/hooks/useHeartbeat';
 
 export default function CustomerOrderPage() {
+  useHeartbeat();
   const params = useParams();
   const router = useRouter();
   const tableNumber = params.tableNumber;
@@ -362,7 +364,7 @@ export default function CustomerOrderPage() {
         })()}
 
         {/* ─── SHARED CART SECTION ─── */}
-        {session.status === 'open' && (
+        {['open', 'locked'].includes(session.status) && (
           <div className="card bg-[#18181b] border border-[#27272a] p-6 rounded-2xl shadow-xl space-y-4">
             {/* Header */}
             <div className="flex items-center justify-between">
@@ -559,8 +561,8 @@ export default function CustomerOrderPage() {
             <span className="text-xl font-mono font-bold text-[var(--accent)]">{formatCurrency(session.running_total)}</span>
           </div>
 
-          {/* End Ordering & Get Bill — only for customers while session is open */}
-          {devRole === 'customer' && session.status === 'open' && (
+          {/* End Ordering & Get Bill — only for customers while session is locked */}
+          {devRole === 'customer' && session.status === 'locked' && (
             <div className="pt-2 border-t border-[#27272a]/40">
               <button
                 onClick={handleEndOrdering}
@@ -579,11 +581,18 @@ export default function CustomerOrderPage() {
             </div>
           )}
 
-          {/* Status message when completed/locked */}
-          {(session.status === 'completed' || session.status === 'locked') && (
+          {/* Status message when completed */}
+          {session.status === 'completed' && (
             <div className="pt-3 border-t border-[#27272a]/40 text-center space-y-1">
               <p className="text-sm font-bold text-[var(--accent)]">Ordering Ended — Bill Generated</p>
               <p className="text-xs text-[var(--text-secondary)]">Payment is pending staff verification. Please pay at the counter.</p>
+            </div>
+          )}
+
+          {/* Status message when locked */}
+          {session.status === 'locked' && (
+            <div className="pt-3 border-t border-[#27272a]/40 text-center space-y-1">
+              <p className="text-xs text-[var(--text-muted)] font-medium">🔒 Session locked. No new devices can join, but you can continue ordering.</p>
             </div>
           )}
         </div>

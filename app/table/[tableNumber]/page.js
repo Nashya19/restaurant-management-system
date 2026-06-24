@@ -123,7 +123,21 @@ export default function CustomerTablePage() {
         return;
       }
 
-      if (session.status === 'locked') {
+      const deviceFingerprint =
+        localStorage.getItem('deviceFingerprint') || crypto.randomUUID();
+      localStorage.setItem('deviceFingerprint', deviceFingerprint);
+
+      // Check if this device was already connected to the session
+      const { data: existingDevice } = await supabase
+        .from('session_devices')
+        .select('id')
+        .eq('session_id', session.id)
+        .eq('device_fingerprint', deviceFingerprint)
+        .maybeSingle();
+
+      const isUnlocked = session.unlock_until && new Date(session.unlock_until) > new Date();
+
+      if (session.status === 'locked' && !existingDevice && !isUnlocked) {
         setMessage('🔒 This session is locked. New devices cannot join.');
         setIsValidating(false);
         return;
@@ -140,18 +154,6 @@ export default function CustomerTablePage() {
         setIsValidating(false);
         return;
       }
-
-      const deviceFingerprint =
-        localStorage.getItem('deviceFingerprint') || crypto.randomUUID();
-
-      localStorage.setItem('deviceFingerprint', deviceFingerprint);
-
-      const { data: existingDevice } = await supabase
-        .from('session_devices')
-        .select('id')
-        .eq('session_id', session.id)
-        .eq('device_fingerprint', deviceFingerprint)
-        .maybeSingle();
 
       if (!existingDevice) {
         await supabase

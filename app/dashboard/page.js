@@ -30,6 +30,7 @@
 import { useDashboard } from '@/lib/hooks/useDashboard';
 import { formatCurrency, formatWaitTime, getWaitTimeClass, formatCount } from '@/lib/utils/formatters';
 import { TrendingUp, Clock, DollarSign, TableProperties, ShoppingCart, Users, Loader2, RefreshCw } from 'lucide-react';
+import Link from 'next/link';
 
 export default function DashboardPage() {
   const { metrics, isLoading, error, refresh } = useDashboard();
@@ -74,7 +75,7 @@ export default function DashboardPage() {
           {/* Stat Cards Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Card 1: Active Orders (HIGHLIGHTED - one accent element) */}
-            <div className="stat-card bg-[#18181b] border border-[#27272a] border-l-4 border-l-[var(--accent)] p-6 rounded-2xl shadow-lg hover:border-l-[var(--accent)] transition-all duration-300 relative overflow-hidden group">
+            <Link href="/orders" className="stat-card bg-[#18181b] border border-[#27272a] border-l-4 border-l-[var(--accent)] p-6 rounded-2xl shadow-lg hover:border-l-[var(--accent)] transition-all duration-300 relative overflow-hidden group block hover:no-underline cursor-pointer">
               <div className="absolute top-0 right-0 w-24 h-24 bg-[var(--accent)] opacity-5 rounded-full blur-2xl pointer-events-none" />
               <div className="flex items-start justify-between mb-4">
                 <div>
@@ -86,7 +87,7 @@ export default function DashboardPage() {
               <p className="text-xs text-[var(--text-secondary)] font-semibold mt-6">
                 Orders in progress (placed, preparing, ready)
               </p>
-            </div>
+            </Link>
 
             {/* Card 2: Average Wait Time */}
             <div className="stat-card bg-[#18181b] border border-[#27272a] p-6 rounded-2xl shadow-lg hover:border-[var(--accent)] transition-all duration-300 relative overflow-hidden group">
@@ -121,7 +122,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Card 4: Open Tables */}
-            <div className="stat-card bg-[#18181b] border border-[#27272a] p-6 rounded-2xl shadow-lg hover:border-[var(--accent)] transition-all duration-300 relative overflow-hidden group">
+            <Link href="/tables" className="stat-card bg-[#18181b] border border-[#27272a] p-6 rounded-2xl shadow-lg hover:border-[var(--accent)] transition-all duration-300 relative overflow-hidden group block hover:no-underline cursor-pointer">
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <p className="text-xs uppercase text-[var(--text-secondary)] font-bold tracking-wider">Open Tables</p>
@@ -132,7 +133,7 @@ export default function DashboardPage() {
               <p className="text-xs text-[var(--text-secondary)] font-semibold mt-6">
                 {metrics.occupiedTables} currently occupied dining tables
               </p>
-            </div>
+            </Link>
 
             {/* Card 5: Avg Order Value */}
             <div className="stat-card bg-[#18181b] border border-[#27272a] p-6 rounded-2xl shadow-lg hover:border-[var(--accent)] transition-all duration-300 relative overflow-hidden group">
@@ -151,7 +152,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Card 6: Staff Online */}
-            <div className="stat-card bg-[#18181b] border border-[#27272a] p-6 rounded-2xl shadow-lg hover:border-[var(--accent)] transition-all duration-300 relative overflow-hidden group">
+            <Link href="/users" className="stat-card bg-[#18181b] border border-[#27272a] p-6 rounded-2xl shadow-lg hover:border-[var(--accent)] transition-all duration-300 relative overflow-hidden group block hover:no-underline cursor-pointer">
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <p className="text-xs uppercase text-[var(--text-secondary)] font-bold tracking-wider">Staff Online</p>
@@ -162,7 +163,7 @@ export default function DashboardPage() {
               <p className="text-xs text-[var(--text-secondary)] font-semibold mt-6">
                 Active staff shifts logged in now
               </p>
-            </div>
+            </Link>
           </div>
 
           {/* Footer Info */}

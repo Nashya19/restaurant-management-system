@@ -56,6 +56,7 @@ CREATE TABLE table_sessions (
     cleared_at timestamptz,
     closed_by uuid REFERENCES profiles(id),
     total_amount numeric(10,2) NOT NULL DEFAULT 0.00,
+    unlock_until timestamptz,
     created_at timestamptz NOT NULL DEFAULT now()
 );
 
@@ -63,7 +64,8 @@ CREATE TABLE session_devices (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     session_id uuid NOT NULL REFERENCES table_sessions(id),
     device_fingerprint text NOT NULL,
-    joined_at timestamptz NOT NULL DEFAULT now()
+    joined_at timestamptz NOT NULL DEFAULT now(),
+    last_active_at timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE TABLE orders (

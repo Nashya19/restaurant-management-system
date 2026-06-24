@@ -285,17 +285,19 @@ export function AdminNavBar({ title, subtitle }) {
               )
             )}
 
-            <button
-              type="button; submit"
-              onClick={handleLogout}
-              className={`w-full flex items-center justify-center ${
-                isCollapsed ? 'px-0 py-3' : 'gap-2.5 px-4 py-3'
-              } text-sm font-semibold rounded-xl border border-red-950 bg-[#2a1010] text-[#c45a5a] hover:border-red-800 hover:text-red-400 transition-all duration-200 cursor-pointer`}
-              title={isCollapsed ? 'Logout' : undefined}
-            >
-              <LogOut size={16} className="shrink-0" />
-              {!isCollapsed && <span>{isSigningOut ? 'Logging out…' : 'Logout'}</span>}
-            </button>
+            {devRole !== 'customer' && (
+              <button
+                type="button; submit"
+                onClick={handleLogout}
+                className={`w-full flex items-center justify-center ${
+                  isCollapsed ? 'px-0 py-3' : 'gap-2.5 px-4 py-3'
+                } text-sm font-semibold rounded-xl border border-red-950 bg-[#2a1010] text-[#c45a5a] hover:border-red-800 hover:text-red-400 transition-all duration-200 cursor-pointer`}
+                title={isCollapsed ? 'Logout' : undefined}
+              >
+                <LogOut size={16} className="shrink-0" />
+                {!isCollapsed && <span>{isSigningOut ? 'Logging out…' : 'Logout'}</span>}
+              </button>
+            )}
           </div>
         </div>
       </aside>

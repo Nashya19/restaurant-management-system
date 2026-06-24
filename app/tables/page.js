@@ -11,6 +11,7 @@
     getSessionDetails,
   } from '@/lib/api/table-sessions';
   import { formatDate } from '@/lib/utils/formatters';
+  import { temporarilyUnlockSessionAction } from '@/lib/actions/orders';
   import { Plus, Lock, Check, Trash2, AlertCircle, X, Eye, Loader2, Clock, Users, DollarSign, Zap, RefreshCw } from 'lucide-react';
   import { createClient } from '@/lib/supabase/client';
   import CustomSelect from '@/components/ui/CustomSelect';
@@ -51,6 +52,8 @@ const [selectedSession, setSelectedSession] = useState(null);
 const [showSessionModal, setShowSessionModal] = useState(false);
 const [confirmAction, setConfirmAction] = useState(null);
 const [sessionRunningTotal, setSessionRunningTotal] = useState(0);
+const [unlockCountdown, setUnlockCountdown] = useState(0);
+const [isUnlocking, setIsUnlocking] = useState(false);
 
 // Select session from query parameter on mount/URL change
 useEffect(() => {
@@ -281,15 +284,57 @@ fetchTables();
       setPageError(err.message || 'Failed to load session details.');
     }
   };
+
+  useEffect(() => {
+    if (selectedSession?.unlock_until) {
+      const calculateRemaining = () => {
+        const diff = Math.ceil((new Date(selectedSession.unlock_until).getTime() - Date.now()) / 1000);
+        return diff > 0 ? diff : 0;
+      };
+      
+      setUnlockCountdown(calculateRemaining());
+      
+      const interval = setInterval(() => {
+        const remaining = calculateRemaining();
+        setUnlockCountdown(remaining);
+        if (remaining <= 0) {
+          clearInterval(interval);
+        }
+      }, 1000);
+      
+      return () => clearInterval(interval);
+    } else {
+      setUnlockCountdown(0);
+    }
+  }, [selectedSession]);
+
+  const handleTemporarilyUnlock = async (sessionId) => {
+    setIsUnlocking(true);
+    try {
+      const res = await temporarilyUnlockSessionAction(sessionId);
+      if (res?.success) {
+        setSelectedSession(prev => ({
+          ...prev,
+          unlock_until: res.data.unlock_until
+        }));
+        await fetchTables();
+      }
+    } catch (err) {
+      alert(err.message || 'Failed to unlock session');
+    } finally {
+      setIsUnlocking(false);
+    }
+  };
   const handleAddTable = async () => {
   try {
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
     if (editingTable) {
       const { error } = await supabase
         .from('tables')
         .update({
           table_number: Number(tableNumber),
           capacity: Number(capacity),
-          qr_code_url: `http://localhost:3000/table/${tableNumber}`,
+          qr_code_url: `${origin}/table/${tableNumber}`,
         })
         .eq('id', editingTable.id);
 
@@ -302,7 +347,7 @@ fetchTables();
       {
         table_number: Number(tableNumber),
         capacity: Number(capacity),
-        qr_code_url: `http://localhost:3000/table/${tableNumber}`,
+        qr_code_url: `${origin}/table/${tableNumber}`,
       },
     ])
     .select()
@@ -571,15 +616,28 @@ useEffect(() => {
                   </button>
                 )}
 
-                {table.current_status === 'open' && (
+                {(table.current_status === 'open' || table.current_status === 'locked') && (
                   <>
+                    {table.current_status === 'locked' && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setConfirmAction({ action: 'complete', sessionId: table.session_id });
+                        }}
+                        className="btn btn-primary text-small w-full flex items-center justify-center gap-2"
+                      >
+                        <Check size={14} />
+                        End Ordering & Bill
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleViewSession(table.session_id);
                       }}
-                      className="btn btn-primary text-small w-full flex items-center justify-center gap-2"
+                      className="btn btn-ghost text-small w-full flex items-center justify-center gap-2"
                     >
                       <Eye size={14} />
                       View Details
@@ -587,7 +645,7 @@ useEffect(() => {
                   </>
                 )}
 
-                {(table.current_status === 'completed' || table.current_status === 'locked') && (
+                {table.current_status === 'completed' && (
                   <>
                     <button
                       type="button"
@@ -598,7 +656,7 @@ useEffect(() => {
                       className="btn btn-primary text-small w-full flex items-center justify-center gap-2"
                     >
                       <Check size={14} />
-                      Confirm & Clear
+                      Confirm Payment & Clear
                     </button>
                     <button
                       type="button"
@@ -734,18 +792,75 @@ useEffect(() => {
             {/* Action Buttons */}
 
 
-            {(selectedSession.status === 'completed' || selectedSession.status === 'locked') && (
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setConfirmAction({ action: 'clear', sessionId: selectedSession.id });
-                    setShowSessionModal(false);
-                  }}
-                  className="flex-1 btn btn-primary"
-                >
-                  <Check size={16} /> Confirm & Clear
-                </button>
+            {(selectedSession.status === 'open' || selectedSession.status === 'locked') && (
+              <div className="flex flex-col gap-3">
+                {selectedSession.status === 'locked' && (
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setConfirmAction({ action: 'complete', sessionId: selectedSession.id });
+                        setShowSessionModal(false);
+                      }}
+                      className="flex-1 btn btn-primary"
+                    >
+                      <Check size={16} /> End Ordering & Bill
+                    </button>
+                  </div>
+                )}
+                
+                <div className="flex gap-3">
+                  {unlockCountdown > 0 ? (
+                    <div className="w-full flex flex-col sm:flex-row items-center gap-2 py-2 px-4 rounded-xl bg-green-950/40 border border-green-800 text-green-300 font-semibold text-xs justify-between">
+                      <div className="flex items-center gap-2">
+                        <Clock size={14} className="animate-pulse" />
+                        <span>Unlock active ({unlockCountdown}s remaining)</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            await lockTableSession(selectedSession.id);
+                            setSelectedSession(prev => ({ ...prev, unlock_until: null }));
+                            await fetchTables();
+                          } catch (err) {
+                            alert(err.message || 'Failed to lock session');
+                          }
+                        }}
+                        className="btn btn-ghost hover:bg-red-950/40 text-[var(--destructive)] border border-red-950/60 rounded-lg text-[10px] font-bold px-2 py-1 h-7 cursor-pointer"
+                      >
+                        Lock Now
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleTemporarilyUnlock(selectedSession.id)}
+                      disabled={isUnlocking}
+                      className="w-full btn btn-ghost border-[#27272a] hover:bg-[#18181b] flex items-center justify-center gap-2 rounded-xl text-xs font-bold h-10"
+                    >
+                      {isUnlocking ? <Loader2 size={14} className="animate-spin" /> : <Clock size={14} />}
+                      <span>Unlock Session (30s)</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {selectedSession.status === 'completed' && (
+              <div className="flex flex-col gap-3">
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setConfirmAction({ action: 'clear', sessionId: selectedSession.id });
+                      setShowSessionModal(false);
+                    }}
+                    className="flex-1 btn btn-primary"
+                  >
+                    <Check size={16} /> Confirm Payment & Clear Table
+                  </button>
+                </div>
               </div>
             )}
 

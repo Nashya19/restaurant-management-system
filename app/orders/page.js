@@ -10,6 +10,7 @@ import {
   cancelTableSession,
 } from '@/lib/api/table-sessions';
 import { formatCurrency } from '@/lib/utils/formatters';
+import { temporarilyUnlockSessionAction } from '@/lib/actions/orders';
 import { formatDate } from '@/lib/utils/formatters';
 import { createClient } from '@/lib/supabase/client';
 import { 
@@ -31,12 +32,14 @@ import Link from 'next/link';
 
 const STATUS_COLORS = {
   open: 'bg-green-700 text-green-100',
+  occupied: 'bg-teal-700 text-teal-100',
   locked: 'bg-orange-700 text-orange-100',
   completed: 'bg-blue-700 text-blue-100',
 };
 
 const STATUS_LABELS = {
   open: 'Open',
+  occupied: 'Occupied',
   locked: 'Locked',
   completed: 'Completed',
 };
@@ -52,6 +55,15 @@ export default function OrdersPage() {
   const [selectedSessionId, setSelectedSessionId] = useState(null);
   const [sessionDetails, setSessionDetails] = useState(null);
   const [confirmAction, setConfirmAction] = useState(null);
+  const [unlockCountdown, setUnlockCountdown] = useState(0);
+  const [isUnlocking, setIsUnlocking] = useState(false);
+  const [devRole, setDevRole] = useState('admin');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setDevRole(localStorage.getItem('dev-role') || 'admin');
+    }
+  }, []);
 
   const selectedSessionIdRef = useRef(selectedSessionId);
   useEffect(() => {
@@ -243,6 +255,48 @@ export default function OrdersPage() {
       await fetchSessionDetails(selectedSessionId);
     }
   };
+
+  useEffect(() => {
+    if (sessionDetails?.unlock_until) {
+      const calculateRemaining = () => {
+        const diff = Math.ceil((new Date(sessionDetails.unlock_until).getTime() - Date.now()) / 1000);
+        return diff > 0 ? diff : 0;
+      };
+      
+      setUnlockCountdown(calculateRemaining());
+      
+      const interval = setInterval(() => {
+        const remaining = calculateRemaining();
+        setUnlockCountdown(remaining);
+        if (remaining <= 0) {
+          clearInterval(interval);
+        }
+      }, 1000);
+      
+      return () => clearInterval(interval);
+    } else {
+      setUnlockCountdown(0);
+    }
+  }, [sessionDetails]);
+
+  const handleTemporarilyUnlock = async (sessionId) => {
+    setIsUnlocking(true);
+    try {
+      const res = await temporarilyUnlockSessionAction(sessionId);
+      if (res?.success) {
+        setSessionDetails(prev => ({
+          ...prev,
+          unlock_until: res.data.unlock_until
+        }));
+        await fetchActiveTables();
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to unlock session');
+    } finally {
+      setIsUnlocking(false);
+    }
+  };
+
   const selectedTable = activeTables.find(t => t.session_id === selectedSessionId);
 
   return (
@@ -299,7 +353,9 @@ export default function OrdersPage() {
             {activeTables.map((table) => {
               const isActive = table.session_id === selectedSessionId;
               let dotColor = 'bg-gray-400';
-              if (table.current_status === 'open') dotColor = 'bg-green-500';
+              if (table.current_status === 'open') {
+                dotColor = table.connected_devices_count > 0 ? 'bg-teal-500' : 'bg-green-500';
+              }
               if (table.current_status === 'locked') dotColor = 'bg-orange-500';
               if (table.current_status === 'completed') dotColor = 'bg-blue-500';
 
@@ -345,9 +401,15 @@ export default function OrdersPage() {
                   <div className="card bg-[#18181b] border border-[#27272a] p-5 rounded-2xl shadow-sm">
                     <p className="text-[10px] uppercase text-[var(--text-secondary)] font-bold tracking-wider mb-1">Session Status</p>
                     <div className="flex items-center gap-2">
-                      <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${STATUS_COLORS[sessionDetails.status]}`}>
-                        {STATUS_LABELS[sessionDetails.status]}
-                      </span>
+                      {(() => {
+                        const isOccupied = sessionDetails.status === 'open' && sessionDetails.connected_devices_count > 0;
+                        const statusKey = isOccupied ? 'occupied' : sessionDetails.status;
+                        return (
+                          <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${STATUS_COLORS[statusKey]}`}>
+                            {STATUS_LABELS[statusKey]}
+                          </span>
+                        );
+                      })()}
                     </div>
                   </div>
                   <div className="card bg-[#18181b] border border-[#27272a] p-5 rounded-2xl shadow-sm">
@@ -443,18 +505,67 @@ export default function OrdersPage() {
                 <div className="card bg-[#18181b] border border-[#27272a] p-6 rounded-2xl shadow-lg space-y-4">
                   <h3 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider">Session Controls</h3>
                   <div className="flex flex-col gap-2.5">
-                    {(sessionDetails.status === 'completed' || sessionDetails.status === 'locked') && (
+                    {(sessionDetails.status === 'open' || sessionDetails.status === 'locked') && (
+                      <>
+                        {sessionDetails.status === 'locked' && (
+                          <button
+                            onClick={() => setConfirmAction({ action: 'complete', sessionId: sessionDetails.id })}
+                            disabled={actionLoading}
+                            className="btn btn-primary btn-premium w-full flex items-center justify-center gap-2 rounded-xl h-11 font-bold cursor-pointer shadow-md shadow-[var(--accent)]/5"
+                          >
+                            <Check size={15} />
+                            <span>End Ordering & Bill</span>
+                          </button>
+                        )}
+                        
+                        {unlockCountdown > 0 ? (
+                          <div className="w-full flex flex-col sm:flex-row items-center gap-2 py-2 px-4 rounded-xl bg-green-950/40 border border-green-800 text-green-300 font-semibold text-xs justify-between">
+                            <div className="flex items-center gap-2">
+                              <Clock size={14} className="animate-pulse" />
+                              <span>Unlock active ({unlockCountdown}s remaining)</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                try {
+                                  await lockTableSession(sessionDetails.id);
+                                  setSessionDetails(prev => ({ ...prev, unlock_until: null }));
+                                  await fetchActiveTables();
+                                } catch (err) {
+                                  setError(err.message || 'Failed to lock session');
+                                }
+                              }}
+                              className="btn btn-ghost hover:bg-red-950/40 text-[var(--destructive)] border border-red-950/60 rounded-lg text-[10px] font-bold px-2 py-1 h-7 cursor-pointer"
+                            >
+                              Lock Now
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleTemporarilyUnlock(sessionDetails.id)}
+                            disabled={isUnlocking}
+                            className="btn btn-ghost border-[#27272a] hover:bg-[#18181b] w-full flex items-center justify-center gap-2 rounded-xl h-11 font-bold cursor-pointer"
+                          >
+                            {isUnlocking ? <Loader2 size={14} className="animate-spin" /> : <Clock size={14} />}
+                            <span>Unlock Session (30s)</span>
+                          </button>
+                        )}
+                      </>
+                    )}
+
+                    {sessionDetails.status === 'completed' && (
                       <button
                         onClick={() => setConfirmAction({ action: 'clear', sessionId: sessionDetails.id })}
                         disabled={actionLoading}
                         className="btn btn-primary btn-premium w-full flex items-center justify-center gap-2 rounded-xl h-11 font-bold cursor-pointer shadow-md shadow-[var(--accent)]/5"
                       >
                         <Check size={15} />
-                        <span>Confirm & Clear</span>
+                        <span>Confirm Payment & Clear</span>
                       </button>
                     )}
 
-                    {(sessionDetails.status === 'open' || sessionDetails.status === 'completed' || sessionDetails.status === 'locked') && (
+                    {devRole !== 'staff' && (sessionDetails.status === 'open' || sessionDetails.status === 'completed' || sessionDetails.status === 'locked') && (
                       <button
                         onClick={() => setConfirmAction({ action: 'cancel', sessionId: sessionDetails.id })}
                         disabled={actionLoading}
