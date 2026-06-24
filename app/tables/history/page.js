@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import CustomSelect from '@/components/ui/CustomSelect';
 import Link from 'next/link';
+import { useAlertConfirm } from '@/lib/hooks/useAlertConfirm';
 
 
 const STATUS_COLORS = {
@@ -43,6 +44,7 @@ const STATUS_LABELS = {
 };
 
 export default function SessionHistoryPage() {
+  const { showAlert, showConfirm, AlertConfirmComponent } = useAlertConfirm();
   const [sessions, setSessions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -244,19 +246,19 @@ export default function SessionHistoryPage() {
       setSelectedSession(details);
       setShowSessionModal(true);
     } catch (err) {
-      alert(err.message || 'Failed to load session details.');
+      await showAlert(err.message || 'Failed to load session details.');
     } finally {
       setIsDetailLoading(false);
     }
   };
 
-  const handleDotClick = () => {
+  const handleDotClick = async () => {
     const input = prompt(`Enter page number (1 to ${totalPages}):`);
     if (input === null) return;
     const pageNum = parseInt(input, 10);
     if (!isNaN(pageNum)) {
       if (pageNum <= 0) {
-        alert("Minimum page number is 1");
+        await showAlert("Minimum page number is 1");
         return;
       }
       const targetPage = Math.min(pageNum, totalPages);
@@ -444,10 +446,10 @@ export default function SessionHistoryPage() {
                             <span title={session.id}>{session.id.substring(0, 8)}...</span>
                             <button
                               type="button"
-                              onClick={(e) => {
+                              onClick={async (e) => {
                                 e.stopPropagation();
                                 navigator.clipboard.writeText(session.id);
-                                alert('Session ID copied!');
+                                await showAlert('Session ID copied!');
                               }}
                               className="ml-2 text-[10px] bg-[#27272a]/80 px-1 py-0.5 rounded border border-[#3f3f46] hover:bg-[#3f3f46] hover:text-[var(--accent)] transition-all cursor-pointer"
                             >
@@ -671,6 +673,7 @@ export default function SessionHistoryPage() {
           </div>
         </div>
       )}
+      {AlertConfirmComponent}
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { LogOut, LayoutDashboard, Users, ListChecks, Grid3x3, Shield, Menu, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { LogOut, LayoutDashboard, Users, ListChecks, Grid3x3, Shield, Menu, X, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 
 export function AdminNavBar({ title, subtitle }) {
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -100,6 +100,7 @@ export function AdminNavBar({ title, subtitle }) {
       return [
         { href: '/tables', label: 'Tables', icon: Grid3x3 },
         { href: '/orders', label: 'Order Management', icon: Shield },
+        { href: '/schedule', label: 'Schedule', icon: Calendar },
         { href: '/menu', label: 'Menu', icon: ListChecks },
       ];
     } else {
@@ -107,6 +108,7 @@ export function AdminNavBar({ title, subtitle }) {
         { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { href: '/tables', label: 'Tables', icon: Grid3x3 },
         { href: '/orders', label: 'Order Management', icon: Shield },
+        { href: '/schedule', label: 'Schedule', icon: Calendar },
         { href: '/users', label: 'Users', icon: Users },
         { href: '/menu', label: 'Menu', icon: ListChecks },
       ];

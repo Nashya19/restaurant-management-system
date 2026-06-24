@@ -22,7 +22,7 @@ This checklist tracks the assignment and completion of all system modules. Pleas
 - [ ] **5. Surplus Food Distribution** (Must build after: *Auth, Menu*)
 - [ ] **6. Feedback and Ratings** (Must build after: *Billing*)
 - [x] **7. Table Management** (Must build after: *Auth*)
-- [ ] **8. Staff Scheduling** (Must build after: *Auth, User Management*)
+- [x] **8. Staff Scheduling** (Must build after: *Auth, User Management*)
 - [x] **9. Order Management** (Must build after: *Table Management, Menu*)
 - [ ] **10. Kitchen Display** (Must build after: *Order Management*)
 - [ ] **11. Wait Time Estimation** (Must build after: *Order Management, Kitchen Display*)

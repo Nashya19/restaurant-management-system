@@ -16,6 +16,7 @@
   import { createClient } from '@/lib/supabase/client';
   import CustomSelect from '@/components/ui/CustomSelect';
   import Link from 'next/link';
+  import { useAlertConfirm } from '@/lib/hooks/useAlertConfirm';
 
 const STATUS_COLORS = {
   inactive: 'bg-gray-700 text-gray-200',
@@ -38,6 +39,7 @@ const STATUS_LABELS = {
 };
 
 export default function TablesPage() {
+  const { showAlert, showConfirm, AlertConfirmComponent } = useAlertConfirm();
   const supabaseRef = useRef(null);
   if (!supabaseRef.current) {
     supabaseRef.current = createClient();
@@ -159,7 +161,7 @@ const [editingTable, setEditingTable] = useState(null);
 const handleToggleTableStatus = async (table) => {
   const action = table.is_active ? 'deactivate' : 'activate';
 
-  const confirmed = window.confirm(
+  const confirmed = await showConfirm(
     `Are you sure you want to ${action} Table ${table.table_number}?`
   );
 
@@ -189,7 +191,7 @@ const handleToggleTableStatus = async (table) => {
 fetchTables();
   } catch (err) {
     console.error(err);
-    alert(err.message);
+    await showAlert(err.message);
   }
 };
   // Handle start session
@@ -320,7 +322,7 @@ fetchTables();
         await fetchTables();
       }
     } catch (err) {
-      alert(err.message || 'Failed to unlock session');
+      await showAlert(err.message || 'Failed to unlock session');
     } finally {
       setIsUnlocking(false);
     }
@@ -383,11 +385,11 @@ fetchTables();
     fetchTables();
   } catch (err) {
     console.error(err);
-    alert(err.message);
+    await showAlert(err.message);
   }
 };
  const handleSaveTableChanges = async () => {
-  const confirmed = window.confirm(
+  const confirmed = await showConfirm(
     'Are you sure you want to save these changes?'
   );
 
@@ -404,7 +406,7 @@ fetchTables();
 
     if (error) throw error;
 
-    alert('Table updated successfully');
+    await showAlert('Table updated successfully');
     setSelectedTable({
   ...selectedTable,
   table_number: Number(manageTableNumber),
@@ -417,7 +419,7 @@ fetchTables();
     fetchTables();
   } catch (err) {
     console.error(err);
-    alert(err.message);
+    await showAlert(err.message);
   }
 };
 const [devRole, setDevRole] = useState('admin');
@@ -562,10 +564,10 @@ useEffect(() => {
                     </span>
                     <button
                       type="button"
-                      onClick={(e) => {
+                      onClick={async (e) => {
                         e.stopPropagation();
                         navigator.clipboard.writeText(table.session_id);
-                        alert('Session ID copied to clipboard!');
+                        await showAlert('Session ID copied to clipboard!');
                       }}
                       className="text-[10px] hover:text-[var(--accent)] cursor-pointer select-none bg-[#27272a]/60 px-1 py-0.5 rounded border border-[#3f3f46] hover:bg-[#3f3f46]/60 transition-all"
                       title="Copy Full Session ID"
@@ -824,7 +826,7 @@ useEffect(() => {
                             setSelectedSession(prev => ({ ...prev, unlock_until: null }));
                             await fetchTables();
                           } catch (err) {
-                            alert(err.message || 'Failed to lock session');
+                            await showAlert(err.message || 'Failed to lock session');
                           }
                         }}
                         className="btn btn-ghost hover:bg-red-950/40 text-[var(--destructive)] border border-red-950/60 rounded-lg text-[10px] font-bold px-2 py-1 h-7 cursor-pointer"
@@ -1097,7 +1099,7 @@ useEffect(() => {
           </div>
         </div>
       )}
-
+      {AlertConfirmComponent}
     </div>
   );
 }

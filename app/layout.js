@@ -32,7 +32,7 @@ export default function RootLayout({ children }) {
               (function() {
                 try {
                   var path = window.location.pathname;
-                  var isStaffPage = path === '/' || path.startsWith('/login') || path.startsWith('/dashboard') || path.startsWith('/orders') || path.startsWith('/admin') || path.startsWith('/tables') || path.startsWith('/menu') || path.startsWith('/users');
+                  var isStaffPage = path === '/' || path.startsWith('/login') || path.startsWith('/dashboard') || path.startsWith('/orders') || path.startsWith('/admin') || path.startsWith('/tables') || path.startsWith('/menu') || path.startsWith('/users') || path.startsWith('/schedule');
                   if (isStaffPage) {
                     document.documentElement.classList.add('dark');
                   } else {

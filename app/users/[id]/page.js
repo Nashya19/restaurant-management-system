@@ -38,8 +38,10 @@ import { createUser, updateUser, resetUserPassword } from '@/lib/actions/users';
 import { useFormState } from '@/lib/hooks/useFormState';
 import { validateUserForm, validateEmail, validatePassword, validateFullName, validateRole } from '@/lib/utils/validation';
 import { ArrowLeft, Loader2, Key } from 'lucide-react';
+import { useAlertConfirm } from '@/lib/hooks/useAlertConfirm';
 
 export default function UserDetailPage() {
+  const { showAlert, showConfirm, AlertConfirmComponent } = useAlertConfirm();
   const router = useRouter();
   const params = useParams();
   const userId = params.id;
@@ -148,7 +150,7 @@ export default function UserDetailPage() {
       setResetPassword('');
       setResetConfirm('');
       setShowResetForm(false);
-      alert('Password reset successfully.');
+      await showAlert('Password reset successfully.');
     } catch (err) {
       setResetError(err.message);
       console.error('Password reset error:', err);
@@ -411,6 +413,7 @@ export default function UserDetailPage() {
           )}
         </div>
       )}
+      {AlertConfirmComponent}
     </div>
   );
 }
