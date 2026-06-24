@@ -14,12 +14,12 @@ export default function CustomAlertConfirm({
 }) {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-sm bg-[#18181b] border border-[#27272a] p-6 rounded-2xl shadow-2xl space-y-4 scale-in-center">
+      <div className="w-full max-w-sm bg-surface border border-border p-6 rounded-2xl shadow-2xl space-y-4 scale-in-center">
         <div className="flex items-start gap-3">
           {type === 'confirm' ? (
             <HelpCircle size={22} className="text-[var(--accent)] shrink-0 mt-0.5" />
           ) : (
-            <AlertCircle size={22} className="text-[#c45a5a] shrink-0 mt-0.5" />
+            <AlertCircle size={22} className="text-destructive shrink-0 mt-0.5" />
           )}
           <div className="space-y-1">
             <h3 className="text-sm font-bold text-[var(--text-primary)]">
@@ -36,7 +36,7 @@ export default function CustomAlertConfirm({
             <button
               type="button"
               onClick={onCancel}
-              className="btn btn-ghost px-4 h-9 text-xs font-bold rounded-xl cursor-pointer border border-[#27272a] bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all"
+              className="btn btn-ghost px-4 h-9 text-xs font-bold rounded-xl cursor-pointer border border-border bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all"
             >
               {cancelText}
             </button>

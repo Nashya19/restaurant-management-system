@@ -6,7 +6,7 @@ import { AdminNavBar } from '@/lib/components/AdminNavBar';
 export default function OrdersLayout({ children }) {
   return (
     <AdminGuard>
-      <div className="dark min-h-screen bg-[var(--background)] text-[var(--text-primary)] flex flex-col md:flex-row">
+      <div className="min-h-screen bg-[var(--background)] text-[var(--text-primary)] flex flex-col md:flex-row">
         <AdminNavBar
           title="Order Management"
           subtitle="Real-time monitoring and state control of active table orders."

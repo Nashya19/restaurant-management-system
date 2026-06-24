@@ -13,9 +13,7 @@ export default function LoginPage() {
   const router = useRouter();
   const supabase = createClient();
 
-  useEffect(() => {
-    document.documentElement.classList.add("dark");
-  }, []);
+  // The theme is loaded dynamically in RootLayout, so we do not force dark theme here.
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -71,7 +69,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="dark flex-1 relative flex flex-col items-center justify-center min-h-screen bg-[#09090b] text-[var(--text-primary)] overflow-hidden font-sans p-4">
+    <div className="flex-1 relative flex flex-col items-center justify-center min-h-screen bg-background text-[var(--text-primary)] overflow-hidden font-sans p-4">
       {/* Background glow effects */}
       <div 
         className="absolute inset-0 z-0 pointer-events-none"
@@ -83,7 +81,7 @@ export default function LoginPage() {
       <div className="relative z-10 w-full max-w-[420px] animate-fade-in">
         {/* Logo / Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[#18181b] border border-[#27272a] text-[var(--accent)] mb-4 shadow-xl">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-surface border border-border text-[var(--accent)] mb-4 shadow-xl">
             <Utensils size={26} strokeWidth={2} aria-hidden="true" />
           </div>
           <h1 className="text-display text-2xl font-bold tracking-tight text-[var(--text-primary)] mb-1">
@@ -93,10 +91,10 @@ export default function LoginPage() {
         </div>
 
         {/* Login Form Card */}
-        <div className="card bg-[#18181b] border border-[#27272a] p-8 shadow-2xl rounded-2xl">
+        <div className="card bg-surface border border-border p-8 shadow-2xl rounded-2xl">
           <form onSubmit={handleLogin} className="space-y-5">
             {error && (
-              <div className="flex items-start gap-2 bg-[#2a1010] border border-[#5a2020] text-[#c45a5a] text-sm p-3 rounded-lg animate-fade-in">
+              <div className="flex items-start gap-2 bg-destructive-bg border border-destructive-border text-destructive text-sm p-3 rounded-lg animate-fade-in">
                 <span className="shrink-0 mt-0.5">⚠️</span>
                 <span>{error}</span>
               </div>
@@ -116,7 +114,7 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="w-full pl-10 pr-3 focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none bg-[#09090b] border-[#27272a] rounded-lg transition-all"
+                  className="w-full pl-10 pr-3 focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none bg-background border-border rounded-lg transition-all"
                   placeholder="name@example.com"
                   spellCheck={false}
                   autoComplete="email"
@@ -138,7 +136,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="w-full pl-10 pr-3 focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none bg-[#09090b] border-[#27272a] rounded-lg transition-all"
+                  className="w-full pl-10 pr-3 focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none bg-background border-border rounded-lg transition-all"
                   placeholder="••••••••"
                   autoComplete="current-password"
                 />
@@ -166,10 +164,10 @@ export default function LoginPage() {
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-[#27272a]"></div>
+                <div className="w-full border-t border-border"></div>
               </div>
               <div className="relative flex justify-center text-small">
-                <span className="bg-[#18181b] px-3 text-[var(--text-secondary)] font-semibold">Or continue with</span>
+                <span className="bg-surface px-3 text-[var(--text-secondary)] font-semibold">Or continue with</span>
               </div>
             </div>
 
@@ -178,7 +176,7 @@ export default function LoginPage() {
               type="button"
               onClick={handleGoogleLogin}
               disabled={loading}
-              className="btn btn-ghost w-full mt-4 flex items-center justify-center gap-2 bg-[#09090b] border-[#27272a] hover:bg-[#18181b] rounded-lg focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none transition-colors"
+              className="btn btn-ghost w-full mt-4 flex items-center justify-center gap-2 bg-background border-border hover:bg-surface rounded-lg focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none transition-colors"
             >
               <svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>

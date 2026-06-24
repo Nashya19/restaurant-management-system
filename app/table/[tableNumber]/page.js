@@ -185,7 +185,7 @@ export default function CustomerTablePage() {
 
   if (checkingActive) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-[#09090b]">
+      <div className="min-h-screen flex items-center justify-center p-6 bg-background">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--accent)]"></div>
           <p className="mt-4 text-zinc-400 font-medium">Checking table status…</p>
@@ -196,10 +196,10 @@ export default function CustomerTablePage() {
 
   if (!tableExists) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-[#09090b]">
-        <div className="card max-w-md w-full bg-[#18181b] border border-red-950 bg-[#2a1010]/30 p-8 rounded-2xl shadow-xl text-center space-y-4">
+      <div className="min-h-screen flex items-center justify-center p-6 bg-background">
+        <div className="card max-w-md w-full bg-surface border border-destructive-border bg-destructive-bg/30 p-8 rounded-2xl shadow-xl text-center space-y-4">
           <span className="text-4xl">⚠️</span>
-          <h1 className="text-2xl font-bold text-[#c45a5a] mt-4 mb-2">Table Not Found</h1>
+          <h1 className="text-2xl font-bold text-destructive mt-4 mb-2">Table Not Found</h1>
           <p className="text-zinc-400 text-sm font-semibold">
             Table {tableNumber} does not exist in the system. Please verify the URL or contact staff.
           </p>
@@ -210,10 +210,10 @@ export default function CustomerTablePage() {
 
   if (!isActive) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-[#09090b]">
-        <div className="card max-w-md w-full bg-[#18181b] border border-red-950 bg-[#2a1010]/30 p-8 rounded-2xl shadow-xl text-center space-y-4">
+      <div className="min-h-screen flex items-center justify-center p-6 bg-background">
+        <div className="card max-w-md w-full bg-surface border border-destructive-border bg-destructive-bg/30 p-8 rounded-2xl shadow-xl text-center space-y-4">
           <span className="text-4xl">⚠️</span>
-          <h1 className="text-2xl font-bold text-[#c45a5a] mt-4 mb-2">Table {tableNumber} Inactive</h1>
+          <h1 className="text-2xl font-bold text-destructive mt-4 mb-2">Table {tableNumber} Inactive</h1>
           <p className="text-zinc-400 text-sm font-semibold">
             This table is currently out of service. Please contact a staff member for assistance.
           </p>
@@ -223,15 +223,15 @@ export default function CustomerTablePage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-[#09090b] relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center p-6 bg-background relative overflow-hidden">
       {/* Decorative ambient background glows */}
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[var(--accent)] opacity-5 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[var(--accent)] opacity-5 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="card max-w-md w-full bg-[#18181b]/80 border border-[#27272a] p-8 rounded-3xl shadow-2xl backdrop-blur-md space-y-8 animate-fade-in relative z-10">
+      <div className="card max-w-md w-full bg-surface/80 border border-border p-8 rounded-3xl shadow-2xl backdrop-blur-md space-y-8 animate-fade-in relative z-10">
         {/* Brand/Table Header */}
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[#27272a]/60 border border-[#27272a] text-[var(--accent)] mb-2 shadow-inner">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[#27272a]/60 border border-border text-[var(--accent)] mb-2 shadow-inner">
             <Shield size={28} />
           </div>
           <h1 className="text-3xl font-extrabold tracking-tight text-white flex items-center justify-center gap-2">
@@ -258,7 +258,7 @@ export default function CustomerTablePage() {
                 onKeyDown={(e) => handleKeyDown(idx, e)}
                 onPaste={handlePaste}
                 disabled={isValidating}
-                className="w-14 h-16 bg-[#09090b] border border-[#27272a] rounded-2xl text-center text-2xl font-bold font-mono text-white focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition-all shadow-inner disabled:opacity-50"
+                className="w-14 h-16 bg-background border border-border rounded-2xl text-center text-2xl font-bold font-mono text-white focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition-all shadow-inner disabled:opacity-50"
               />
             ))}
           </div>
@@ -286,7 +286,7 @@ export default function CustomerTablePage() {
 
         {/* Message alerts */}
         {message && (
-          <p className="text-sm text-center font-semibold text-[#c45a5a] bg-[#2a1010]/30 border border-[#5a2020] p-3.5 rounded-xl animate-fade-in">
+          <p className="text-sm text-center font-semibold text-destructive bg-destructive-bg/30 border border-destructive-border p-3.5 rounded-xl animate-fade-in">
             {message}
           </p>
         )}

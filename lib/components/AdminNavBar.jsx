@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { LogOut, LayoutDashboard, Users, ListChecks, Grid3x3, Shield, Menu, X, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
+import { LogOut, LayoutDashboard, Users, ListChecks, Grid3x3, Shield, Menu, X, ChevronLeft, ChevronRight, Calendar, Sun, Moon } from 'lucide-react';
 
 export function AdminNavBar({ title, subtitle }) {
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -18,6 +18,7 @@ export function AdminNavBar({ title, subtitle }) {
   const [tableNum, setTableNum] = useState('1');
   const [toast, setToast] = useState(null);
   const [isLocalhost, setIsLocalhost] = useState(false);
+  const [theme, setTheme] = useState('light');
 
   useEffect(() => {
     const stored = localStorage.getItem('sidebar-collapsed');
@@ -31,6 +32,9 @@ export function AdminNavBar({ title, subtitle }) {
         window.location.hostname === 'localhost' || 
         window.location.hostname === '127.0.0.1'
       );
+      // Theme initialization
+      const activeTheme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+      setTheme(activeTheme);
     }
   }, []);
 
@@ -77,6 +81,17 @@ export function AdminNavBar({ title, subtitle }) {
     const nextState = !isCollapsed;
     setIsCollapsed(nextState);
     localStorage.setItem('sidebar-collapsed', String(nextState));
+  };
+
+  const toggleTheme = () => {
+    const nextTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(nextTheme);
+    localStorage.setItem('theme', nextTheme);
+    if (nextTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
   };
 
   const handleLogout = async () => {
@@ -152,14 +167,14 @@ export function AdminNavBar({ title, subtitle }) {
       )}
 
       {/* Mobile Top Bar */}
-      <div className="md:hidden flex items-center justify-between p-4 bg-[#18181b] border-b border-[#27272a] w-full z-40">
+      <div className="md:hidden flex items-center justify-between p-4 bg-surface border-b border-border w-full z-40">
         <div className="flex items-center gap-2 text-[var(--accent)]">
           <Shield size={20} />
           <span className="font-bold text-sm text-[var(--text-primary)]">Zenith RMS</span>
         </div>
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="p-1.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[#27272a] rounded-lg bg-[#09090b]"
+          className="p-1.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-border rounded-lg bg-background"
         >
           {isOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
@@ -167,10 +182,10 @@ export function AdminNavBar({ title, subtitle }) {
 
       {/* Sidebar navigation container */}
       <aside className={`${
-        isOpen ? 'flex fixed inset-0 top-[57px] bg-[#09090b]/95 backdrop-blur-md' : 'hidden'
+        isOpen ? 'flex fixed inset-0 top-[57px] bg-background/95 backdrop-blur-md' : 'hidden'
       } md:flex flex-col w-full ${
         isCollapsed ? 'md:w-20 md:p-4' : 'md:w-64 md:p-6'
-      } bg-[#18181b] border-b md:border-b-0 md:border-r border-[#27272a] p-6 shrink-0 z-40 transition-all duration-300`}>
+      } bg-surface border-b md:border-b-0 md:border-r border-border p-6 shrink-0 z-40 transition-all duration-300`}>
         <div className="flex flex-col h-full justify-between">
           <div className="space-y-8">
             {/* Logo and App Title */}
@@ -187,7 +202,7 @@ export function AdminNavBar({ title, subtitle }) {
               {!isCollapsed && (
                 <button
                   onClick={toggleCollapse}
-                  className="p-1.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[#09090b] rounded-lg cursor-pointer border border-[#27272a] transition-all"
+                  className="p-1.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-background rounded-lg cursor-pointer border border-border transition-all"
                   title="Collapse Sidebar"
                 >
                   <ChevronLeft size={16} />
@@ -197,10 +212,10 @@ export function AdminNavBar({ title, subtitle }) {
 
             {/* Expand button (visible only when collapsed) */}
             {isCollapsed && (
-              <div className="hidden md:flex justify-center border-b border-[#27272a] pb-4">
+              <div className="hidden md:flex justify-center border-b border-border pb-4">
                 <button
                   onClick={toggleCollapse}
-                  className="p-1.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[#09090b] rounded-lg cursor-pointer border border-[#27272a] transition-all"
+                  className="p-1.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-background rounded-lg cursor-pointer border border-border transition-all"
                   title="Expand Sidebar"
                 >
                   <ChevronRight size={16} />
@@ -210,7 +225,7 @@ export function AdminNavBar({ title, subtitle }) {
 
             {/* Page specific Header (shown in sidebar) */}
             {!isCollapsed && (
-              <div className="space-y-1 py-3 border-b border-[#27272a]">
+              <div className="space-y-1 py-3 border-b border-border">
                 <h3 className="text-sm font-bold text-[var(--text-primary)]">{displayTitle}</h3>
                 {displaySubtitle && (
                   <p className="text-xs text-[var(--text-secondary)] font-medium leading-relaxed">
@@ -234,7 +249,7 @@ export function AdminNavBar({ title, subtitle }) {
                     } text-sm font-semibold rounded-xl border transition-all duration-200 ${
                       isActive
                         ? 'border-[var(--accent)] bg-[var(--surface-raised)] text-[var(--accent)] shadow-md shadow-[var(--accent)]/5'
-                        : 'border-transparent bg-transparent text-[var(--text-secondary)] hover:border-[#27272a] hover:bg-[#09090b] hover:text-[var(--text-primary)]'
+                        : 'border-transparent bg-transparent text-[var(--text-secondary)] hover:border-border hover:bg-background hover:text-[var(--text-primary)]'
                     }`}
                     title={isCollapsed ? label : undefined}
                   >
@@ -246,12 +261,31 @@ export function AdminNavBar({ title, subtitle }) {
             </nav>
           </div>
 
-          {/* Logout Action at bottom */}
-          <div className="pt-6 border-t border-[#27272a] mt-auto space-y-4">
+          {/* Bottom Actions */}
+          <div className="pt-6 border-t border-border mt-auto space-y-4">
+            {/* Theme Toggle Button */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className={`w-full flex items-center justify-center ${
+                isCollapsed ? 'px-0 py-3' : 'gap-2.5 px-4 py-3'
+              } text-sm font-semibold rounded-xl border border-border bg-background text-[var(--text-primary)] hover:bg-[var(--surface-raised)] transition-all duration-200 cursor-pointer`}
+              title={isCollapsed ? `Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode` : undefined}
+            >
+              {theme === 'dark' ? (
+                <Sun size={16} className="shrink-0 text-yellow-500" />
+              ) : (
+                <Moon size={16} className="shrink-0 text-indigo-500" />
+              )}
+              {!isCollapsed && (
+                <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+              )}
+            </button>
+
             {/* Developer Mode Switcher */}
             {isLocalhost && (
               !isCollapsed ? (
-                <div className="space-y-1.5 px-4 py-3 bg-[#09090b]/40 rounded-xl border border-[#27272a]/60">
+                <div className="space-y-1.5 px-4 py-3 bg-background/40 rounded-xl border border-border/60">
                   <label className="text-[10px] uppercase text-[var(--text-secondary)] font-bold tracking-wider block">
                     Dev Mode Role
                   </label>
@@ -261,7 +295,7 @@ export function AdminNavBar({ title, subtitle }) {
                       localStorage.setItem('dev-role', e.target.value);
                       window.location.reload();
                     }}
-                    className="w-full bg-[#09090b] border border-[#27272a] focus:border-[var(--accent)] rounded-lg text-xs h-8 text-[var(--text-primary)] outline-none cursor-pointer px-2"
+                    className="w-full bg-background border border-border focus:border-[var(--accent)] rounded-lg text-xs h-8 text-[var(--text-primary)] outline-none cursor-pointer px-2"
                   >
                     <option value="admin">Admin</option>
                     <option value="staff">Staff</option>
@@ -269,7 +303,7 @@ export function AdminNavBar({ title, subtitle }) {
                   </select>
                 </div>
               ) : (
-                <div className="flex justify-center py-2 bg-[#09090b]/40 rounded-xl border border-[#27272a]/60">
+                <div className="flex justify-center py-2 bg-background/40 rounded-xl border border-border/60">
                   <select
                     value={devRole}
                     onChange={(e) => {
@@ -289,11 +323,11 @@ export function AdminNavBar({ title, subtitle }) {
 
             {devRole !== 'customer' && (
               <button
-                type="button; submit"
+                type="button"
                 onClick={handleLogout}
                 className={`w-full flex items-center justify-center ${
                   isCollapsed ? 'px-0 py-3' : 'gap-2.5 px-4 py-3'
-                } text-sm font-semibold rounded-xl border border-red-950 bg-[#2a1010] text-[#c45a5a] hover:border-red-800 hover:text-red-400 transition-all duration-200 cursor-pointer`}
+                } text-sm font-semibold rounded-xl border border-destructive-border bg-destructive-bg text-destructive hover:bg-destructive hover:text-white transition-all duration-200 cursor-pointer`}
                 title={isCollapsed ? 'Logout' : undefined}
               >
                 <LogOut size={16} className="shrink-0" />

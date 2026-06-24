@@ -85,7 +85,7 @@ export default function SearchableSelect({
           setIsOpen(true);
           inputRef.current?.focus();
         }}
-        className="min-h-10 w-full bg-[#09090b] border border-[#27272a] hover:border-[#3f3f46] focus-within:border-[var(--accent)] rounded-xl flex flex-wrap items-center gap-1.5 px-3 py-1.5 cursor-text transition-all"
+        className="min-h-10 w-full bg-background border border-border hover:border-border focus-within:border-[var(--accent)] rounded-xl flex flex-wrap items-center gap-1.5 px-3 py-1.5 cursor-text transition-all"
       >
         {/* Render selected chips for multi select */}
         {isMulti && Array.isArray(value) && value.map((valId) => {
@@ -94,7 +94,7 @@ export default function SearchableSelect({
           return (
             <span
               key={valId}
-              className="inline-flex items-center gap-1 bg-[#18181b] border border-[#27272a] text-xs font-semibold px-2 py-0.5 rounded-lg text-[var(--text-primary)]"
+              className="inline-flex items-center gap-1 bg-surface border border-border text-xs font-semibold px-2 py-0.5 rounded-lg text-[var(--text-primary)]"
             >
               {opt.full_name}
               <button
@@ -138,7 +138,7 @@ export default function SearchableSelect({
 
       {/* Dropdown Overlay */}
       {isOpen && (
-        <div className="absolute z-50 left-0 right-0 mt-1.5 max-h-60 overflow-y-auto bg-[#09090b] border border-[#27272a] rounded-xl shadow-2xl overflow-hidden divide-y divide-[#27272a]/40">
+        <div className="absolute z-50 left-0 right-0 mt-1.5 max-h-60 overflow-y-auto bg-background border border-border rounded-xl shadow-2xl overflow-hidden divide-y divide-border/40">
           {filteredOptions.length === 0 ? (
             <div className="px-3.5 py-3 text-xs text-[var(--text-secondary)] select-none">
               No results found
@@ -150,19 +150,19 @@ export default function SearchableSelect({
                 <div
                   key={opt.id}
                   onClick={(e) => handleSelect(opt, e)}
-                  className="flex items-center justify-between px-3.5 py-2.5 text-xs font-semibold cursor-pointer hover:bg-[#18181b] transition-all select-none"
+                  className="flex items-center justify-between px-3.5 py-2.5 text-xs font-semibold cursor-pointer hover:bg-surface transition-all select-none"
                 >
                   <div className="flex items-center gap-2">
                     {isMulti && (
                       <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-all ${
-                        selected ? 'bg-[var(--accent)] border-[var(--accent)] text-black' : 'border-[#27272a] bg-transparent'
+                        selected ? 'bg-[var(--accent)] border-[var(--accent)] text-black' : 'border-border bg-transparent'
                       }`}>
                         {selected && <Check size={10} strokeWidth={3} />}
                       </div>
                     )}
                     <span className="text-[var(--text-primary)]">{opt.full_name}</span>
                     <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${
-                      opt.role === 'admin' ? 'bg-[#0f2318] text-[#4a9b6a]' : 'bg-[#18181b] border border-[#27272a] text-[var(--text-secondary)]'
+                      opt.role === 'admin' ? 'bg-success-bg text-success' : 'bg-surface border border-border text-[var(--text-secondary)]'
                     }`}>
                       {opt.role}
                     </span>

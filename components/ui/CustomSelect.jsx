@@ -24,7 +24,7 @@ export default function CustomSelect({ value, onChange, options, icon: Icon, cla
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full h-10 flex items-center justify-between gap-3 bg-[#09090b] border border-[#27272a] rounded-xl px-4 hover:border-[var(--accent)] transition-all duration-200 focus:outline-none cursor-pointer"
+        className="w-full h-10 flex items-center justify-between gap-3 bg-background border border-border rounded-xl px-4 hover:border-[var(--accent)] transition-all duration-200 focus:outline-none cursor-pointer"
       >
         <span className="flex items-center gap-2">
           {Icon && <Icon size={16} className="text-[var(--text-secondary)]" />}
@@ -34,7 +34,7 @@ export default function CustomSelect({ value, onChange, options, icon: Icon, cla
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 w-full mt-2 bg-[#18181b] border border-[#27272a] rounded-xl shadow-2xl overflow-hidden animate-fade-in">
+        <div className="absolute z-50 w-full mt-2 bg-surface border border-border rounded-xl shadow-2xl overflow-hidden animate-fade-in">
           {options.map((opt) => (
             <button
               key={opt.value}
@@ -43,8 +43,8 @@ export default function CustomSelect({ value, onChange, options, icon: Icon, cla
                 onChange(opt.value);
                 setIsOpen(false);
               }}
-              className={`w-full text-left px-4 py-2.5 text-sm transition-colors cursor-pointer hover:bg-[#27272a] ${
-                value === opt.value ? 'text-[var(--accent)] font-bold bg-[#09090b]/40' : 'text-[var(--text-primary)]'
+              className={`w-full text-left px-4 py-2.5 text-sm transition-colors cursor-pointer hover:bg-surface-raised ${
+                value === opt.value ? 'text-[var(--accent)] font-bold bg-background/40' : 'text-[var(--text-primary)]'
               }`}
             >
               {opt.label}

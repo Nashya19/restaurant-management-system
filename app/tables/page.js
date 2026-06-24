@@ -433,7 +433,7 @@ useEffect(() => {
   return (
     <div className="w-full max-w-7xl mx-auto space-y-8 animate-fade-in">
       {/* Header Controls */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between pb-4 border-b border-[#27272a] mb-8">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between pb-4 border-b border-border mb-8">
         {/* Left: Sub-navigation Tabs */}
         <div className="flex items-center gap-3">
           <Link
@@ -445,7 +445,7 @@ useEffect(() => {
           {devRole !== 'staff' && (
             <Link
               href="/tables/history"
-              className="px-4 py-2 rounded-xl text-sm font-semibold border transition-all duration-200 border-[#27272a] bg-[#09090b] text-[var(--text-secondary)] hover:border-[#3f3f46] hover:text-[var(--text-primary)]"
+              className="px-4 py-2 rounded-xl text-sm font-semibold border transition-all duration-200 border-border bg-background text-[var(--text-secondary)] hover:border-border hover:text-[var(--text-primary)]"
             >
               Session History
             </Link>
@@ -457,7 +457,7 @@ useEffect(() => {
           <button
             type="button"
             onClick={fetchTables}
-            className="btn btn-ghost bg-[#09090b] border-[#27272a] hover:bg-[#18181b] hover:text-[var(--accent)] flex items-center justify-center gap-2 rounded-xl font-bold cursor-pointer text-xs h-10 animate-fade-in"
+            className="btn btn-ghost bg-background border-border hover:bg-surface hover:text-[var(--accent)] flex items-center justify-center gap-2 rounded-xl font-bold cursor-pointer text-xs h-10 animate-fade-in"
           >
             <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
             <span>Refresh</span>
@@ -486,7 +486,7 @@ useEffect(() => {
                   setManageCapacity('');
                   setShowManageTableModal(true);
                 }}
-                className="btn btn-ghost flex items-center justify-center gap-2 rounded-xl bg-[#18181b] border-[#27272a] hover:border-[#3f3f46] hover:bg-[#27272a] text-[var(--text-primary)] font-bold cursor-pointer text-xs h-10"
+                className="btn btn-ghost flex items-center justify-center gap-2 rounded-xl bg-surface border-border hover:border-border hover:bg-surface-raised text-[var(--text-primary)] font-bold cursor-pointer text-xs h-10"
               >
                 Manage Tables
               </button>
@@ -497,7 +497,7 @@ useEffect(() => {
 
       {/* Error Alert */}
       {pageError && (
-        <div className="flex items-start gap-2 bg-[#2a1010] border border-[#5a2020] text-[#c45a5a] text-sm p-4 rounded-xl animate-fade-in mb-6">
+        <div className="flex items-start gap-2 bg-destructive-bg border border-destructive-border text-destructive text-sm p-4 rounded-xl animate-fade-in mb-6">
           <span className="shrink-0 mt-0.5">⚠️</span>
           <span>{pageError}</span>
         </div>
@@ -516,7 +516,7 @@ useEffect(() => {
           {tables.map((table) => (
             <div
               key={table.id}
-              className={`card bg-[#18181b] border border-[#27272a] p-6 rounded-2xl transition-all duration-300 relative overflow-hidden group shadow-lg ${
+              className={`card bg-surface border border-border p-6 rounded-2xl transition-all duration-300 relative overflow-hidden group shadow-lg ${
                 table.is_active
                   ? 'hover:border-[var(--accent)] cursor-pointer hover:-translate-y-1 hover:shadow-xl hover:shadow-[var(--accent)]/5'
                   : 'opacity-50 cursor-not-allowed'
@@ -719,11 +719,11 @@ useEffect(() => {
 
             {/* Session Info */}
             <div className="grid gap-4 sm:grid-cols-2 mb-6">
-              <div className="bg-[#09090b] border border-[#27272a] p-4 rounded-xl">
+              <div className="bg-background border border-border p-4 rounded-xl">
                 <p className="text-xs text-[var(--text-secondary)] mb-1 font-semibold uppercase">PIN</p>
                 <p className="font-mono font-bold text-lg text-[var(--accent)]">{selectedSession.pin}</p>
               </div>
-              <div className="bg-[#09090b] border border-[#27272a] p-4 rounded-xl">
+              <div className="bg-background border border-border p-4 rounded-xl">
                 <p className="text-xs text-[var(--text-secondary)] mb-1 font-semibold uppercase">Status</p>
                 {(() => {
                   const isOccupied = selectedSession.status === 'open' && selectedSession.connected_devices_count > 0;
@@ -736,11 +736,11 @@ useEffect(() => {
                   );
                 })()}
               </div>
-              <div className="bg-[#09090b] border border-[#27272a] p-4 rounded-xl">
+              <div className="bg-background border border-border p-4 rounded-xl">
                 <p className="text-xs text-[var(--text-secondary)] mb-1 font-semibold uppercase">Started At</p>
                 <p className="text-sm font-semibold">{formatDate(selectedSession.started_at)}</p>
               </div>
-              <div className="bg-[#09090b] border border-[#27272a] p-4 rounded-xl">
+              <div className="bg-background border border-border p-4 rounded-xl">
                 <p className="text-xs text-[var(--text-secondary)] mb-1 font-semibold uppercase">Connected Devices</p>
                 <p className="text-sm font-bold">{selectedSession.connected_devices_count}</p>
               </div>
@@ -829,7 +829,7 @@ useEffect(() => {
                             await showAlert(err.message || 'Failed to lock session');
                           }
                         }}
-                        className="btn btn-ghost hover:bg-red-950/40 text-[var(--destructive)] border border-red-950/60 rounded-lg text-[10px] font-bold px-2 py-1 h-7 cursor-pointer"
+                        className="btn btn-ghost hover:bg-red-950/40 text-[var(--destructive)] border border-destructive-border/60 rounded-lg text-[10px] font-bold px-2 py-1 h-7 cursor-pointer"
                       >
                         Lock Now
                       </button>
@@ -839,7 +839,7 @@ useEffect(() => {
                       type="button"
                       onClick={() => handleTemporarilyUnlock(selectedSession.id)}
                       disabled={isUnlocking}
-                      className="w-full btn btn-ghost border-[#27272a] hover:bg-[#18181b] flex items-center justify-center gap-2 rounded-xl text-xs font-bold h-10"
+                      className="w-full btn btn-ghost border-border hover:bg-surface flex items-center justify-center gap-2 rounded-xl text-xs font-bold h-10"
                     >
                       {isUnlocking ? <Loader2 size={14} className="animate-spin" /> : <Clock size={14} />}
                       <span>Unlock Session (30s)</span>
@@ -894,8 +894,8 @@ useEffect(() => {
       {/* Add New Table Modal */}
       {showAddTableModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="card bg-[#18181b] border border-[#27272a] w-full max-w-md p-8 rounded-2xl shadow-2xl relative">
-            <div className="flex items-center justify-between mb-6 pb-2 border-b border-[#27272a]">
+          <div className="card bg-surface border border-border w-full max-w-md p-8 rounded-2xl shadow-2xl relative">
+            <div className="flex items-center justify-between mb-6 pb-2 border-b border-border">
               <h3 className="text-lg font-bold text-[var(--text-primary)] uppercase tracking-wider">
                 {editingTable ? 'Edit Table Settings' : 'Add New Table'}
               </h3>
@@ -915,7 +915,7 @@ useEffect(() => {
                   placeholder="e.g., 5"
                   value={tableNumber}
                   onChange={(e) => setTableNumber(e.target.value)}
-                  className="w-full bg-[#09090b] border-[#27272a] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-xl h-10 px-3.5 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-all"
+                  className="w-full bg-background border-border focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-xl h-10 px-3.5 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-all"
                 />
               </div>
 
@@ -926,15 +926,15 @@ useEffect(() => {
                   placeholder="e.g., 4"
                   value={capacity}
                   onChange={(e) => setCapacity(e.target.value)}
-                  className="w-full bg-[#09090b] border-[#27272a] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-xl h-10 px-3.5 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-all"
+                  className="w-full bg-background border-border focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-xl h-10 px-3.5 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-all"
                 />
               </div>
 
-              <div className="flex gap-3 pt-4 border-t border-[#27272a] mt-4">
+              <div className="flex gap-3 pt-4 border-t border-border mt-4">
                 <button
                   type="button"
                   onClick={() => setShowAddTableModal(false)}
-                  className="btn btn-ghost bg-[#09090b] border-[#27272a] hover:bg-[#18181b] flex-1 rounded-xl font-bold cursor-pointer text-xs h-10"
+                  className="btn btn-ghost bg-background border-border hover:bg-surface flex-1 rounded-xl font-bold cursor-pointer text-xs h-10"
                 >
                   Cancel
                 </button>
@@ -954,8 +954,8 @@ useEffect(() => {
       {/* Confirmation Dialog */}
       {confirmAction && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="card bg-[#18181b] border border-[#27272a] w-full max-w-md p-8 rounded-2xl shadow-2xl text-center">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[#2a1f0a] border border-[#5a3a10] text-[var(--accent)] mb-4 animate-pulse">
+          <div className="card bg-surface border border-border w-full max-w-md p-8 rounded-2xl shadow-2xl text-center">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-warning-bg border border-warning-border text-[var(--accent)] mb-4 animate-pulse">
               <AlertCircle size={24} />
             </div>
             <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">Confirm Action</h3>
@@ -969,7 +969,7 @@ useEffect(() => {
               <button
                 type="button"
                 onClick={() => setConfirmAction(null)}
-                className="flex-1 btn btn-ghost bg-[#09090b] border-[#27272a] hover:bg-[#18181b] rounded-xl font-bold cursor-pointer text-xs h-10"
+                className="flex-1 btn btn-ghost bg-background border-border hover:bg-surface rounded-xl font-bold cursor-pointer text-xs h-10"
               >
                 Cancel
               </button>
@@ -993,8 +993,8 @@ useEffect(() => {
       {/* Manage Tables Modal */}
       {showManageTableModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="card bg-[#18181b] border border-[#27272a] w-full max-w-md p-8 rounded-2xl shadow-2xl relative">
-            <div className="flex items-center justify-between mb-6 pb-2 border-b border-[#27272a]">
+          <div className="card bg-surface border border-border w-full max-w-md p-8 rounded-2xl shadow-2xl relative">
+            <div className="flex items-center justify-between mb-6 pb-2 border-b border-border">
               <h2 className="text-lg font-bold text-[var(--text-primary)]">Manage Tables</h2>
               <button
                 type="button"
@@ -1047,7 +1047,7 @@ useEffect(() => {
                       value={manageTableNumber}
                       onChange={(e) => setManageTableNumber(e.target.value)}
                       placeholder="e.g., 10"
-                      className="w-full bg-[#09090b] border-[#27272a] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-xl h-10 px-3.5 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-all"
+                      className="w-full bg-background border-border focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-xl h-10 px-3.5 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-all"
                     />
                   </div>
 
@@ -1058,17 +1058,17 @@ useEffect(() => {
                       value={manageCapacity}
                       onChange={(e) => setManageCapacity(e.target.value)}
                       placeholder="e.g., 6"
-                      className="w-full bg-[#09090b] border-[#27272a] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-xl h-10 px-3.5 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-all"
+                      className="w-full bg-background border-border focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-xl h-10 px-3.5 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-all"
                     />
                   </div>
                 </>
               )}
 
-              <div className="flex flex-col gap-2.5 pt-4 border-t border-[#27272a] mt-4">
+              <div className="flex flex-col gap-2.5 pt-4 border-t border-border mt-4">
                 <div className="flex gap-3">
                   <button
                     onClick={() => setShowManageTableModal(false)}
-                    className="btn btn-ghost bg-[#09090b] border-[#27272a] hover:bg-[#18181b] flex-1 rounded-xl font-bold cursor-pointer text-xs h-10"
+                    className="btn btn-ghost bg-background border-border hover:bg-surface flex-1 rounded-xl font-bold cursor-pointer text-xs h-10"
                   >
                     Cancel
                   </button>
@@ -1087,8 +1087,8 @@ useEffect(() => {
                     onClick={() => handleToggleTableStatus(selectedTable)}
                     className={`btn text-xs font-bold rounded-xl flex items-center justify-center gap-2 cursor-pointer w-full h-10 transition-all ${
                       selectedTable.is_active
-                        ? 'border border-red-950 bg-[#2a1010] text-[#c45a5a] hover:bg-red-900'
-                        : 'border border-green-950 bg-[#0f2318] text-[#4a9b6a] hover:bg-green-900'
+                        ? 'border border-destructive-border bg-destructive-bg text-destructive hover:bg-red-900'
+                        : 'border border-green-950 bg-success-bg text-success hover:bg-green-900'
                     }`}
                   >
                     {selectedTable.is_active ? 'Deactivate Table' : 'Activate Table'}

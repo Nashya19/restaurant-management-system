@@ -166,7 +166,7 @@ export default function CustomDatePicker({ value, onChange, label, selectionMode
       {/* Date Input Box */}
       <div
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full bg-[#09090b] border border-[#27272a] hover:border-[#3f3f46] focus-within:border-[var(--accent)] rounded-xl flex items-center justify-between px-3 h-11 text-sm text-[var(--text-primary)] cursor-pointer outline-none transition-all select-none"
+        className="w-full bg-background border border-border hover:border-border focus-within:border-[var(--accent)] rounded-xl flex items-center justify-between px-3 h-11 text-sm text-[var(--text-primary)] cursor-pointer outline-none transition-all select-none"
       >
         <span className="font-mono">{label ? `${label} ${getDisplayValue()}` : (getDisplayValue() || 'Select Date')}</span>
         <Calendar size={16} className="text-[var(--text-secondary)]" />
@@ -174,13 +174,13 @@ export default function CustomDatePicker({ value, onChange, label, selectionMode
 
       {/* Calendar Dropdown Card */}
       {isOpen && (
-        <div className="absolute z-[999] left-0 mt-1.5 p-4 w-72 bg-[#18181b] border border-[#27272a] rounded-2xl shadow-2xl space-y-4 select-none">
+        <div className="absolute z-[999] left-0 mt-1.5 p-4 w-72 bg-surface border border-border rounded-2xl shadow-2xl space-y-4 select-none">
           {/* Header */}
           <div className="flex items-center justify-between">
             <button
               type="button"
               onClick={handlePrevMonth}
-              className="p-1.5 border border-[#27272a] hover:border-[#3f3f46] bg-[#09090b] rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all cursor-pointer"
+              className="p-1.5 border border-border hover:border-border bg-background rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all cursor-pointer"
             >
               <ChevronLeft size={14} />
             </button>
@@ -192,7 +192,7 @@ export default function CustomDatePicker({ value, onChange, label, selectionMode
             <button
               type="button"
               onClick={handleNextMonth}
-              className="p-1.5 border border-[#27272a] hover:border-[#3f3f46] bg-[#09090b] rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all cursor-pointer"
+              className="p-1.5 border border-border hover:border-border bg-background rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all cursor-pointer"
             >
               <ChevronRight size={14} />
             </button>
@@ -227,7 +227,7 @@ export default function CustomDatePicker({ value, onChange, label, selectionMode
                       ? 'bg-[var(--accent)] border-[var(--accent)] text-black font-bold shadow-md shadow-[var(--accent)]/15'
                       : today
                       ? 'bg-[#27272a]/40 border-[var(--accent)]/40 text-[var(--accent)]'
-                      : 'bg-transparent border-transparent text-[var(--text-primary)] hover:bg-[#27272a]/50 hover:border-[#27272a]'
+                      : 'bg-transparent border-transparent text-[var(--text-primary)] hover:bg-surface-raised/50 hover:border-border'
                   }`}
                 >
                   {day}
@@ -238,7 +238,7 @@ export default function CustomDatePicker({ value, onChange, label, selectionMode
 
           {/* OK Button for week selection */}
           {selectionMode === 'week' && (
-            <div className="flex justify-end pt-2 border-t border-[#27272a]/60">
+            <div className="flex justify-end pt-2 border-t border-border/60">
               <button
                 type="button"
                 onClick={(e) => {

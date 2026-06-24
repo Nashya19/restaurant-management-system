@@ -176,7 +176,7 @@ export default function UserDetailPage() {
       <div>
         <Link
           href="/users"
-          className="btn btn-ghost bg-[#09090b] border-[#27272a] hover:bg-[#18181b] hover:text-[var(--accent)] inline-flex items-center gap-2 font-bold px-4 py-2 rounded-xl cursor-pointer text-xs"
+          className="btn btn-ghost bg-background border-border hover:bg-surface hover:text-[var(--accent)] inline-flex items-center gap-2 font-bold px-4 py-2 rounded-xl cursor-pointer text-xs"
         >
           <ArrowLeft size={14} />
           <span>Back to Staff</span>
@@ -184,7 +184,7 @@ export default function UserDetailPage() {
       </div>
 
       {/* Page Header */}
-      <div className="pb-4 border-b border-[#27272a]">
+      <div className="pb-4 border-b border-border">
         <h1 className="text-display text-2xl font-bold tracking-tight text-[var(--text-primary)]">
           {isNewUser ? 'Create Staff Member' : 'Edit Staff Member'}
         </h1>
@@ -196,10 +196,10 @@ export default function UserDetailPage() {
       </div>
 
       {/* Main Form */}
-      <form onSubmit={handleFormSubmit} className="card bg-[#18181b] border border-[#27272a] p-8 rounded-2xl shadow-lg space-y-6">
+      <form onSubmit={handleFormSubmit} className="card bg-surface border border-border p-8 rounded-2xl shadow-lg space-y-6">
         {/* Submit Error */}
         {errors.submit && (
-          <div className="flex items-start gap-2 bg-[#2a1010] border border-[#5a2020] text-[#c45a5a] text-sm p-4 rounded-xl">
+          <div className="flex items-start gap-2 bg-destructive-bg border border-destructive-border text-destructive text-sm p-4 rounded-xl">
             <span className="shrink-0 mt-0.5">⚠️</span>
             <span>{errors.submit}</span>
           </div>
@@ -218,7 +218,7 @@ export default function UserDetailPage() {
               value={formData.email}
               onChange={handleChange}
               placeholder="staff@restaurant.com"
-              className="w-full bg-[#09090b] border-[#27272a] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-lg text-sm transition-all"
+              className="w-full bg-background border-border focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-lg text-sm transition-all"
               required
             />
             {errors.email && <p className="text-xs text-[var(--destructive)] mt-1 font-semibold">{errors.email}</p>}
@@ -237,7 +237,7 @@ export default function UserDetailPage() {
             value={formData.fullName}
             onChange={handleChange}
             placeholder="John Doe"
-            className="w-full bg-[#09090b] border-[#27272a] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-lg text-sm transition-all"
+            className="w-full bg-background border-border focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-lg text-sm transition-all"
             required
           />
           {errors.fullName && <p className="text-xs text-[var(--destructive)] mt-1 font-semibold">{errors.fullName}</p>}
@@ -256,7 +256,7 @@ export default function UserDetailPage() {
               value={formData.password}
               onChange={handleChange}
               placeholder="Min 8 chars, upper, lower, number"
-              className="w-full bg-[#09090b] border-[#27272a] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-lg text-sm transition-all"
+              className="w-full bg-background border-border focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-lg text-sm transition-all"
               required
             />
             {errors.password && <p className="text-xs text-[var(--destructive)] mt-1 font-semibold">{errors.password}</p>}
@@ -277,7 +277,7 @@ export default function UserDetailPage() {
               name="role"
               value={formData.role}
               onChange={handleChange}
-              className="w-full bg-[#09090b] border-[#27272a] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-lg text-sm h-10 px-3 outline-none transition-all"
+              className="w-full bg-background border-border focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-lg text-sm h-10 px-3 outline-none transition-all"
               required
             >
               <option value="staff">Staff</option>
@@ -302,13 +302,13 @@ export default function UserDetailPage() {
             value={formData.phone}
             onChange={handleChange}
             placeholder="e.g. +15551234567"
-            className="w-full bg-[#09090b] border-[#27272a] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-lg text-sm transition-all"
+            className="w-full bg-background border-border focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-lg text-sm transition-all"
           />
           {errors.phone && <p className="text-xs text-[var(--destructive)] mt-1 font-semibold">{errors.phone}</p>}
         </div>
 
         {/* Buttons */}
-        <div className="flex gap-4 pt-4 border-t border-[#27272a]">
+        <div className="flex gap-4 pt-4 border-t border-border">
           <button
             type="submit"
             disabled={formLoading}
@@ -323,7 +323,7 @@ export default function UserDetailPage() {
               'Save Changes'
             )}
           </button>
-          <Link href="/users" className="btn btn-ghost bg-[#09090b] border-[#27272a] hover:bg-[#18181b] flex-1 rounded-xl font-bold text-center">
+          <Link href="/users" className="btn btn-ghost bg-background border-border hover:bg-surface flex-1 rounded-xl font-bold text-center">
             Cancel
           </Link>
         </div>
@@ -331,7 +331,7 @@ export default function UserDetailPage() {
 
       {/* Password Reset Section (Edit only) */}
       {!isNewUser && (
-        <div className="card bg-[#18181b] border border-[#27272a] p-8 rounded-2xl shadow-lg">
+        <div className="card bg-surface border border-border p-8 rounded-2xl shadow-lg">
           <div className="flex items-start justify-between">
             <div>
               <h3 className="text-md font-bold text-[var(--text-primary)] mb-1 uppercase tracking-wider">Reset Password</h3>
@@ -341,16 +341,16 @@ export default function UserDetailPage() {
             </div>
             <button
               onClick={() => setShowResetForm(!showResetForm)}
-              className="btn btn-ghost bg-[#09090b] border-[#27272a] hover:bg-[#18181b] text-[var(--accent)] hover:text-[var(--accent)] p-2 rounded-xl cursor-pointer"
+              className="btn btn-ghost bg-background border-border hover:bg-surface text-[var(--accent)] hover:text-[var(--accent)] p-2 rounded-xl cursor-pointer"
             >
               <Key size={18} />
             </button>
           </div>
 
           {showResetForm && (
-            <form onSubmit={handlePasswordReset} className="space-y-4 pt-6 mt-6 border-t border-[#27272a] animate-fade-in">
+            <form onSubmit={handlePasswordReset} className="space-y-4 pt-6 mt-6 border-t border-border animate-fade-in">
               {resetError && (
-                <div className="flex items-start gap-2 bg-[#2a1010] border border-[#5a2020] text-[#c45a5a] text-sm p-4 rounded-xl">
+                <div className="flex items-start gap-2 bg-destructive-bg border border-destructive-border text-destructive text-sm p-4 rounded-xl">
                   <span className="shrink-0 mt-0.5">⚠️</span>
                   <span>{resetError}</span>
                 </div>
@@ -366,7 +366,7 @@ export default function UserDetailPage() {
                   value={resetPassword}
                   onChange={(e) => setResetPassword(e.target.value)}
                   placeholder="Min 8 chars, upper, lower, number"
-                  className="w-full bg-[#09090b] border-[#27272a] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-lg text-sm transition-all"
+                  className="w-full bg-background border-border focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-lg text-sm transition-all"
                   required
                 />
               </div>
@@ -381,12 +381,12 @@ export default function UserDetailPage() {
                   value={resetConfirm}
                   onChange={(e) => setResetConfirm(e.target.value)}
                   placeholder="Repeat password"
-                  className="w-full bg-[#09090b] border-[#27272a] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-lg text-sm transition-all"
+                  className="w-full bg-background border-border focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-lg text-sm transition-all"
                   required
                 />
               </div>
 
-              <div className="flex gap-4 pt-4 border-t border-[#27272a]">
+              <div className="flex gap-4 pt-4 border-t border-border">
                 <button
                   type="submit"
                   disabled={resetLoading}
@@ -404,7 +404,7 @@ export default function UserDetailPage() {
                 <button
                   type="button"
                   onClick={() => setShowResetForm(false)}
-                  className="btn btn-ghost bg-[#09090b] border-[#27272a] hover:bg-[#18181b] flex-1 rounded-xl font-bold cursor-pointer"
+                  className="btn btn-ghost bg-background border-border hover:bg-surface flex-1 rounded-xl font-bold cursor-pointer"
                 >
                   Cancel
                 </button>

@@ -66,7 +66,7 @@ export default function SwitchRequestModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="card w-full max-w-lg bg-[#18181b] border border-[#27272a] p-6 rounded-2xl shadow-2xl relative animate-scale-in">
+      <div className="card w-full max-w-lg bg-surface border border-border p-6 rounded-2xl shadow-2xl relative animate-scale-in">
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -77,20 +77,20 @@ export default function SwitchRequestModal({
 
         {mode === 'request' && colleagueShift && (
           <div className="space-y-4">
-            <div className="flex items-center gap-2.5 text-[var(--accent)] border-b border-[#27272a] pb-3 mb-2">
+            <div className="flex items-center gap-2.5 text-[var(--accent)] border-b border-border pb-3 mb-2">
               <ArrowLeftRight size={20} />
               <h3 className="text-heading text-lg font-bold text-[var(--text-primary)]">Request Shift Switch</h3>
             </div>
 
             {error && (
-              <div className="flex items-start gap-2 bg-[#2a1010] border border-[#5a2020] text-[#c45a5a] text-xs p-3.5 rounded-xl">
+              <div className="flex items-start gap-2 bg-destructive-bg border border-destructive-border text-destructive text-xs p-3.5 rounded-xl">
                 <AlertCircle size={14} className="shrink-0 mt-0.5" />
                 <span>{error}</span>
               </div>
             )}
 
             {/* Target Shift Details */}
-            <div className="bg-[#09090b] border border-[#27272a] p-4 rounded-xl space-y-1">
+            <div className="bg-background border border-border p-4 rounded-xl space-y-1">
               <span className="text-[10px] uppercase text-[var(--text-secondary)] font-bold tracking-wider">Target Shift to Switch</span>
               <div className="text-sm font-semibold text-[var(--text-primary)] mt-1">{colleagueShift.staffName}'s Shift</div>
               <div className="text-xs text-[var(--text-secondary)]">{formatStationAsLayer(colleagueShift.station)}</div>
@@ -100,7 +100,7 @@ export default function SwitchRequestModal({
             </div>
 
             {!isEligible ? (
-              <div className="flex items-start gap-2 bg-[#2a1010] border border-[#5a2020] text-[#c45a5a] text-xs p-4 rounded-xl">
+              <div className="flex items-start gap-2 bg-destructive-bg border border-destructive-border text-destructive text-xs p-4 rounded-xl">
                 <AlertCircle size={16} className="shrink-0 mt-0.5" />
                 <div>
                   <p className="font-bold">Switch Blocked</p>
@@ -122,7 +122,7 @@ export default function SwitchRequestModal({
                     <select
                       value={selectedUserShiftId}
                       onChange={(e) => setSelectedUserShiftId(e.target.value)}
-                      className="w-full bg-[#09090b] border border-[#27272a] focus:border-[var(--accent)] rounded-xl text-sm h-11 text-[var(--text-primary)] outline-none px-3"
+                      className="w-full bg-background border border-border focus:border-[var(--accent)] rounded-xl text-sm h-11 text-[var(--text-primary)] outline-none px-3"
                     >
                       <option value="">Select a shift...</option>
                       {userShifts.map((shift) => (
@@ -138,7 +138,7 @@ export default function SwitchRequestModal({
                   <button
                     type="button"
                     onClick={onClose}
-                    className="btn btn-ghost px-4 h-10 text-xs font-bold rounded-xl cursor-pointer border border-[#27272a] bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                    className="btn btn-ghost px-4 h-10 text-xs font-bold rounded-xl cursor-pointer border border-border bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                   >
                     Cancel
                   </button>
@@ -158,13 +158,13 @@ export default function SwitchRequestModal({
 
         {mode === 'review' && switchRequest && (
           <div className="space-y-4">
-            <div className="flex items-center gap-2.5 text-[var(--accent)] border-b border-[#27272a] pb-3 mb-2">
+            <div className="flex items-center gap-2.5 text-[var(--accent)] border-b border-border pb-3 mb-2">
               <ArrowLeftRight size={20} />
               <h3 className="text-heading text-lg font-bold text-[var(--text-primary)]">Review Switch Request</h3>
             </div>
 
             {error && (
-              <div className="flex items-start gap-2 bg-[#2a1010] border border-[#5a2020] text-[#c45a5a] text-xs p-3.5 rounded-xl">
+              <div className="flex items-start gap-2 bg-destructive-bg border border-destructive-border text-destructive text-xs p-3.5 rounded-xl">
                 <AlertCircle size={14} className="shrink-0 mt-0.5" />
                 <span>{error}</span>
               </div>
@@ -172,7 +172,7 @@ export default function SwitchRequestModal({
 
             <div className="grid grid-cols-2 gap-4">
               {/* Requester Shift Details */}
-              <div className="bg-[#09090b]/40 border border-[#27272a]/60 p-4 rounded-xl space-y-1">
+              <div className="bg-background/40 border border-border/60 p-4 rounded-xl space-y-1">
                 <span className="text-[10px] uppercase text-[var(--text-secondary)] font-bold tracking-wider">Requester</span>
                 <div className="text-sm font-semibold text-[var(--text-primary)] mt-1">
                   {switchRequest.requester?.full_name}
@@ -186,7 +186,7 @@ export default function SwitchRequestModal({
               </div>
 
               {/* Target Shift Details */}
-              <div className="bg-[#09090b]/40 border border-[#27272a]/60 p-4 rounded-xl space-y-1">
+              <div className="bg-background/40 border border-border/60 p-4 rounded-xl space-y-1">
                 <span className="text-[10px] uppercase text-[var(--text-secondary)] font-bold tracking-wider">Target Staff</span>
                 <div className="text-sm font-semibold text-[var(--text-primary)] mt-1">
                   {switchRequest.target?.full_name}
@@ -224,8 +224,8 @@ export default function SwitchRequestModal({
                 <span
                   className={`inline-block px-3 py-1 rounded text-xs font-bold uppercase ${
                     switchRequest.status === 'approved'
-                      ? 'bg-[#0f2318] text-[#4a9b6a] border border-[#2a5c3a]'
-                      : 'bg-[#2a1010] text-[#c45a5a] border border-[#5a2020]'
+                      ? 'bg-success-bg text-success border border-[#2a5c3a]'
+                      : 'bg-destructive-bg text-destructive border border-destructive-border'
                   }`}
                 >
                   Request {switchRequest.status.toUpperCase()}

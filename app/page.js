@@ -3,7 +3,7 @@ import { Utensils, HeartHandshake, LogIn, ChevronRight, Shield } from 'lucide-re
 
 export default function LandingPage() {
   return (
-    <div className="dark flex-1 relative flex flex-col items-center justify-center min-h-screen bg-[#09090b] text-[var(--text-primary)] overflow-hidden font-sans">
+    <div className="flex-1 relative flex flex-col items-center justify-center min-h-screen bg-background text-[var(--text-primary)] overflow-hidden font-sans">
       {/* Background Image with Cozy Warm Opacity and Sepia Overlay */}
       <div 
         className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-[0.15] scale-105 transition-transform duration-1000"
@@ -23,14 +23,14 @@ export default function LandingPage() {
       <div 
         className="absolute inset-0 z-0 pointer-events-none"
         style={{
-          background: 'radial-gradient(circle at center, rgba(9, 9, 11, 0.2) 0%, rgba(9, 9, 11, 0.98) 85%, #09090b 100%)'
+          background: 'radial-gradient(circle at center, rgba(var(--accent-rgb), 0.02) 0%, var(--background) 85%)'
         }}
       />
 
       {/* Main Content Wrapper */}
       <div className="relative z-10 w-full max-w-4xl px-6 py-16 flex flex-col items-center text-center animate-fade-in">
         {/* Brand Badge */}
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[#18181b] border border-[#27272a] text-[var(--accent)] mb-8 shadow-2xl transition-all duration-300 hover:border-[var(--accent)] hover:rotate-6">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-surface border border-border text-[var(--accent)] mb-8 shadow-2xl transition-all duration-300 hover:border-[var(--accent)] hover:rotate-6">
           <Utensils size={30} strokeWidth={1.8} aria-hidden="true" />
         </div>
 
@@ -50,7 +50,7 @@ export default function LandingPage() {
           {/* Public Surplus */}
           <Link 
             href="/surplus" 
-            className="glow-card card flex flex-col items-center justify-center p-8 bg-[#18181b] border border-[#27272a] text-center group cursor-pointer focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none"
+            className="glow-card card flex flex-col items-center justify-center p-8 bg-surface border border-border text-center group cursor-pointer focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none"
           >
             <div className="mb-4 text-[var(--text-secondary)] group-hover:text-[var(--accent)] group-hover:scale-110 transition-all duration-300">
               <HeartHandshake size={36} aria-hidden="true" />
@@ -67,7 +67,7 @@ export default function LandingPage() {
           {/* Secure Staff Portal */}
           <Link 
             href="/login" 
-            className="glow-card card flex flex-col items-center justify-center p-8 bg-[#18181b] border border-[#27272a] text-center group cursor-pointer focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none"
+            className="glow-card card flex flex-col items-center justify-center p-8 bg-surface border border-border text-center group cursor-pointer focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none"
           >
             <div className="mb-4 text-[var(--text-secondary)] group-hover:text-[var(--accent)] group-hover:scale-110 transition-all duration-300">
               <LogIn size={36} aria-hidden="true" />

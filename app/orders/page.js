@@ -302,7 +302,7 @@ export default function OrdersPage() {
   return (
     <div className="w-full max-w-7xl mx-auto space-y-6 animate-fade-in">
       {/* Header controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-4 border-b border-[#27272a] gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-4 border-b border-border gap-4">
         <div>
           <h1 className="text-display text-2xl font-bold tracking-tight text-[var(--text-primary)]">
             Order Management
@@ -313,7 +313,7 @@ export default function OrdersPage() {
         </div>
         <button
           onClick={handleManualRefresh}
-          className="btn btn-ghost bg-[#09090b] border-[#27272a] hover:bg-[#18181b] flex items-center justify-center gap-2 rounded-xl text-xs font-bold cursor-pointer h-10 px-4 self-start sm:self-auto"
+          className="btn btn-ghost bg-background border-border hover:bg-surface flex items-center justify-center gap-2 rounded-xl text-xs font-bold cursor-pointer h-10 px-4 self-start sm:self-auto"
         >
           <RefreshCw size={14} className={isLoadingTables ? 'animate-spin' : ''} />
           <span>Refresh</span>
@@ -321,7 +321,7 @@ export default function OrdersPage() {
       </div>
 
       {error && (
-        <div className="flex items-start gap-2 bg-[#2a1010] border border-[#5a2020] text-[#c45a5a] text-sm p-4 rounded-xl animate-fade-in">
+        <div className="flex items-start gap-2 bg-destructive-bg border border-destructive-border text-destructive text-sm p-4 rounded-xl animate-fade-in">
           <span className="shrink-0 mt-0.5">⚠️</span>
           <span>{error}</span>
         </div>
@@ -332,8 +332,8 @@ export default function OrdersPage() {
           <Loader2 size={36} className="animate-spin text-[var(--accent)]" />
         </div>
       ) : activeTables.length === 0 ? (
-        <div className="card p-12 border border-[#27272a] rounded-2xl text-center max-w-md mx-auto space-y-4">
-          <div className="inline-flex items-center justify-center p-4 bg-[#18181b] text-[var(--text-secondary)] rounded-2xl border border-[#27272a]">
+        <div className="card p-12 border border-border rounded-2xl text-center max-w-md mx-auto space-y-4">
+          <div className="inline-flex items-center justify-center p-4 bg-surface text-[var(--text-secondary)] rounded-2xl border border-border">
             <UtensilsCrossed size={32} />
           </div>
           <h3 className="text-md font-bold text-[var(--text-primary)]">No Active Tables</h3>
@@ -349,7 +349,7 @@ export default function OrdersPage() {
       ) : (
         <div className="space-y-6">
           {/* Chrome-like Tabs */}
-          <div className="flex border-b border-[#27272a] overflow-x-auto scrollbar-thin">
+          <div className="flex border-b border-border overflow-x-auto scrollbar-thin">
             {activeTables.map((table) => {
               const isActive = table.session_id === selectedSessionId;
               let dotColor = 'bg-gray-400';
@@ -365,8 +365,8 @@ export default function OrdersPage() {
                   onClick={() => setSelectedSessionId(table.session_id)}
                   className={`flex items-center gap-2.5 px-6 py-3 border-t-2 border-x text-sm font-semibold rounded-t-xl transition-all whitespace-nowrap cursor-pointer ${
                     isActive
-                      ? 'border-x-[#27272a] border-t-[var(--accent)] bg-[#18181b] text-[var(--text-primary)] shadow-sm'
-                      : 'border-x-transparent border-t-transparent bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[#18181b]/30'
+                      ? 'border-x-[#27272a] border-t-[var(--accent)] bg-surface text-[var(--text-primary)] shadow-sm'
+                      : 'border-x-transparent border-t-transparent bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-surface/30'
                   }`}
                 >
                   <span className={`w-2 h-2 rounded-full ${dotColor}`} />
@@ -392,13 +392,13 @@ export default function OrdersPage() {
               <div className="lg:col-span-2 space-y-6">
                 {/* Stats Grid */}
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="card bg-[#18181b] border border-[#27272a] p-5 rounded-2xl shadow-sm">
+                  <div className="card bg-surface border border-border p-5 rounded-2xl shadow-sm">
                     <p className="text-[10px] uppercase text-[var(--text-secondary)] font-bold tracking-wider mb-1">Session PIN</p>
                     <p className="font-sans font-bold text-lg text-[var(--accent)] flex items-center gap-1.5">
                       <Zap size={16} /> {sessionDetails.pin}
                     </p>
                   </div>
-                  <div className="card bg-[#18181b] border border-[#27272a] p-5 rounded-2xl shadow-sm">
+                  <div className="card bg-surface border border-border p-5 rounded-2xl shadow-sm">
                     <p className="text-[10px] uppercase text-[var(--text-secondary)] font-bold tracking-wider mb-1">Session Status</p>
                     <div className="flex items-center gap-2">
                       {(() => {
@@ -412,13 +412,13 @@ export default function OrdersPage() {
                       })()}
                     </div>
                   </div>
-                  <div className="card bg-[#18181b] border border-[#27272a] p-5 rounded-2xl shadow-sm">
+                  <div className="card bg-surface border border-border p-5 rounded-2xl shadow-sm">
                     <p className="text-[10px] uppercase text-[var(--text-secondary)] font-bold tracking-wider mb-1">Devices Connected</p>
                     <p className="text-md font-bold flex items-center gap-1.5 text-[var(--text-primary)]">
                       <Users size={16} /> {sessionDetails.connected_devices_count} device(s)
                     </p>
                   </div>
-                  <div className="card bg-[#18181b] border border-[#27272a] p-5 rounded-2xl shadow-sm">
+                  <div className="card bg-surface border border-border p-5 rounded-2xl shadow-sm">
                     <p className="text-[10px] uppercase text-[var(--text-secondary)] font-bold tracking-wider mb-1">Session Duration</p>
                     <p className="text-md font-bold flex items-center gap-1.5 text-[var(--text-primary)]">
                       <Clock size={16} />
@@ -436,8 +436,8 @@ export default function OrdersPage() {
                   {sessionDetails.orders && sessionDetails.orders.length > 0 ? (
                     <div className="space-y-3">
                       {sessionDetails.orders.map((order, idx) => (
-                        <div key={order.id} className="card bg-[#18181b] border border-[#27272a] p-5 rounded-2xl shadow-md">
-                          <div className="flex items-center justify-between pb-3 border-b border-[#27272a]/60 mb-3">
+                        <div key={order.id} className="card bg-surface border border-border p-5 rounded-2xl shadow-md">
+                          <div className="flex items-center justify-between pb-3 border-b border-border/60 mb-3">
                             <span className="text-xs font-bold text-[var(--text-primary)]">Order #{sessionDetails.orders.length - idx}</span>
                             {(() => {
                               let badgeColor = 'bg-gray-700 text-gray-200';
@@ -468,13 +468,13 @@ export default function OrdersPage() {
                             </div>
 
                             {order.estimated_wait_minutes && (
-                              <div className="flex justify-between items-center text-sm font-semibold pt-1 border-t border-[#27272a]/20">
+                              <div className="flex justify-between items-center text-sm font-semibold pt-1 border-t border-border/20">
                                 <span className="text-[var(--text-secondary)]">Est. Wait Time:</span>
                                 <span className="text-[var(--accent)] font-mono">{order.estimated_wait_minutes} mins</span>
                               </div>
                             )}
 
-                            <div className="flex justify-between items-center text-sm font-bold pt-2 border-t border-[#27272a]/40">
+                            <div className="flex justify-between items-center text-sm font-bold pt-2 border-t border-border/40">
                               <span className="text-[var(--text-secondary)]">Subtotal:</span>
                               <span className="text-[var(--accent)] font-mono">{formatCurrency(order.total_price)}</span>
                             </div>
@@ -483,7 +483,7 @@ export default function OrdersPage() {
                       ))}
                     </div>
                   ) : (
-                    <div className="card p-8 border border-[#27272a] rounded-2xl text-center">
+                    <div className="card p-8 border border-border rounded-2xl text-center">
                       <p className="text-xs text-[var(--text-secondary)] font-semibold">No orders placed during this session yet.</p>
                     </div>
                   )}
@@ -493,7 +493,7 @@ export default function OrdersPage() {
               {/* Right Column: Bill & Session Controls */}
               <div className="space-y-6">
                 {/* Total Running Bill */}
-                <div className="card bg-[#18181b] border border-[#27272a] p-6 rounded-2xl shadow-lg relative overflow-hidden">
+                <div className="card bg-surface border border-border p-6 rounded-2xl shadow-lg relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-24 h-24 bg-[var(--accent)] opacity-5 rounded-full blur-2xl pointer-events-none" />
                   <p className="text-[10px] uppercase text-[var(--text-secondary)] font-bold tracking-wider mb-1">Total Running Bill</p>
                   <p className="text-2xl font-bold font-mono text-[var(--accent)] flex items-center gap-1">
@@ -502,7 +502,7 @@ export default function OrdersPage() {
                 </div>
 
                 {/* Session Actions Panel */}
-                <div className="card bg-[#18181b] border border-[#27272a] p-6 rounded-2xl shadow-lg space-y-4">
+                <div className="card bg-surface border border-border p-6 rounded-2xl shadow-lg space-y-4">
                   <h3 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider">Session Controls</h3>
                   <div className="flex flex-col gap-2.5">
                     {(sessionDetails.status === 'open' || sessionDetails.status === 'locked') && (
@@ -535,7 +535,7 @@ export default function OrdersPage() {
                                   setError(err.message || 'Failed to lock session');
                                 }
                               }}
-                              className="btn btn-ghost hover:bg-red-950/40 text-[var(--destructive)] border border-red-950/60 rounded-lg text-[10px] font-bold px-2 py-1 h-7 cursor-pointer"
+                              className="btn btn-ghost hover:bg-red-950/40 text-[var(--destructive)] border border-destructive-border/60 rounded-lg text-[10px] font-bold px-2 py-1 h-7 cursor-pointer"
                             >
                               Lock Now
                             </button>
@@ -545,7 +545,7 @@ export default function OrdersPage() {
                             type="button"
                             onClick={() => handleTemporarilyUnlock(sessionDetails.id)}
                             disabled={isUnlocking}
-                            className="btn btn-ghost border-[#27272a] hover:bg-[#18181b] w-full flex items-center justify-center gap-2 rounded-xl h-11 font-bold cursor-pointer"
+                            className="btn btn-ghost border-border hover:bg-surface w-full flex items-center justify-center gap-2 rounded-xl h-11 font-bold cursor-pointer"
                           >
                             {isUnlocking ? <Loader2 size={14} className="animate-spin" /> : <Clock size={14} />}
                             <span>Unlock Session (30s)</span>
@@ -569,7 +569,7 @@ export default function OrdersPage() {
                       <button
                         onClick={() => setConfirmAction({ action: 'cancel', sessionId: sessionDetails.id })}
                         disabled={actionLoading}
-                        className="btn btn-ghost text-[var(--destructive)] w-full flex items-center justify-center gap-2 border border-red-950/60 bg-[#2a1010]/20 hover:bg-[#2a1010]/40 rounded-xl h-11 font-bold cursor-pointer mt-2"
+                        className="btn btn-ghost text-[var(--destructive)] w-full flex items-center justify-center gap-2 border border-destructive-border/60 bg-destructive-bg/20 hover:bg-destructive-bg/40 rounded-xl h-11 font-bold cursor-pointer mt-2"
                       >
                         <X size={15} />
                         <span>Emergency Cancel</span>
@@ -586,8 +586,8 @@ export default function OrdersPage() {
       {/* Confirmation Dialog */}
       {confirmAction && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="card bg-[#18181b] border border-[#27272a] w-full max-w-md p-8 rounded-2xl shadow-2xl text-center">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[#2a1f0a] border border-[#5a3a10] text-[var(--accent)] mb-4 animate-pulse">
+          <div className="card bg-surface border border-border w-full max-w-md p-8 rounded-2xl shadow-2xl text-center">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-warning-bg border border-warning-border text-[var(--accent)] mb-4 animate-pulse">
               <AlertCircle size={24} />
             </div>
             <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">Confirm Action</h3>
@@ -601,7 +601,7 @@ export default function OrdersPage() {
               <button
                 type="button"
                 onClick={() => setConfirmAction(null)}
-                className="flex-1 btn btn-ghost bg-[#09090b] border-[#27272a] hover:bg-[#18181b] rounded-xl font-bold cursor-pointer text-xs h-10"
+                className="flex-1 btn btn-ghost bg-background border-border hover:bg-surface rounded-xl font-bold cursor-pointer text-xs h-10"
               >
                 Cancel
               </button>

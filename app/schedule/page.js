@@ -643,26 +643,26 @@ export default function SchedulePage() {
     <div className="w-full max-w-7xl mx-auto space-y-6 animate-fade-in">
       {/* Messages */}
       {error && (
-        <div className="flex items-start gap-2 bg-[#2a1010] border border-[#5a2020] text-[#c45a5a] text-sm p-4 rounded-xl">
+        <div className="flex items-start gap-2 bg-destructive-bg border border-destructive-border text-destructive text-sm p-4 rounded-xl">
           <AlertCircle size={16} className="shrink-0 mt-0.5" />
           <span>{error}</span>
         </div>
       )}
 
       {successMsg && (
-        <div className="flex items-start gap-2 bg-[#0f2318] border border-[#2a5c3a] text-[#4a9b6a] text-sm p-4 rounded-xl">
+        <div className="flex items-start gap-2 bg-success-bg border border-[#2a5c3a] text-success text-sm p-4 rounded-xl">
           <CheckCircle size={16} className="shrink-0 mt-0.5" />
           <span>{successMsg}</span>
         </div>
       )}
 
       {/* Timetable Header Controls */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between pb-4 border-b border-[#27272a]">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between pb-4 border-b border-border">
         {/* Left: Date Range & Nav buttons */}
         <div className="flex items-center gap-3">
           <button
             onClick={handlePrevWeek}
-            className="p-2 border border-[#27272a] hover:border-[#3f3f46] bg-[#09090b] rounded-xl hover:text-[var(--accent)] transition-all cursor-pointer"
+            className="p-2 border border-border hover:border-border bg-background rounded-xl hover:text-[var(--accent)] transition-all cursor-pointer"
           >
             <ChevronLeft size={16} />
           </button>
@@ -681,13 +681,13 @@ export default function SchedulePage() {
           </div>
           <button
             onClick={handleNextWeek}
-            className="p-2 border border-[#27272a] hover:border-[#3f3f46] bg-[#09090b] rounded-xl hover:text-[var(--accent)] transition-all cursor-pointer"
+            className="p-2 border border-border hover:border-border bg-background rounded-xl hover:text-[var(--accent)] transition-all cursor-pointer"
           >
             <ChevronRight size={16} />
           </button>
           <button
             onClick={handleCurrentWeek}
-            className="btn btn-ghost text-xs bg-[#09090b] border-[#27272a] hover:bg-[#18181b] px-3.5 h-9 rounded-xl font-bold cursor-pointer"
+            className="btn btn-ghost text-xs bg-background border-border hover:bg-surface px-3.5 h-9 rounded-xl font-bold cursor-pointer"
           >
             Today
           </button>
@@ -696,7 +696,7 @@ export default function SchedulePage() {
         {/* Right: Settings and Admin Actions */}
         <div className="flex flex-wrap items-center gap-3">
           {isAdmin && (
-            <div className="flex items-center gap-2 bg-[#09090b]/40 border border-[#27272a]/60 px-3 py-1.5 rounded-xl">
+            <div className="flex items-center gap-2 bg-background/40 border border-border/60 px-3 py-1.5 rounded-xl">
               <label className="text-[10px] uppercase text-[var(--text-secondary)] font-bold tracking-wider">
                 Start Week:
               </label>
@@ -714,7 +714,7 @@ export default function SchedulePage() {
 
           <button
             onClick={fetchData}
-            className="btn btn-ghost bg-[#09090b] border-[#27272a] hover:bg-[#18181b] hover:text-[var(--accent)] flex items-center justify-center gap-2 rounded-xl font-bold cursor-pointer text-xs h-9"
+            className="btn btn-ghost bg-background border-border hover:bg-surface hover:text-[var(--accent)] flex items-center justify-center gap-2 rounded-xl font-bold cursor-pointer text-xs h-9"
           >
             <RefreshCw size={13} className={isLoading ? 'animate-spin' : ''} />
             <span>Refresh</span>
@@ -724,7 +724,7 @@ export default function SchedulePage() {
             <>
               <button
                 onClick={handleCarryover}
-                className="btn btn-ghost bg-[#18181b] border-[#27272a] hover:border-[var(--accent)] text-[var(--text-primary)] flex items-center justify-center gap-2 rounded-xl font-bold cursor-pointer text-xs h-9"
+                className="btn btn-ghost bg-surface border-border hover:border-[var(--accent)] text-[var(--text-primary)] flex items-center justify-center gap-2 rounded-xl font-bold cursor-pointer text-xs h-9"
               >
                 <Copy size={13} />
                 <span>Carryover Week</span>
@@ -732,7 +732,7 @@ export default function SchedulePage() {
 
               <button
                 onClick={() => setIsReplaceModalOpen(true)}
-                className="btn btn-ghost bg-[#18181b] border-[#27272a] hover:border-[var(--accent)] text-[var(--text-primary)] flex items-center justify-center gap-2 rounded-xl font-bold cursor-pointer text-xs h-9"
+                className="btn btn-ghost bg-surface border-border hover:border-[var(--accent)] text-[var(--text-primary)] flex items-center justify-center gap-2 rounded-xl font-bold cursor-pointer text-xs h-9"
               >
                 <UserMinus size={13} />
                 <span>Swap Employee</span>
@@ -743,7 +743,7 @@ export default function SchedulePage() {
                   setTagForm({ date: '', tagType: 'holiday', description: '' });
                   setIsTagModalOpen(true);
                 }}
-                className="btn btn-ghost bg-[#18181b] border-[#27272a] hover:border-[var(--accent)] text-[var(--text-primary)] flex items-center justify-center gap-2 rounded-xl font-bold cursor-pointer text-xs h-9"
+                className="btn btn-ghost bg-surface border-border hover:border-[var(--accent)] text-[var(--text-primary)] flex items-center justify-center gap-2 rounded-xl font-bold cursor-pointer text-xs h-9"
               >
                 <Tag size={13} />
                 <span>Tag Day</span>
@@ -755,7 +755,7 @@ export default function SchedulePage() {
       </div>
 
       {/* Filter and Search Toolbar */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between bg-[#18181b]/30 border border-[#27272a]/60 px-5 py-3.5 rounded-2xl">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between bg-surface/30 border border-border/60 px-5 py-3.5 rounded-2xl">
         {/* Search Staff */}
         <div className="flex-1 max-w-md flex items-center gap-3">
           <span className="text-xs uppercase text-[var(--text-secondary)] font-bold tracking-wider whitespace-nowrap">
@@ -775,13 +775,13 @@ export default function SchedulePage() {
           <span className="text-xs uppercase text-[var(--text-secondary)] font-bold tracking-wider">
             Filter Roles:
           </span>
-          <div className="flex items-center gap-1.5 bg-[#09090b] border border-[#27272a] p-1 rounded-xl">
+          <div className="flex items-center gap-1.5 bg-background border border-border p-1 rounded-xl">
             <button
               type="button"
               onClick={() => setShowAdmins(prev => !prev)}
               className={`text-xs font-bold px-3.5 py-1.5 rounded-lg transition-all cursor-pointer ${
                 showAdmins
-                  ? 'bg-[#0f2318] text-[#4a9b6a] border border-[#2a5c3a]/50'
+                  ? 'bg-success-bg text-success border border-[#2a5c3a]/50'
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-transparent'
               }`}
             >
@@ -832,19 +832,19 @@ export default function SchedulePage() {
       {currentUser && (
         <div className="grid gap-6 md:grid-cols-2">
           {/* Active Swap Requests */}
-          <div className="card bg-[#18181b] border border-[#27272a] p-5 rounded-2xl shadow-lg space-y-4">
-            <h3 className="text-heading text-sm font-bold uppercase tracking-wider text-[var(--text-primary)] border-b border-[#27272a] pb-2">
+          <div className="card bg-surface border border-border p-5 rounded-2xl shadow-lg space-y-4">
+            <h3 className="text-heading text-sm font-bold uppercase tracking-wider text-[var(--text-primary)] border-b border-border pb-2">
               Pending Swap Requests ({activeSwaps.length})
             </h3>
             {activeSwaps.length === 0 ? (
               <p className="text-xs text-[var(--text-secondary)] font-medium">No pending swap requests.</p>
             ) : (
-              <div className="divide-y divide-[#27272a] space-y-4">
+              <div className="divide-y divide-border space-y-4">
                 {activeSwaps.map((req) => {
                   const showResolve = isAdmin;
                   return (
                     <div key={req.id} className="pt-4 first:pt-0 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                      <div className="flex-1 bg-[#09090b]/80 border border-[#27272a]/60 rounded-xl p-4 space-y-3">
+                      <div className="flex-1 bg-background/80 border border-border/60 rounded-xl p-4 space-y-3">
                         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
                           {/* Requester Shift Info */}
                           <div className="space-y-1">
@@ -859,7 +859,7 @@ export default function SchedulePage() {
                           </div>
 
                           {/* Swap icon */}
-                          <div className="flex items-center justify-center shrink-0 w-8 h-8 rounded-full bg-[#18181b] border border-[#27272a] text-[var(--accent)] shadow-inner">
+                          <div className="flex items-center justify-center shrink-0 w-8 h-8 rounded-full bg-surface border border-border text-[var(--accent)] shadow-inner">
                             <RefreshCw size={12} className="animate-pulse" />
                           </div>
 
@@ -892,14 +892,14 @@ export default function SchedulePage() {
           </div>
 
           {/* Past Request History */}
-          <div className="card bg-[#18181b] border border-[#27272a] p-5 rounded-2xl shadow-lg space-y-4">
-            <h3 className="text-heading text-sm font-bold uppercase tracking-wider text-[var(--text-primary)] border-b border-[#27272a] pb-2">
+          <div className="card bg-surface border border-border p-5 rounded-2xl shadow-lg space-y-4">
+            <h3 className="text-heading text-sm font-bold uppercase tracking-wider text-[var(--text-primary)] border-b border-border pb-2">
               Swap Request History
             </h3>
             {pastSwaps.length === 0 ? (
               <p className="text-xs text-[var(--text-secondary)] font-medium">No history log.</p>
             ) : (
-              <div className="divide-y divide-[#27272a]/60 space-y-3.5 max-h-60 overflow-y-auto pr-1">
+              <div className="divide-y divide-border/60 space-y-3.5 max-h-60 overflow-y-auto pr-1">
                 {pastSwaps.map((req) => (
                   <div key={req.id} className="pt-3.5 first:pt-0 flex items-center justify-between gap-3">
                     <div className="space-y-1 flex-1">
@@ -921,8 +921,8 @@ export default function SchedulePage() {
                     <span
                       className={`px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase tracking-wider border shrink-0 ${
                         req.status === 'approved'
-                          ? 'bg-[#0f2318] border-[#2a5c3a]/60 text-[#4a9b6a]'
-                          : 'bg-[#2a1010] border-[#5a2020]/60 text-[#c45a5a]'
+                          ? 'bg-success-bg border-[#2a5c3a]/60 text-success'
+                          : 'bg-destructive-bg border-destructive-border/60 text-destructive'
                       }`}
                     >
                       {req.status}
@@ -942,7 +942,7 @@ export default function SchedulePage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <form
             onSubmit={handleAddShiftSubmit}
-            className="card w-full max-w-lg bg-[#18181b] border border-[#27272a] p-6 rounded-2xl shadow-2xl relative space-y-4"
+            className="card w-full max-w-lg bg-surface border border-border p-6 rounded-2xl shadow-2xl relative space-y-4"
           >
             <h3 className="text-heading text-lg font-bold text-[var(--text-primary)]">Create Shift</h3>
             <div className="space-y-3.5">
@@ -994,7 +994,7 @@ export default function SchedulePage() {
                           setShiftForm(prev => ({ ...prev, startHour: val }));
                         }
                       }}
-                      className="w-16 bg-[#09090b] border border-[#27272a] focus:border-[var(--accent)] rounded-xl text-sm h-11 text-[var(--text-primary)] outline-none px-2 text-center"
+                      className="w-16 bg-background border border-border focus:border-[var(--accent)] rounded-xl text-sm h-11 text-[var(--text-primary)] outline-none px-2 text-center"
                     />
                     <span className="flex items-center text-[var(--text-secondary)] font-bold">:</span>
                     <input
@@ -1015,7 +1015,7 @@ export default function SchedulePage() {
                           setShiftForm(prev => ({ ...prev, startMin: val }));
                         }
                       }}
-                      className="w-16 bg-[#09090b] border border-[#27272a] focus:border-[var(--accent)] rounded-xl text-sm h-11 text-[var(--text-primary)] outline-none px-2 text-center"
+                      className="w-16 bg-background border border-border focus:border-[var(--accent)] rounded-xl text-sm h-11 text-[var(--text-primary)] outline-none px-2 text-center"
                     />
                   </div>
                 </div>
@@ -1043,7 +1043,7 @@ export default function SchedulePage() {
                           setShiftForm(prev => ({ ...prev, endHour: val }));
                         }
                       }}
-                      className="w-16 bg-[#09090b] border border-[#27272a] focus:border-[var(--accent)] rounded-xl text-sm h-11 text-[var(--text-primary)] outline-none px-2 text-center"
+                      className="w-16 bg-background border border-border focus:border-[var(--accent)] rounded-xl text-sm h-11 text-[var(--text-primary)] outline-none px-2 text-center"
                     />
                     <span className="flex items-center text-[var(--text-secondary)] font-bold">:</span>
                     <input
@@ -1064,7 +1064,7 @@ export default function SchedulePage() {
                           setShiftForm(prev => ({ ...prev, endMin: val }));
                         }
                       }}
-                      className="w-16 bg-[#09090b] border border-[#27272a] focus:border-[var(--accent)] rounded-xl text-sm h-11 text-[var(--text-primary)] outline-none px-2 text-center"
+                      className="w-16 bg-background border border-border focus:border-[var(--accent)] rounded-xl text-sm h-11 text-[var(--text-primary)] outline-none px-2 text-center"
                     />
                   </div>
                 </div>
@@ -1075,7 +1075,7 @@ export default function SchedulePage() {
               <button
                 type="button"
                 onClick={() => setIsAddModalOpen(false)}
-                className="btn btn-ghost px-4 h-10 text-xs font-bold rounded-xl cursor-pointer border border-[#27272a] bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                className="btn btn-ghost px-4 h-10 text-xs font-bold rounded-xl cursor-pointer border border-border bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
               >
                 Cancel
               </button>
@@ -1111,7 +1111,7 @@ export default function SchedulePage() {
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
             <form
               onSubmit={handleEditShiftSubmit}
-              className="card w-full max-w-lg bg-[#18181b] border border-[#27272a] p-6 rounded-2xl shadow-2xl relative space-y-4"
+              className="card w-full max-w-lg bg-surface border border-border p-6 rounded-2xl shadow-2xl relative space-y-4"
             >
               <h3 className="text-heading text-lg font-bold text-[var(--text-primary)]">Edit Shift</h3>
               <div className="space-y-3.5">
@@ -1135,7 +1135,7 @@ export default function SchedulePage() {
                     <select
                       value={shiftForm.station}
                       onChange={(e) => setShiftForm({ ...shiftForm, station: e.target.value })}
-                      className="w-full bg-[#09090b] border border-[#27272a] focus:border-[var(--accent)] rounded-xl text-sm h-10 text-[var(--text-primary)] outline-none px-3"
+                      className="w-full bg-background border border-border focus:border-[var(--accent)] rounded-xl text-sm h-10 text-[var(--text-primary)] outline-none px-3"
                     >
                       {Array.from({ length: maxLayerAllowed + 1 }, (_, i) => (
                         <option key={i} value={String(i)}>
@@ -1181,7 +1181,7 @@ export default function SchedulePage() {
                             setShiftForm(prev => ({ ...prev, startHour: val }));
                           }
                         }}
-                        className="w-16 bg-[#09090b] border border-[#27272a] focus:border-[var(--accent)] rounded-xl text-sm h-11 text-[var(--text-primary)] outline-none px-2 text-center"
+                        className="w-16 bg-background border border-border focus:border-[var(--accent)] rounded-xl text-sm h-11 text-[var(--text-primary)] outline-none px-2 text-center"
                       />
                       <span className="flex items-center text-[var(--text-secondary)] font-bold">:</span>
                       <input
@@ -1202,7 +1202,7 @@ export default function SchedulePage() {
                             setShiftForm(prev => ({ ...prev, startMin: val }));
                           }
                         }}
-                        className="w-16 bg-[#09090b] border border-[#27272a] focus:border-[var(--accent)] rounded-xl text-sm h-11 text-[var(--text-primary)] outline-none px-2 text-center"
+                        className="w-16 bg-background border border-border focus:border-[var(--accent)] rounded-xl text-sm h-11 text-[var(--text-primary)] outline-none px-2 text-center"
                       />
                     </div>
                   </div>
@@ -1230,7 +1230,7 @@ export default function SchedulePage() {
                             setShiftForm(prev => ({ ...prev, endHour: val }));
                           }
                         }}
-                        className="w-16 bg-[#09090b] border border-[#27272a] focus:border-[var(--accent)] rounded-xl text-sm h-11 text-[var(--text-primary)] outline-none px-2 text-center"
+                        className="w-16 bg-background border border-border focus:border-[var(--accent)] rounded-xl text-sm h-11 text-[var(--text-primary)] outline-none px-2 text-center"
                       />
                       <span className="flex items-center text-[var(--text-secondary)] font-bold">:</span>
                       <input
@@ -1251,7 +1251,7 @@ export default function SchedulePage() {
                             setShiftForm(prev => ({ ...prev, endMin: val }));
                           }
                         }}
-                        className="w-16 bg-[#09090b] border border-[#27272a] focus:border-[var(--accent)] rounded-xl text-sm h-11 text-[var(--text-primary)] outline-none px-2 text-center"
+                        className="w-16 bg-background border border-border focus:border-[var(--accent)] rounded-xl text-sm h-11 text-[var(--text-primary)] outline-none px-2 text-center"
                       />
                     </div>
                   </div>
@@ -1271,7 +1271,7 @@ export default function SchedulePage() {
                   <button
                     type="button"
                     onClick={() => setIsEditModalOpen(false)}
-                    className="btn btn-ghost px-4 h-10 text-xs font-bold rounded-xl cursor-pointer border border-[#27272a] bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                    className="btn btn-ghost px-4 h-10 text-xs font-bold rounded-xl cursor-pointer border border-border bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                   >
                     Cancel
                   </button>
@@ -1295,7 +1295,7 @@ export default function SchedulePage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <form
             onSubmit={handleTagSubmit}
-            className="card w-full max-w-md bg-[#18181b] border border-[#27272a] p-6 rounded-2xl shadow-2xl relative space-y-4"
+            className="card w-full max-w-md bg-surface border border-border p-6 rounded-2xl shadow-2xl relative space-y-4"
           >
             <h3 className="text-heading text-lg font-bold text-[var(--text-primary)] flex items-center gap-2">
               <Tag size={18} className="text-[var(--accent)]" />
@@ -1320,7 +1320,7 @@ export default function SchedulePage() {
                 <select
                   value={tagForm.tagType}
                   onChange={(e) => setTagForm({ ...tagForm, tagType: e.target.value })}
-                  className="w-full bg-[#09090b] border border-[#27272a] focus:border-[var(--accent)] rounded-xl text-sm h-10 text-[var(--text-primary)] outline-none px-3"
+                  className="w-full bg-background border border-border focus:border-[var(--accent)] rounded-xl text-sm h-10 text-[var(--text-primary)] outline-none px-3"
                 >
                   <option value="holiday">Holiday (Full Day Off)</option>
                   <option value="end_early">End Early</option>
@@ -1337,7 +1337,7 @@ export default function SchedulePage() {
                   placeholder="e.g. Independence Day, Staff Outing"
                   value={tagForm.description}
                   onChange={(e) => setTagForm({ ...tagForm, description: e.target.value })}
-                  className="w-full bg-[#09090b] border border-[#27272a] focus:border-[var(--accent)] rounded-xl text-sm h-10 text-[var(--text-primary)] outline-none px-3"
+                  className="w-full bg-background border border-border focus:border-[var(--accent)] rounded-xl text-sm h-10 text-[var(--text-primary)] outline-none px-3"
                   required
                 />
               </div>
@@ -1366,7 +1366,7 @@ export default function SchedulePage() {
                           setTagStartHour(val);
                         }
                       }}
-                      className="w-16 bg-[#09090b] border border-[#27272a] focus:border-[var(--accent)] rounded-xl text-sm h-10 text-[var(--text-primary)] outline-none px-2 text-center font-mono"
+                      className="w-16 bg-background border border-border focus:border-[var(--accent)] rounded-xl text-sm h-10 text-[var(--text-primary)] outline-none px-2 text-center font-mono"
                     />
                     <span className="flex items-center text-[var(--text-secondary)] font-bold">:</span>
                     <input
@@ -1387,7 +1387,7 @@ export default function SchedulePage() {
                           setTagStartMin(val);
                         }
                       }}
-                      className="w-16 bg-[#09090b] border border-[#27272a] focus:border-[var(--accent)] rounded-xl text-sm h-10 text-[var(--text-primary)] outline-none px-2 text-center font-mono"
+                      className="w-16 bg-background border border-border focus:border-[var(--accent)] rounded-xl text-sm h-10 text-[var(--text-primary)] outline-none px-2 text-center font-mono"
                     />
                   </div>
                 </div>
@@ -1417,7 +1417,7 @@ export default function SchedulePage() {
                           setTagEndHour(val);
                         }
                       }}
-                      className="w-16 bg-[#09090b] border border-[#27272a] focus:border-[var(--accent)] rounded-xl text-sm h-10 text-[var(--text-primary)] outline-none px-2 text-center font-mono"
+                      className="w-16 bg-background border border-border focus:border-[var(--accent)] rounded-xl text-sm h-10 text-[var(--text-primary)] outline-none px-2 text-center font-mono"
                     />
                     <span className="flex items-center text-[var(--text-secondary)] font-bold">:</span>
                     <input
@@ -1438,7 +1438,7 @@ export default function SchedulePage() {
                           setTagEndMin(val);
                         }
                       }}
-                      className="w-16 bg-[#09090b] border border-[#27272a] focus:border-[var(--accent)] rounded-xl text-sm h-10 text-[var(--text-primary)] outline-none px-2 text-center font-mono"
+                      className="w-16 bg-background border border-border focus:border-[var(--accent)] rounded-xl text-sm h-10 text-[var(--text-primary)] outline-none px-2 text-center font-mono"
                     />
                   </div>
                 </div>
@@ -1447,7 +1447,7 @@ export default function SchedulePage() {
 
             {/* List existing day tags in this week to delete them */}
             {dayTags.length > 0 && (
-              <div className="space-y-2 pt-2 border-t border-[#27272a]">
+              <div className="space-y-2 pt-2 border-t border-border">
                 <label className="text-[10px] uppercase text-[var(--text-secondary)] font-bold tracking-wider block">
                   Current tags in this view:
                 </label>
@@ -1477,7 +1477,7 @@ export default function SchedulePage() {
                       tagTypeLabel = tag.tag_type === 'holiday' ? 'Holiday' : tag.tag_type === 'end_early' ? 'Ends Early' : 'Opens Late';
                     }
                     return (
-                      <div key={tag.id} className="flex items-center justify-between text-xs py-1 px-2 bg-[#09090b] border border-[#27272a] rounded-lg">
+                      <div key={tag.id} className="flex items-center justify-between text-xs py-1 px-2 bg-background border border-border rounded-lg">
                         <span className="truncate">
                           <span className="font-semibold text-[var(--text-secondary)] font-mono">{tag.date}</span>
                           <span className="text-[var(--text-primary)] ml-2">{tagTypeLabel}: {cleanDesc}{timesText}</span>
@@ -1485,7 +1485,7 @@ export default function SchedulePage() {
                         <button
                           type="button"
                           onClick={() => handleRemoveTag(tag.id)}
-                          className="text-[#c45a5a] hover:text-red-400 font-bold"
+                          className="text-destructive hover:text-red-400 font-bold"
                         >
                           Remove
                         </button>
@@ -1500,7 +1500,7 @@ export default function SchedulePage() {
               <button
                 type="button"
                 onClick={() => setIsTagModalOpen(false)}
-                className="btn btn-ghost px-4 h-10 text-xs font-bold rounded-xl cursor-pointer border border-[#27272a] bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                className="btn btn-ghost px-4 h-10 text-xs font-bold rounded-xl cursor-pointer border border-border bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
               >
                 Cancel
               </button>
@@ -1522,7 +1522,7 @@ export default function SchedulePage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <form
             onSubmit={handleReplaceEmployee}
-            className="card w-full max-w-md bg-[#18181b] border border-[#27272a] p-6 rounded-2xl shadow-2xl relative space-y-4"
+            className="card w-full max-w-md bg-surface border border-border p-6 rounded-2xl shadow-2xl relative space-y-4"
           >
             <h3 className="text-heading text-lg font-bold text-[var(--text-primary)] flex items-center gap-2">
               <UserMinus size={18} className="text-[var(--accent)]" />
@@ -1537,7 +1537,7 @@ export default function SchedulePage() {
                 <select
                   value={replaceForm.oldEmployeeId}
                   onChange={(e) => setReplaceForm({ ...replaceForm, oldEmployeeId: e.target.value })}
-                  className="w-full bg-[#09090b] border border-[#27272a] focus:border-[var(--accent)] rounded-xl text-sm h-10 text-[var(--text-primary)] outline-none px-3"
+                  className="w-full bg-background border border-border focus:border-[var(--accent)] rounded-xl text-sm h-10 text-[var(--text-primary)] outline-none px-3"
                   required
                 >
                   <option value="">Select original employee...</option>
@@ -1556,7 +1556,7 @@ export default function SchedulePage() {
                 <select
                   value={replaceForm.newEmployeeId}
                   onChange={(e) => setReplaceForm({ ...replaceForm, newEmployeeId: e.target.value })}
-                  className="w-full bg-[#09090b] border border-[#27272a] focus:border-[var(--accent)] rounded-xl text-sm h-10 text-[var(--text-primary)] outline-none px-3"
+                  className="w-full bg-background border border-border focus:border-[var(--accent)] rounded-xl text-sm h-10 text-[var(--text-primary)] outline-none px-3"
                   required
                 >
                   <option value="">Select inheriting employee...</option>
@@ -1583,7 +1583,7 @@ export default function SchedulePage() {
               <button
                 type="button"
                 onClick={() => setIsReplaceModalOpen(false)}
-                className="btn btn-ghost px-4 h-10 text-xs font-bold rounded-xl cursor-pointer border border-[#27272a] bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                className="btn btn-ghost px-4 h-10 text-xs font-bold rounded-xl cursor-pointer border border-border bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
               >
                 Cancel
               </button>

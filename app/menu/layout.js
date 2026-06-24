@@ -29,7 +29,7 @@ export default function MenuLayout({ children }) {
 
   return (
     <AdminGuard>
-      <div className="dark min-h-screen bg-[var(--background)] text-[var(--text-primary)] flex flex-col md:flex-row">
+      <div className="min-h-screen bg-[var(--background)] text-[var(--text-primary)] flex flex-col md:flex-row">
         {/* Main Admin Sidebar */}
         <AdminNavBar title="Menu Management" subtitle="Create, update, and organize menu items with ease." />
 
@@ -37,13 +37,13 @@ export default function MenuLayout({ children }) {
         <main className="flex-1 flex flex-col p-6 md:p-10 md:overflow-y-auto">
           {/* Sub Navigation Bar on Top */}
           {devRole === 'admin' && (
-            <div className="flex items-center gap-3 border-b border-[#27272a] pb-4 mb-8">
+            <div className="flex items-center gap-3 border-b border-border pb-4 mb-8">
               <Link
                 href="/menu"
                 className={`px-4 py-2 rounded-xl text-sm font-semibold border transition-all duration-200 ${
                   isMenuItemsActive
                     ? 'border-[var(--accent)] bg-[var(--surface-raised)] text-[var(--accent)]'
-                    : 'border-[#27272a] bg-[#09090b] text-[var(--text-secondary)] hover:border-[#3f3f46] hover:text-[var(--text-primary)]'
+                    : 'border-border bg-background text-[var(--text-secondary)] hover:border-border hover:text-[var(--text-primary)]'
                 }`}
               >
                 Menu Items
@@ -53,7 +53,7 @@ export default function MenuLayout({ children }) {
                 className={`px-4 py-2 rounded-xl text-sm font-semibold border transition-all duration-200 ${
                   isCategoriesActive
                     ? 'border-[var(--accent)] bg-[var(--surface-raised)] text-[var(--accent)]'
-                    : 'border-[#27272a] bg-[#09090b] text-[var(--text-secondary)] hover:border-[#3f3f46] hover:text-[var(--text-primary)]'
+                    : 'border-border bg-background text-[var(--text-secondary)] hover:border-border hover:text-[var(--text-primary)]'
                 }`}
               >
                 Categories

@@ -7,8 +7,8 @@
   padding-right: 14px !important;
   height: 46px !important;
   border-radius: 12px !important;
-  background-color: #09090b !important;
-  border: 1px solid #27272a !important;
+  background-color: var(--surface-raised) !important;
+  border: 1px solid var(--border) !important;
   color: var(--text-primary) !important;
   outline: none !important;
   transition: all 0.2s ease !important;
@@ -23,7 +23,7 @@
 /* Timeline grid row scrollbar customization */
 .timeline-track {
   scrollbar-width: thin;
-  scrollbar-color: #27272a transparent;
+  scrollbar-color: var(--border) transparent;
 }
 
 .timeline-track::-webkit-scrollbar {
@@ -35,7 +35,7 @@
 }
 
 .timeline-track::-webkit-scrollbar-thumb {
-  background: #27272a;
+  background: var(--border);
   border-radius: 9999px;
   border: 2px solid transparent;
   background-clip: padding-box;
@@ -73,13 +73,13 @@
 .blocked-track-overlay {
   background: repeating-linear-gradient(
     45deg,
-    rgba(212, 134, 42, 0.03),
-    rgba(212, 134, 42, 0.03) 10px,
-    rgba(212, 134, 42, 0.07) 10px,
-    rgba(212, 134, 42, 0.07) 20px
+    var(--warning-bg),
+    var(--warning-bg) 10px,
+    rgba(var(--accent-rgb), 0.05) 10px,
+    rgba(var(--accent-rgb), 0.05) 20px
   );
-  border-left: 1px dashed rgba(212, 134, 42, 0.25);
-  border-right: 1px dashed rgba(212, 134, 42, 0.25);
+  border-left: 1px dashed var(--warning-border);
+  border-right: 1px dashed var(--warning-border);
   backdrop-filter: blur(0.5px);
   transition: all 0.2s ease;
 }
@@ -87,9 +87,9 @@
 .blocked-track-overlay:hover {
   background: repeating-linear-gradient(
     45deg,
-    rgba(212, 134, 42, 0.05),
-    rgba(212, 134, 42, 0.05) 10px,
-    rgba(212, 134, 42, 0.09) 10px,
-    rgba(212, 134, 42, 0.09) 20px
+    var(--warning-bg),
+    var(--warning-bg) 10px,
+    rgba(var(--accent-rgb), 0.09) 10px,
+    rgba(var(--accent-rgb), 0.09) 20px
   );
 }

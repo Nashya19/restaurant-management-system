@@ -265,7 +265,7 @@ export default function CustomerOrderPage() {
   // --- Render states ---
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#09090b]">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--accent)]"></div>
           <p className="mt-4 text-[var(--text-secondary)] font-medium">Loading orders…</p>
@@ -276,9 +276,9 @@ export default function CustomerOrderPage() {
 
   if (accessDenied) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-[#09090b]">
-        <div className="card max-w-md w-full bg-[#18181b] border border-red-950 bg-[#2a1010]/10 p-8 rounded-2xl shadow-xl text-center space-y-4">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[#2a1010] text-[#c45a5a] text-xl">
+      <div className="min-h-screen flex items-center justify-center p-6 bg-background">
+        <div className="card max-w-md w-full bg-surface border border-destructive-border bg-destructive-bg/10 p-8 rounded-2xl shadow-xl text-center space-y-4">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-destructive-bg text-destructive text-xl">
             <ShieldAlert size={24} />
           </div>
           <h2 className="text-lg font-bold text-[var(--text-primary)]">Access Denied</h2>
@@ -295,8 +295,8 @@ export default function CustomerOrderPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-[#09090b]">
-        <div className="card max-w-md w-full bg-[#18181b] border border-[#27272a] p-8 rounded-2xl shadow-xl text-center space-y-4">
+      <div className="min-h-screen flex items-center justify-center p-6 bg-background">
+        <div className="card max-w-md w-full bg-surface border border-border p-8 rounded-2xl shadow-xl text-center space-y-4">
           <span className="text-3xl">⚠️</span>
           <h2 className="text-lg font-bold text-[var(--text-primary)]">Error</h2>
           <p className="text-sm text-[var(--text-secondary)] font-semibold">{error}</p>
@@ -310,16 +310,16 @@ export default function CustomerOrderPage() {
   const cartTotal = cartItems.reduce((sum, ci) => sum + (ci.menu_items?.price || 0) * ci.quantity, 0);
 
   return (
-    <div className="dark min-h-screen bg-[var(--background)] text-[var(--text-primary)] flex flex-col md:flex-row">
+    <div className="min-h-screen bg-[var(--background)] text-[var(--text-primary)] flex flex-col md:flex-row">
       <AdminNavBar title="Order View" subtitle={`Table ${tableNumber} active session`} />
 
       <main className="flex-1 p-6 md:p-10 md:overflow-y-auto space-y-8 max-w-5xl mx-auto w-full">
 
         {/* Header */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pb-4 border-b border-[#27272a]">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pb-4 border-b border-border">
           <div>
             <div className="flex items-center gap-2">
-              <Link href="/menu" className="p-1.5 hover:bg-[#18181b] border border-transparent hover:border-[#27272a] rounded-lg transition-all text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+              <Link href="/menu" className="p-1.5 hover:bg-surface border border-transparent hover:border-border rounded-lg transition-all text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
                 <ArrowLeft size={16} />
               </Link>
               <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">Table {tableNumber} Orders</h1>
@@ -330,7 +330,7 @@ export default function CustomerOrderPage() {
           </div>
           <button
             onClick={() => { loadSession(devRole); loadCart(localStorage.getItem('sessionId')); }}
-            className="btn btn-ghost bg-[#09090b] border-[#27272a] hover:bg-[#18181b] flex items-center justify-center gap-2 rounded-xl text-xs font-bold cursor-pointer h-10 px-4"
+            className="btn btn-ghost bg-background border-border hover:bg-surface flex items-center justify-center gap-2 rounded-xl text-xs font-bold cursor-pointer h-10 px-4"
           >
             <RefreshCw size={14} /><span>Refresh</span>
           </button>
@@ -365,7 +365,7 @@ export default function CustomerOrderPage() {
 
         {/* ─── SHARED CART SECTION ─── */}
         {['open', 'locked'].includes(session.status) && (
-          <div className="card bg-[#18181b] border border-[#27272a] p-6 rounded-2xl shadow-xl space-y-4">
+          <div className="card bg-surface border border-border p-6 rounded-2xl shadow-xl space-y-4">
             {/* Header */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -379,14 +379,14 @@ export default function CustomerOrderPage() {
 
             {/* Cart error */}
             {cartError && (
-              <div className="flex items-center gap-2 text-[#c45a5a] text-xs font-semibold p-3 bg-[#2a1010] rounded-lg border border-[#5a2020]/50">
+              <div className="flex items-center gap-2 text-destructive text-xs font-semibold p-3 bg-destructive-bg rounded-lg border border-destructive-border/50">
                 <span className="shrink-0">⚠️</span><span>{cartError}</span>
               </div>
             )}
 
             {/* Order placed success */}
             {orderPlacedMsg && (
-              <div className="flex items-center gap-2 text-[#4a9b6a] text-xs font-semibold p-3 bg-[#0f2318] rounded-lg border border-[#205a30]/50">
+              <div className="flex items-center gap-2 text-success text-xs font-semibold p-3 bg-success-bg rounded-lg border border-[#205a30]/50">
                 <CheckCircle2 size={14} className="shrink-0" /><span>{orderPlacedMsg}</span>
               </div>
             )}
@@ -399,7 +399,7 @@ export default function CustomerOrderPage() {
               </div>
             ) : cartItems.length === 0 ? (
               <div className="text-center py-8 space-y-3">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-[#09090b] border border-[#27272a] text-[var(--text-secondary)]">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-background border border-border text-[var(--text-secondary)]">
                   <ShoppingCart size={22} />
                 </div>
                 <div>
@@ -408,7 +408,7 @@ export default function CustomerOrderPage() {
                 </div>
                 <Link
                   href="/menu"
-                  className="inline-block btn bg-[#09090b] border border-[#27272a] hover:bg-[#18181b] text-xs px-5 py-2 rounded-xl font-bold text-[var(--text-primary)]"
+                  className="inline-block btn bg-background border border-border hover:bg-surface text-xs px-5 py-2 rounded-xl font-bold text-[var(--text-primary)]"
                 >
                   Browse Menu →
                 </Link>
@@ -433,7 +433,7 @@ export default function CustomerOrderPage() {
                       <div className="flex items-center gap-1.5 shrink-0">
                         <button
                           onClick={() => updateCartItemQty(ci.menu_item_id, ci.quantity - 1)}
-                          className="w-7 h-7 rounded-lg bg-[#09090b] hover:bg-[#27272a] border border-[#27272a] flex items-center justify-center text-[var(--text-primary)] transition-all cursor-pointer"
+                          className="w-7 h-7 rounded-lg bg-background hover:bg-surface-raised border border-border flex items-center justify-center text-[var(--text-primary)] transition-all cursor-pointer"
                           title={ci.quantity === 1 ? 'Remove item' : 'Decrease quantity'}
                         >
                           {ci.quantity === 1 ? <Trash2 size={11} className="text-red-400" /> : <Minus size={11} />}
@@ -443,7 +443,7 @@ export default function CustomerOrderPage() {
                         </span>
                         <button
                           onClick={() => updateCartItemQty(ci.menu_item_id, ci.quantity + 1)}
-                          className="w-7 h-7 rounded-lg bg-[#09090b] hover:bg-[#27272a] border border-[#27272a] flex items-center justify-center text-[var(--text-primary)] transition-all cursor-pointer"
+                          className="w-7 h-7 rounded-lg bg-background hover:bg-surface-raised border border-border flex items-center justify-center text-[var(--text-primary)] transition-all cursor-pointer"
                         >
                           <Plus size={11} />
                         </button>
@@ -458,7 +458,7 @@ export default function CustomerOrderPage() {
                 </div>
 
                 {/* Divider + Cart total */}
-                <div className="flex justify-between items-center pt-3 border-t border-[#27272a]/60">
+                <div className="flex justify-between items-center pt-3 border-t border-border/60">
                   <span className="text-sm font-semibold text-[var(--text-secondary)]">
                     Cart Total <span className="text-[var(--text-muted)] font-normal">({cartItems.length} item type{cartItems.length !== 1 ? 's' : ''})</span>
                   </span>
@@ -494,8 +494,8 @@ export default function CustomerOrderPage() {
           {session.orders && session.orders.length > 0 ? (
             <div className="space-y-4">
               {session.orders.map((order, idx) => (
-                <div key={order.id} className="card bg-[#18181b] border border-[#27272a] p-6 rounded-2xl shadow-md transition-all">
-                  <div className="flex items-start justify-between mb-4 pb-3 border-b border-[#27272a]/60">
+                <div key={order.id} className="card bg-surface border border-border p-6 rounded-2xl shadow-md transition-all">
+                  <div className="flex items-start justify-between mb-4 pb-3 border-b border-border/60">
                     <div>
                       <h3 className="text-sm font-bold text-[var(--text-primary)]">Order #{session.orders.length - idx}</h3>
                       <p className="text-[10px] text-[var(--text-muted)] mt-0.5 font-mono">ID: {order.id.substring(0, 8)}</p>
@@ -528,13 +528,13 @@ export default function CustomerOrderPage() {
                     </div>
 
                     {order.status === 'preparing' && order.estimated_wait_minutes && (
-                      <div className="flex justify-between items-center text-sm font-semibold pt-1 border-t border-[#27272a]/20">
+                      <div className="flex justify-between items-center text-sm font-semibold pt-1 border-t border-border/20">
                         <span className="text-[var(--text-secondary)]">Est. Prep Time</span>
                         <span className="text-[var(--accent)] font-mono">{order.estimated_wait_minutes} mins</span>
                       </div>
                     )}
 
-                    <div className="flex justify-between items-center text-sm font-bold pt-2 border-t border-[#27272a]/40">
+                    <div className="flex justify-between items-center text-sm font-bold pt-2 border-t border-border/40">
                       <span className="text-[var(--text-secondary)]">Order Subtotal</span>
                       <span className="text-[var(--accent)] font-mono">{formatCurrency(order.total_price)}</span>
                     </div>
@@ -543,8 +543,8 @@ export default function CustomerOrderPage() {
               ))}
             </div>
           ) : (
-            <div className="card p-12 border border-[#27272a] rounded-2xl text-center">
-              <div className="inline-flex items-center justify-center p-3 bg-[#18181b] text-[var(--text-secondary)] rounded-2xl mb-4 border border-[#27272a]">
+            <div className="card p-12 border border-border rounded-2xl text-center">
+              <div className="inline-flex items-center justify-center p-3 bg-surface text-[var(--text-secondary)] rounded-2xl mb-4 border border-border">
                 <ChefHat size={32} />
               </div>
               <p className="text-sm text-[var(--text-secondary)] font-semibold">No orders placed yet.</p>
@@ -554,7 +554,7 @@ export default function CustomerOrderPage() {
         </div>
 
         {/* ─── SESSION SUMMARY ─── */}
-        <div className="card bg-[#18181b] border border-[#27272a] p-6 rounded-2xl shadow-xl space-y-4">
+        <div className="card bg-surface border border-border p-6 rounded-2xl shadow-xl space-y-4">
           <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--text-secondary)]">Session Summary</h2>
           <div className="flex justify-between items-center">
             <span className="text-sm font-semibold text-[var(--text-secondary)]">Total running bill</span>
@@ -563,11 +563,11 @@ export default function CustomerOrderPage() {
 
           {/* End Ordering & Get Bill — only for customers while session is locked */}
           {devRole === 'customer' && session.status === 'locked' && (
-            <div className="pt-2 border-t border-[#27272a]/40">
+            <div className="pt-2 border-t border-border/40">
               <button
                 onClick={handleEndOrdering}
                 disabled={isEndingSession}
-                className="btn w-full flex items-center justify-center gap-2 rounded-xl h-11 font-bold cursor-pointer bg-[#09090b] border border-[#27272a] hover:bg-[#18181b] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all"
+                className="btn w-full flex items-center justify-center gap-2 rounded-xl h-11 font-bold cursor-pointer bg-background border border-border hover:bg-surface text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all"
               >
                 {isEndingSession ? (
                   <><Loader2 className="animate-spin" size={16} /><span>Processing…</span></>
@@ -583,7 +583,7 @@ export default function CustomerOrderPage() {
 
           {/* Status message when completed */}
           {session.status === 'completed' && (
-            <div className="pt-3 border-t border-[#27272a]/40 text-center space-y-1">
+            <div className="pt-3 border-t border-border/40 text-center space-y-1">
               <p className="text-sm font-bold text-[var(--accent)]">Ordering Ended — Bill Generated</p>
               <p className="text-xs text-[var(--text-secondary)]">Payment is pending staff verification. Please pay at the counter.</p>
             </div>
@@ -591,7 +591,7 @@ export default function CustomerOrderPage() {
 
           {/* Status message when locked */}
           {session.status === 'locked' && (
-            <div className="pt-3 border-t border-[#27272a]/40 text-center space-y-1">
+            <div className="pt-3 border-t border-border/40 text-center space-y-1">
               <p className="text-xs text-[var(--text-muted)] font-medium">🔒 Session locked. No new devices can join, but you can continue ordering.</p>
             </div>
           )}

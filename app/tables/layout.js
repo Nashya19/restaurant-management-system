@@ -13,7 +13,7 @@ import { AdminNavBar } from '@/lib/components/AdminNavBar';
 export default function TablesLayout({ children }) {
   return (
     <AdminGuard>
-      <div className="dark min-h-screen bg-[var(--background)] text-[var(--text-primary)] flex flex-col md:flex-row">
+      <div className="min-h-screen bg-[var(--background)] text-[var(--text-primary)] flex flex-col md:flex-row">
         <AdminNavBar
           title="Table Management"
           subtitle="Manage physical restaurant tables, seating capacity, and QR code links."

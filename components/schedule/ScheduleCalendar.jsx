@@ -9,18 +9,26 @@ const TOTAL_HOURS = 24;
 
 const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-const getEmployeeColor = (userId) => {
-  if (!userId) return { bg: '#18181b', border: '#27272a', text: '#e4e4e7' };
+const getEmployeeColor = (userId, isDark) => {
+  if (!userId) return { bg: 'var(--surface)', border: 'var(--border)', text: 'var(--text-primary)' };
   let hash = 0;
   for (let i = 0; i < userId.length; i++) {
     hash = userId.charCodeAt(i) + ((hash << 5) - hash);
   }
   const hue = Math.abs(hash) % 360;
-  return {
-    bg: `hsl(${hue}, 40%, 15%)`,
-    border: `hsl(${hue}, 50%, 40%)`,
-    text: `hsl(${hue}, 85%, 85%)`
-  };
+  if (isDark) {
+    return {
+      bg: `hsl(${hue}, 40%, 15%)`,
+      border: `hsl(${hue}, 50%, 40%)`,
+      text: `hsl(${hue}, 85%, 85%)`
+    };
+  } else {
+    return {
+      bg: `hsl(${hue}, 70%, 92%)`,
+      border: `hsl(${hue}, 60%, 75%)`,
+      text: `hsl(${hue}, 85%, 20%)`
+    };
+  }
 };
 
 const parseDayTagTimes = (dayTag) => {
@@ -180,6 +188,19 @@ export default function ScheduleCalendar({
   const [draggedEmployee, setDraggedEmployee] = useState(null);
   const [pendingMerge, setPendingMerge] = useState(null);
   const [calendarError, setCalendarError] = useState(null);
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const checkTheme = () => {
+        setIsDark(document.documentElement.classList.contains('dark'));
+      };
+      checkTheme();
+      const observer = new MutationObserver(checkTheme);
+      observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+      return () => observer.disconnect();
+    }
+  }, []);
 
   // Group users into Admins and Staff
   const { admins, staff } = React.useMemo(() => {
@@ -713,7 +734,7 @@ export default function ScheduleCalendar({
     <div ref={containerRef} className="space-y-6">
       {/* 1. Drag & Drop Employee Tray (Admin only) */}
       {isAdmin && (
-        <div className="card bg-[#18181b] border border-[#27272a] p-5 rounded-2xl space-y-4">
+        <div className="card bg-surface border border-border p-5 rounded-2xl space-y-4">
           {admins.length > 0 && (
             <div className="space-y-2">
               <h4 className="text-[10px] uppercase text-[var(--text-secondary)] font-bold tracking-wider">
@@ -721,7 +742,7 @@ export default function ScheduleCalendar({
               </h4>
               <div className="flex flex-wrap gap-2">
                 {admins.map((user) => {
-                  const colors = getEmployeeColor(user.id);
+                  const colors = getEmployeeColor(user.id, isDark);
                   return (
                     <div
                       key={user.id}
@@ -740,13 +761,13 @@ export default function ScheduleCalendar({
           )}
 
           {staff.length > 0 && (
-            <div className="space-y-2 pt-2 border-t border-[#27272a]/40">
+            <div className="space-y-2 pt-2 border-t border-border/40">
               <h4 className="text-[10px] uppercase text-[var(--text-secondary)] font-bold tracking-wider">
                 Staff Members:
               </h4>
               <div className="flex flex-wrap gap-2">
                 {staff.map((user) => {
-                  const colors = getEmployeeColor(user.id);
+                  const colors = getEmployeeColor(user.id, isDark);
                   return (
                     <div
                       key={user.id}
@@ -767,17 +788,17 @@ export default function ScheduleCalendar({
       )}
 
       {/* 2. Excel-like Schedule Timetable Grid */}
-      <div className="w-full overflow-x-auto rounded-2xl border border-[#27272a] shadow-xl">
-        <div className="bg-[#18181b] min-w-[1200px] overflow-hidden">
+      <div className="w-full overflow-x-auto rounded-2xl border border-border shadow-xl">
+        <div className="bg-surface min-w-[1200px] overflow-hidden">
         {/* Hours Header Row */}
-        <div className="grid grid-cols-[110px_24px_1fr] bg-[#09090b] border-b border-[#27272a]">
+        <div className="grid grid-cols-[110px_24px_1fr] bg-background border-b border-border">
           <div className="text-xs uppercase text-[var(--text-secondary)] font-bold tracking-wider px-6 py-4 flex items-center">
             Days
           </div>
-          <div className="bg-[#09090b]" />
+          <div className="bg-background" />
           <div className="grid w-full relative pr-1" style={{ gridTemplateColumns: 'repeat(24, minmax(0, 1fr))' }}>
             {HOURS.map((h) => (
-              <div key={h} className="text-center font-mono text-[9px] text-[var(--text-secondary)] py-4 border-l border-[#27272a]/40 first:border-l-0 select-none">
+              <div key={h} className="text-center font-mono text-[9px] text-[var(--text-secondary)] py-4 border-l border-border/40 first:border-l-0 select-none">
                 {`${String(h).padStart(2, '0')}:00`}
               </div>
             ))}
@@ -808,13 +829,13 @@ export default function ScheduleCalendar({
               day: '2-digit', month: 'short', year: 'numeric'
             });
 
-            return (
+             return (
               <div
                 key={dayName}
-                className="grid grid-cols-[110px_24px_1fr] border-b border-[#27272a] last:border-b-0"
+                className="grid grid-cols-[110px_24px_1fr] border-b border-border last:border-b-0"
               >
                 {/* Y-Axis Label: Day name + date */}
-                <div className="flex flex-col gap-0.5 justify-center px-5 py-3 bg-[#09090b]/40 border-r border-[#27272a]/40 select-none min-h-[60px]">
+                <div className="flex flex-col gap-0.5 justify-center px-5 py-3 bg-[var(--surface-raised)]/60 border-r border-border/40 select-none min-h-[60px]">
                   <span className="text-sm font-bold text-[var(--text-primary)] leading-tight">{dayName}</span>
                   <span className="text-[10px] text-[var(--text-secondary)] font-mono tracking-wide">{dateLabel}</span>
 
@@ -823,7 +844,7 @@ export default function ScheduleCalendar({
                 {/* Layer number sidebar — syncs scroll with timeline */}
                 <div
                   style={{ height: `${visibleHeight}px` }}
-                  className="layer-sidebar bg-[#09090b]/40 overflow-y-auto overflow-x-hidden select-none border-r border-[#27272a]/40"
+                  className="layer-sidebar bg-[var(--surface-raised)]/60 overflow-y-auto overflow-x-hidden select-none border-r border-border/40"
                   onScroll={(e) => {
                     const next = e.currentTarget.nextElementSibling;
                     if (next) next.scrollTop = e.currentTarget.scrollTop;
@@ -853,7 +874,7 @@ export default function ScheduleCalendar({
                     const prev = e.currentTarget.previousElementSibling;
                     if (prev) prev.scrollTop = e.currentTarget.scrollTop;
                   }}
-                  className={`timeline-track relative w-full bg-[#121214]/20 overflow-y-auto select-none transition-all duration-200 ${
+                  className={`timeline-track relative w-full bg-[var(--surface-raised)]/20 overflow-y-auto select-none transition-all duration-200 ${
                     isHoliday ? 'bg-amber-500/10' : ''
                   }`}
                 >
@@ -883,7 +904,7 @@ export default function ScheduleCalendar({
                       style={{
                         top: `${(i + 1) * LANE_H + 6}px`,
                         height: '1px',
-                        background: 'linear-gradient(to right, transparent 0%, rgba(63,63,70,0.35) 5%, rgba(63,63,70,0.35) 95%, transparent 100%)',
+                        background: 'linear-gradient(to right, transparent 0%, var(--border) 5%, var(--border) 95%, transparent 100%)',
                       }}
                     />
                   ))}
@@ -891,13 +912,13 @@ export default function ScheduleCalendar({
                   {/* Vertical hour grid lines */}
                   <div className="absolute inset-0 grid pointer-events-none pr-1" style={{ gridTemplateColumns: 'repeat(24, minmax(0, 1fr))', height: `${trackHeight}px` }}>
                     {HOURS.map((h) => (
-                      <div key={h} className="h-full border-l border-[#27272a]/20 first:border-l-0" />
+                      <div key={h} className="h-full border-l border-border/20 first:border-l-0" />
                     ))}
                   </div>
 
                   {/* Holiday tag display */}
                   {isHoliday ? (
-                    <div className="absolute inset-0 bg-[#2a240a] border-l-4 border-l-[#d4862a] flex items-center px-6 text-xs font-bold text-[#d4862a]">
+                    <div className="absolute inset-0 bg-warning-bg border-l-4 border-l-warning flex items-center px-6 text-xs font-bold text-warning">
                       ★ HOLIDAY: {dayTag.description || 'Closed'}
                     </div>
                   ) : (
@@ -914,14 +935,14 @@ export default function ScheduleCalendar({
                               style={{ ...pos, height: `${trackHeight}px` }}
                               className="absolute blocked-track-overlay flex flex-col items-center justify-center text-center p-2 z-10 select-none pointer-events-none"
                             >
-                              <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-500/80 leading-none">
+                              <span className="text-[10px] font-extrabold uppercase tracking-wider text-warning leading-none">
                                 ★ {isEndEarly ? 'Ends Early' : 'Opens Late'}
                               </span>
-                              <span className="text-[8px] font-semibold text-amber-500/60 font-mono mt-1 leading-none">
+                              <span className="text-[8px] font-bold text-warning/80 font-mono mt-1 leading-none">
                                 {block.startTime} - {block.endTime}
                               </span>
                               {block.reason && (
-                                <span className="text-[8px] opacity-75 text-[var(--text-secondary)] mt-1.5 leading-none max-w-xs truncate">
+                                <span className="text-[8px] text-[var(--text-primary)] font-bold mt-1.5 leading-none max-w-xs truncate">
                                   {block.reason}
                                 </span>
                               )}
@@ -938,7 +959,7 @@ export default function ScheduleCalendar({
                         );
 
                         const posStyles = getPositionStyles(shift.start_time, shift.end_time, shift.id, shift.uiLaneIndex);
-                        const colors = getEmployeeColor(shift.staff_id);
+                        const colors = getEmployeeColor(shift.staff_id, isDark);
 
                         const durationHours = (new Date(shift.end_time) - new Date(shift.start_time)) / (1000 * 60 * 60);
                         const showTime = durationHours >= 2.0;
@@ -1030,7 +1051,7 @@ export default function ScheduleCalendar({
       {/* Merge Confirmation Dialog Modal */}
       {pendingMerge && (
         <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="card w-full max-w-md bg-[#18181b] border border-[#27272a] p-6 rounded-2xl shadow-2xl space-y-4">
+          <div className="card w-full max-w-md bg-surface border border-border p-6 rounded-2xl shadow-2xl space-y-4">
             <h3 className="text-lg font-bold text-[var(--text-primary)]">Combine Shifts?</h3>
             <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
               Would you like to combine these two shifts for <strong>{pendingMerge.staffName}</strong> into a single continuous shift from <strong>{pendingMerge.displayStart}</strong> to <strong>{pendingMerge.displayEnd}</strong>?
@@ -1039,7 +1060,7 @@ export default function ScheduleCalendar({
               <button
                 type="button"
                 onClick={handleCancelMerge}
-                className="btn btn-ghost px-4 h-10 text-xs font-bold rounded-xl cursor-pointer border border-[#27272a] bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                className="btn btn-ghost px-4 h-10 text-xs font-bold rounded-xl cursor-pointer border border-border bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
               >
                 No, Keep Separate
               </button>
@@ -1057,9 +1078,9 @@ export default function ScheduleCalendar({
 
       {calendarError && (
         <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="card w-full max-w-md bg-[#18181b] border border-[#27272a] p-6 rounded-2xl shadow-2xl space-y-4">
-            <h3 className="text-lg font-bold text-[#c45a5a] flex items-center gap-2">
-              <AlertCircle size={20} className="text-[#c45a5a]" />
+          <div className="card w-full max-w-md bg-surface border border-border p-6 rounded-2xl shadow-2xl space-y-4">
+            <h3 className="text-lg font-bold text-destructive flex items-center gap-2">
+              <AlertCircle size={20} className="text-destructive" />
               <span>Schedule Conflict</span>
             </h3>
             <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
