@@ -188,7 +188,7 @@ export default function CustomerTablePage() {
       <div className="min-h-screen flex items-center justify-center p-6 bg-background">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--accent)]"></div>
-          <p className="mt-4 text-zinc-400 font-medium">Checking table status…</p>
+          <p className="mt-4 text-[var(--text-secondary)] font-medium">Checking table status…</p>
         </div>
       </div>
     );
@@ -200,7 +200,7 @@ export default function CustomerTablePage() {
         <div className="card max-w-md w-full bg-surface border border-destructive-border bg-destructive-bg/30 p-8 rounded-2xl shadow-xl text-center space-y-4">
           <span className="text-4xl">⚠️</span>
           <h1 className="text-2xl font-bold text-destructive mt-4 mb-2">Table Not Found</h1>
-          <p className="text-zinc-400 text-sm font-semibold">
+          <p className="text-[var(--text-secondary)] text-sm font-semibold">
             Table {tableNumber} does not exist in the system. Please verify the URL or contact staff.
           </p>
         </div>
@@ -214,7 +214,7 @@ export default function CustomerTablePage() {
         <div className="card max-w-md w-full bg-surface border border-destructive-border bg-destructive-bg/30 p-8 rounded-2xl shadow-xl text-center space-y-4">
           <span className="text-4xl">⚠️</span>
           <h1 className="text-2xl font-bold text-destructive mt-4 mb-2">Table {tableNumber} Inactive</h1>
-          <p className="text-zinc-400 text-sm font-semibold">
+          <p className="text-[var(--text-secondary)] text-sm font-semibold">
             This table is currently out of service. Please contact a staff member for assistance.
           </p>
         </div>
@@ -231,13 +231,13 @@ export default function CustomerTablePage() {
       <div className="card max-w-md w-full bg-surface/80 border border-border p-8 rounded-3xl shadow-2xl backdrop-blur-md space-y-8 animate-fade-in relative z-10">
         {/* Brand/Table Header */}
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[#27272a]/60 border border-border text-[var(--accent)] mb-2 shadow-inner">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[var(--surface-raised)] border border-border text-[var(--accent)] mb-2 shadow-inner">
             <Shield size={28} />
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white flex items-center justify-center gap-2">
+          <h1 className="text-3xl font-extrabold tracking-tight text-[var(--text-primary)] flex items-center justify-center gap-2">
             Table {tableNumber} <Sparkles size={18} className="text-[var(--accent)]" />
           </h1>
-          <p className="text-sm text-zinc-400 font-medium">
+          <p className="text-sm text-[var(--text-secondary)] font-medium">
             Enter the 4-digit PIN provided by your waiter to join this table session.
           </p>
         </div>
@@ -258,7 +258,7 @@ export default function CustomerTablePage() {
                 onKeyDown={(e) => handleKeyDown(idx, e)}
                 onPaste={handlePaste}
                 disabled={isValidating}
-                className="w-14 h-16 bg-background border border-border rounded-2xl text-center text-2xl font-bold font-mono text-white focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition-all shadow-inner disabled:opacity-50"
+                className="w-14 h-16 bg-background border border-border rounded-2xl text-center text-2xl font-bold font-mono text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition-all shadow-inner disabled:opacity-50"
               />
             ))}
           </div>

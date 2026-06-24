@@ -11,6 +11,7 @@ import { AdminNavBar } from '@/lib/components/AdminNavBar';
 import { Clock, RefreshCw, ChefHat, CheckCircle2, ArrowLeft, ShieldAlert, Loader2, ShoppingCart, Plus, Minus, Trash2, UtensilsCrossed } from 'lucide-react';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { useHeartbeat } from '@/lib/hooks/useHeartbeat';
+import PaymentScreen from '@/components/ui/PaymentScreen';
 
 export default function CustomerOrderPage() {
   useHeartbeat();
@@ -28,6 +29,7 @@ export default function CustomerOrderPage() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', message: '', onConfirm: () => {}, confirmStyle: 'btn-danger', confirmText: 'Confirm' });
   const [isEndingSession, setIsEndingSession] = useState(false);
+  const [isConfirmingPayment, setIsConfirmingPayment] = useState(false);
 
   // Shared cart state
   const [cartItems, setCartItems] = useState([]);
@@ -262,6 +264,17 @@ export default function CustomerOrderPage() {
     });
   };
 
+  const handleConfirmPayment = async () => {
+    setIsConfirmingPayment(true);
+    try {
+      // Navigate to feedback page — the feedback page will clear the session
+      router.push(`/table/${tableNumber}/feedback`);
+    } catch (err) {
+      console.error('[PAYMENT] Navigation error:', err);
+      setIsConfirmingPayment(false);
+    }
+  };
+
   // --- Render states ---
   if (loading) {
     return (
@@ -308,6 +321,18 @@ export default function CustomerOrderPage() {
 
   // Cart derived totals
   const cartTotal = cartItems.reduce((sum, ci) => sum + (ci.menu_items?.price || 0) * ci.quantity, 0);
+
+  // ── Full-page Payment Screen when bill has been generated ────────────────────
+  if (session?.status === 'completed') {
+    return (
+      <PaymentScreen
+        session={session}
+        tableNumber={tableNumber}
+        onConfirm={handleConfirmPayment}
+        isConfirming={isConfirmingPayment}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--text-primary)] flex flex-col md:flex-row">
@@ -578,14 +603,6 @@ export default function CustomerOrderPage() {
               <p className="text-center text-[10px] text-[var(--text-muted)] mt-2">
                 Locks the menu and notifies staff to collect payment
               </p>
-            </div>
-          )}
-
-          {/* Status message when completed */}
-          {session.status === 'completed' && (
-            <div className="pt-3 border-t border-border/40 text-center space-y-1">
-              <p className="text-sm font-bold text-[var(--accent)]">Ordering Ended — Bill Generated</p>
-              <p className="text-xs text-[var(--text-secondary)]">Payment is pending staff verification. Please pay at the counter.</p>
             </div>
           )}
 
