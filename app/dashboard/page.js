@@ -134,22 +134,28 @@ export default function DashboardPage() {
                 {metrics.occupiedTables} currently occupied dining tables
               </p>
             </Link>
+{/* Card 5: Average Rating */}
+<Link href="/ratings" className="block">
+  <div className="stat-card bg-surface border border-border p-6 rounded-2xl shadow-lg hover:border-[var(--accent)] transition-all duration-300 relative overflow-hidden group cursor-pointer">
 
-            {/* Card 5: Avg Order Value */}
-            <div className="stat-card bg-surface border border-border p-6 rounded-2xl shadow-lg hover:border-[var(--accent)] transition-all duration-300 relative overflow-hidden group">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <p className="text-xs uppercase text-[var(--text-secondary)] font-bold tracking-wider">Avg Order Value</p>
-                  <p className="text-4xl font-extrabold font-mono text-[var(--text-primary)] mt-2">
-                    {formatCurrency(metrics.avgOrderValue)}
-                  </p>
-                </div>
-                <ShoppingCart size={24} className="text-[var(--text-secondary)] opacity-50 group-hover:scale-110 transition-transform duration-300" />
-              </div>
-              <p className="text-xs text-[var(--text-secondary)] font-semibold mt-6">
-                Average guest spending per session
-              </p>
-            </div>
+    <div>
+      <p className="text-xs uppercase text-[var(--text-secondary)] font-bold tracking-wider">
+        Average Rating
+      </p>
+
+      <p className="text-4xl font-extrabold font-mono text-[var(--text-primary)] mt-2">
+        ⭐ {Number(metrics.averageRating || 0).toFixed(1)} / 5
+      </p>
+    </div>
+
+    
+
+   <p className="text-xs text-[var(--text-secondary)] font-semibold mt-6">
+  Based on {metrics.ratingsCount || 0} customer ratings
+</p>
+
+  </div>
+</Link>
 
             {/* Card 6: Staff Online */}
             <Link href="/users" className="stat-card bg-surface border border-border p-6 rounded-2xl shadow-lg hover:border-[var(--accent)] transition-all duration-300 relative overflow-hidden group block hover:no-underline cursor-pointer">
