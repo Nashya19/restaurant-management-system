@@ -7,10 +7,10 @@ export default function KitchenPage() {
   const [orders, setOrders] = useState([]);
   const supabase = createClient();
 
-   const fetchOrders = async () => {
-  const { data, error } = await supabase
-    .from('orders')
-    .select(`
+  const fetchOrders = async () => {
+    const { data, error } = await supabase
+      .from('orders')
+      .select(`
       id,
       status,
       estimated_wait_minutes,
@@ -31,18 +31,18 @@ export default function KitchenPage() {
         )
       )
     `)
-    .in('status', ['placed', 'preparing', 'ready'])
-    .order('created_at', { ascending: true });
+      .in('status', ['placed', 'preparing', 'ready'])
+      .order('created_at', { ascending: true });
 
-  if (error) {
-    console.error(error);
-    return;
-  }
+    if (error) {
+      console.error(error);
+      return;
+    }
 
-  console.log('Kitchen Orders:', data);
+    console.log('Kitchen Orders:', data);
 
-  setOrders(data || []);
-};
+    setOrders(data || []);
+  };
 
   useEffect(() => {
     fetchOrders();
