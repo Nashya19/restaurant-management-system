@@ -13,6 +13,45 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { useHeartbeat } from '@/lib/hooks/useHeartbeat';
 import PaymentScreen from '@/components/ui/PaymentScreen';
 
+const getItemStatusMeta = (status = 'pending') => {
+  switch (status) {
+    case 'ready':
+      return {
+        label: 'Ready',
+        className: 'bg-success/10 text-success border border-success/20',
+      };
+    case 'preparing':
+      return {
+        label: 'Preparing',
+        className: 'bg-warning/10 text-warning border border-warning/20',
+      };
+    default:
+      return {
+        label: 'Queued',
+        className: 'bg-surface border border-border text-[var(--text-secondary)]',
+      };
+  }
+};
+
+const getOrderProgressMeta = (order) => {
+  const items = order?.items || [];
+  if (!items.length) {
+    return { label: 'Queued', description: 'Waiting for kitchen confirmation', className: 'bg-surface text-[var(--text-secondary)] border border-border' };
+  }
+
+  const allReady = items.every(item => item.status === 'ready');
+  if (allReady) {
+    return { label: 'Ready', description: 'Everything is ready to serve', className: 'bg-success/10 text-success border border-success/20' };
+  }
+
+  const somePreparing = items.some(item => item.status === 'preparing');
+  if (somePreparing) {
+    return { label: 'Preparing', description: 'Some items are being cooked', className: 'bg-warning/10 text-warning border border-warning/20' };
+  }
+
+  return { label: 'Queued', description: 'Your order is waiting in the kitchen', className: 'bg-surface text-[var(--text-secondary)] border border-border' };
+};
+
 export default function CustomerOrderPage() {
   useHeartbeat();
   const params = useParams();
@@ -185,9 +224,21 @@ export default function CustomerOrderPage() {
       )
       .subscribe();
 
+    // Real-time: order_items changes so customers see item status updates
+    const itemsChannel = supabase
+      .channel(`order_items_${localSessionId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' },
+        (payload) => {
+          // Reload session to pick up item status changes
+          loadSession(role);
+        }
+      )
+      .subscribe();
+
     return () => {
       ordersChannel.unsubscribe();
       cartChannel.unsubscribe();
+      itemsChannel.unsubscribe();
     };
   }, [tableNumber]);
 
@@ -518,39 +569,59 @@ export default function CustomerOrderPage() {
 
           {session.orders && session.orders.length > 0 ? (
             <div className="space-y-4">
-              {session.orders.map((order, idx) => (
-                <div key={order.id} className="card bg-surface border border-border p-6 rounded-2xl shadow-md transition-all">
-                  <div className="flex items-start justify-between mb-4 pb-3 border-b border-border/60">
-                    <div>
-                      <h3 className="text-sm font-bold text-[var(--text-primary)]">Order #{session.orders.length - idx}</h3>
-                      <p className="text-[10px] text-[var(--text-muted)] mt-0.5 font-mono">ID: {order.id.substring(0, 8)}</p>
-                    </div>
-                    {(() => {
-                      let badgeColor = 'bg-gray-700 text-gray-200';
-                      if (order.status === 'placed') badgeColor = 'bg-yellow-900/60 border border-yellow-800 text-yellow-200';
-                      if (order.status === 'preparing') badgeColor = 'bg-orange-950/60 border border-orange-800 text-orange-300';
-                      if (order.status === 'ready') badgeColor = 'bg-blue-950/60 border border-blue-800 text-blue-300';
-                      if (order.status === 'delivered') badgeColor = 'bg-green-950/60 border border-green-800 text-green-300';
-                      if (order.status === 'cancelled') badgeColor = 'bg-red-950/60 border border-red-800 text-red-300';
-                      return (
-                        <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${badgeColor}`}>
-                          {order.status}
-                        </span>
-                      );
-                    })()}
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="space-y-2.5">
-                      {order.items?.map((item, itemIdx) => (
-                        <div key={itemIdx} className="flex justify-between items-center text-sm font-semibold">
-                          <span className="text-[var(--text-primary)]">
-                            {item.name} <span className="text-zinc-500 font-bold ml-1.5">x{item.quantity}</span>
+              {session.orders.map((order, idx) => {
+                const progressMeta = getOrderProgressMeta(order);
+                return (
+                  <div key={order.id} className="card bg-surface border border-border p-6 rounded-2xl shadow-md transition-all">
+                    <div className="flex items-start justify-between mb-4 pb-3 border-b border-border/60">
+                      <div>
+                        <h3 className="text-sm font-bold text-[var(--text-primary)]">Order #{session.orders.length - idx}</h3>
+                        <p className="text-[10px] text-[var(--text-muted)] mt-0.5 font-mono">ID: {order.id.substring(0, 8)}</p>
+                      </div>
+                      {(() => {
+                        let badgeColor = 'bg-gray-700 text-gray-200';
+                        if (order.status === 'placed') badgeColor = 'bg-yellow-900/60 border border-yellow-800 text-yellow-200';
+                        if (order.status === 'preparing') badgeColor = 'bg-orange-950/60 border border-orange-800 text-orange-300';
+                        if (order.status === 'ready') badgeColor = 'bg-blue-950/60 border border-blue-800 text-blue-300';
+                        if (order.status === 'delivered') badgeColor = 'bg-green-950/60 border border-green-800 text-green-300';
+                        if (order.status === 'cancelled') badgeColor = 'bg-red-950/60 border border-red-800 text-red-300';
+                        return (
+                          <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${badgeColor}`}>
+                            {order.status}
                           </span>
-                          <span className="text-zinc-400 font-mono text-xs">{formatCurrency(item.price_at_order * item.quantity)}</span>
-                        </div>
-                      ))}
+                        );
+                      })()}
                     </div>
+
+                    <div className={`mb-4 inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider ${progressMeta.className}`}>
+                      <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                      <span>{progressMeta.label}</span>
+                      <span className="text-[10px] normal-case tracking-normal opacity-80">{progressMeta.description}</span>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="space-y-2.5">
+                        {order.items?.map((item) => {
+                          const statusMeta = getItemStatusMeta(item.status);
+                          return (
+                            <div key={item.id || item.name} className="flex flex-col gap-2 rounded-2xl p-3 bg-[var(--surface-raised)] border border-border">
+                              <div className="flex items-center justify-between gap-4">
+                                <div className="min-w-0">
+                                  <p className="text-sm font-semibold text-[var(--text-primary)] truncate">{item.name}</p>
+                                  <p className="text-[11px] text-[var(--text-secondary)]">Qty: {item.quantity} · {formatCurrency(item.price_at_order)} each</p>
+                                </div>
+                                <span className={`text-[10px] uppercase tracking-wider font-semibold px-2.5 py-1 rounded-full ${statusMeta.className}`}>
+                                  {statusMeta.label}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between text-xs text-[var(--text-secondary)]">
+                                <span>Line total</span>
+                                <span className="font-mono">{formatCurrency(item.subtotal)}</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
 
                     {order.status === 'preparing' && order.estimated_wait_minutes && (
                       <div className="flex justify-between items-center text-sm font-semibold pt-1 border-t border-border/20">
