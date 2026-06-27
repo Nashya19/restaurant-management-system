@@ -636,7 +636,8 @@ export default function CustomerOrderPage() {
                     </div>
                   </div>
                 </div>
-              ))}
+                )
+              })}
             </div>
           ) : (
             <div className="card p-12 border border-border rounded-2xl text-center">
