@@ -257,6 +257,7 @@ export default function PaymentScreen({ session, tableNumber, onConfirm, isConfi
 
         {/* Confirm payment button */}
         <div className="px-6 py-5 space-y-3">
+          {/* Hide Razorpay for the time being
           <button
             type="button"
             onClick={startRazorpayPayment}
@@ -265,6 +266,7 @@ export default function PaymentScreen({ session, tableNumber, onConfirm, isConfi
             <ShieldCheck size={16} />
             <span>Pay via Razorpay (Test Mode)</span>
           </button>
+          */}
 
           <button
             type="button"
