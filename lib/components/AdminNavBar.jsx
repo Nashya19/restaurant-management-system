@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { LogOut, LayoutDashboard, Users, ListChecks, Grid3x3, Shield, Menu, X, ChevronLeft, ChevronRight, Calendar, Sun, Moon, ReceiptText } from 'lucide-react';
+import { LogOut, LayoutDashboard, Users, ListChecks, Grid3x3, Shield, Menu, X, ChevronLeft, ChevronRight, Calendar, Sun, Moon, ReceiptText, Utensils } from 'lucide-react';
 
 export function AdminNavBar({ title, subtitle }) {
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -113,6 +113,7 @@ export function AdminNavBar({ title, subtitle }) {
       ];
     } else if (devRole === 'staff') {
       return [
+        { href: '/kitchen', label: 'Kitchen Display', icon: Utensils },
         { href: '/tables', label: 'Tables', icon: Grid3x3 },
         { href: '/orders', label: 'Order Management', icon: Shield },
         { href: '/schedule', label: 'Schedule', icon: Calendar },
@@ -121,6 +122,7 @@ export function AdminNavBar({ title, subtitle }) {
     } else {
       return [
         { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { href: '/kitchen', label: 'Kitchen Display', icon: Utensils },
         { href: '/tables', label: 'Tables', icon: Grid3x3 },
         { href: '/orders', label: 'Order Management', icon: Shield },
         { href: '/billing', label: 'Billing', icon: ReceiptText },

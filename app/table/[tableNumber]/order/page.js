@@ -3,16 +3,109 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getSessionDetailsAction, completeTableSessionAction } from '@/lib/actions/orders';
+import { getSessionDetailsAction, completeTableSessionAction, getQueueStatusAction } from '@/lib/actions/orders';
 import { getCartItemsAction, updateCartItemAction, submitSharedOrderAction } from '@/lib/actions/cart';
 import { createClient } from '@/lib/supabase/client';
 import { formatCurrency } from '@/lib/utils/formatters';
 import { AdminNavBar } from '@/lib/components/AdminNavBar';
-import { Clock, RefreshCw, ChefHat, CheckCircle2, ArrowLeft, ShieldAlert, Loader2, ShoppingCart, Plus, Minus, Trash2, UtensilsCrossed } from 'lucide-react';
+import { Clock, RefreshCw, ChefHat, CheckCircle2, ArrowLeft, ShieldAlert, Loader2, ShoppingCart, Plus, Minus, Trash2, UtensilsCrossed, Bell } from 'lucide-react';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { useHeartbeat } from '@/lib/hooks/useHeartbeat';
 import PaymentScreen from '@/components/ui/PaymentScreen';
 
+// ─── Status helpers ───────────────────────────────────────────────────────────
+
+const getItemStatusMeta = (status = 'pending') => {
+  switch (status) {
+    case 'ready':
+      return { label: 'Ready ✓', className: 'bg-success/10 text-success border border-success/20' };
+    case 'preparing':
+      return { label: 'Preparing…', className: 'bg-warning/10 text-warning border border-warning/20' };
+    default:
+      return { label: 'Queued', className: 'bg-surface border border-border text-[var(--text-secondary)]' };
+  }
+};
+
+const getOrderProgressMeta = (order) => {
+  const items = order?.items || [];
+  if (!items.length) return { label: 'Queued', description: 'Waiting for kitchen', className: 'bg-surface text-[var(--text-secondary)] border border-border' };
+  if (items.every(i => i.status === 'ready'))    return { label: 'Ready', description: 'Everything is ready to serve!', className: 'bg-success/10 text-success border border-success/20' };
+  if (items.some(i => i.status === 'preparing')) return { label: 'Preparing', description: 'Kitchen is cooking your items', className: 'bg-warning/10 text-warning border border-warning/20' };
+  return { label: 'Queued', description: 'Your order is in the queue', className: 'bg-surface text-[var(--text-secondary)] border border-border' };
+};
+
+// Seconds remaining for a preparing item
+function calcSecondsLeft(item) {
+  if (!item.item_started_at || !item.prep_time_minutes) return null;
+  const prepSecs = item.prep_time_minutes * 60;
+  const elapsed  = Math.floor((Date.now() - new Date(item.item_started_at)) / 1000);
+  return Math.max(0, prepSecs - elapsed);
+}
+
+function formatMinsLeft(secs) {
+  if (secs === null) return null;
+  if (secs === 0) return 'Almost ready!';
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  return m > 0 ? `~${m}m ${s}s` : `~${s}s`;
+}
+
+// ─── Customer Item Ready Toast ────────────────────────────────────────────────
+function CustomerReadyToast({ item, onDismiss }) {
+  useEffect(() => {
+    const t = setTimeout(onDismiss, 6000);
+    return () => clearTimeout(t);
+  }, [onDismiss]);
+
+  const isPreparing = item.status === 'preparing';
+
+  return (
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[90vw] max-w-sm animate-slide-up">
+      <div className={`flex items-center gap-3 bg-[var(--surface)] border ${
+        isPreparing ? 'border-warning/50 shadow-2xl' : 'border-success/50 shadow-2xl'
+      } rounded-2xl px-5 py-4`}>
+        <div className={`p-2.5 ${
+          isPreparing ? 'bg-warning/15 border-warning/30 text-warning' : 'bg-success/15 border-success/30 text-success'
+        } rounded-xl border shrink-0 animate-bounce`}>
+          <Bell size={20} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-bold text-[var(--text-primary)]">
+            {isPreparing ? `${item.name} is preparing! 👨‍🍳` : `${item.name} is Ready! 🎉`}
+          </p>
+          <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">
+            {isPreparing ? 'The kitchen has started cooking your item' : 'Your item is ready to be served'}
+          </p>
+        </div>
+        <button
+          onClick={onDismiss}
+          className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xl leading-none shrink-0 cursor-pointer"
+        >×</button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Live per-item countdown (ticks every second) ────────────────────────────
+function useItemTimers(session) {
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setTick(n => n + 1), 1000);
+    return () => clearInterval(t);
+  }, []);
+  // Build map: orderItemId -> secondsLeft
+  const map = {};
+  (session?.orders || []).forEach(order => {
+    (order.items || []).forEach(item => {
+      if (item.status === 'preparing') {
+        map[item.id] = calcSecondsLeft(item);
+      }
+    });
+  });
+  return map;
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
 export default function CustomerOrderPage() {
   useHeartbeat();
   const params = useParams();
@@ -20,34 +113,44 @@ export default function CustomerOrderPage() {
   const tableNumber = params.tableNumber;
   const supabase = createClient();
 
-  // Session state
-  const [session, setSession] = useState(null);
-  const [devRole, setDevRole] = useState('customer');
-  const [loading, setLoading] = useState(true);
-  const [accessDenied, setAccessDenied] = useState(false);
-  const [error, setError] = useState(null);
-  const [currentTime, setCurrentTime] = useState(new Date());
-  const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', message: '', onConfirm: () => {}, confirmStyle: 'btn-danger', confirmText: 'Confirm' });
-  const [isEndingSession, setIsEndingSession] = useState(false);
+  const [session, setSession]               = useState(null);
+  const [devRole, setDevRole]               = useState('customer');
+  const [loading, setLoading]               = useState(true);
+  const [accessDenied, setAccessDenied]     = useState(false);
+  const [error, setError]                   = useState(null);
+  const [currentTime, setCurrentTime]       = useState(new Date());
+  const [confirmDialog, setConfirmDialog]   = useState({ isOpen: false, title: '', message: '', onConfirm: () => {}, confirmStyle: 'btn-danger', confirmText: 'Confirm' });
+  const [isEndingSession, setIsEndingSession]     = useState(false);
   const [isConfirmingPayment, setIsConfirmingPayment] = useState(false);
+  const [readyToast, setReadyToast]         = useState(null); // { name }
+  const [queueStatus, setQueueStatus]       = useState({ ordersAhead: 0, totalOrdersInQueue: 0 });
 
-  // Shared cart state
-  const [cartItems, setCartItems] = useState([]);
-  const [isCartLoading, setIsCartLoading] = useState(false);
+  const [cartItems, setCartItems]           = useState([]);
+  const [isCartLoading, setIsCartLoading]   = useState(false);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [orderPlacedMsg, setOrderPlacedMsg] = useState(null);
-  const [cartError, setCartError] = useState(null);
+  const [cartError, setCartError]           = useState(null);
   const cartPendingUpdates = useRef({});
+
+  // Track previous item statuses to detect → ready
+  const prevItemStatuses = useRef({});
+  const sessionRef = useRef(null);
+
+  useEffect(() => {
+    sessionRef.current = session;
+  }, [session]);
 
   const closeConfirm = () => setConfirmDialog(prev => ({ ...prev, isOpen: false }));
 
-  // Clock ticker
+  // Clock ticker (for overall wait time display)
   useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 10000);
-    return () => clearInterval(timer);
+    const t = setInterval(() => setCurrentTime(new Date()), 10000);
+    return () => clearInterval(t);
   }, []);
 
-  // Load shared cart from DB
+  // Per-item countdown timers
+  const itemTimers = useItemTimers(session);
+
   const loadCart = async (sessionId) => {
     if (!sessionId) return;
     setIsCartLoading(true);
@@ -61,45 +164,33 @@ export default function CustomerOrderPage() {
     }
   };
 
-  // Update a cart item quantity (optimistic + DB write)
   const updateCartItemQty = async (menuItemId, newQty) => {
     const sessionId = localStorage.getItem('sessionId');
     if (!sessionId) return;
-
     setCartError(null);
-    // Optimistic update
     setCartItems(prev => {
       if (newQty <= 0) return prev.filter(ci => ci.menu_item_id !== menuItemId);
       return prev.map(ci => ci.menu_item_id === menuItemId ? { ...ci, quantity: newQty } : ci);
     });
-
     cartPendingUpdates.current[menuItemId] = true;
     try {
       await updateCartItemAction(sessionId, menuItemId, newQty);
     } catch (err) {
-      console.error('[CART] Failed to update item:', err);
       setCartError(err.message || 'Failed to update cart item.');
-      // Revert by reloading
       await loadCart(sessionId);
     } finally {
       cartPendingUpdates.current[menuItemId] = false;
     }
   };
 
-  // Place the order from the shared cart
   const handlePlaceOrder = async () => {
     const sessionId = localStorage.getItem('sessionId');
     if (!sessionId) return;
-
-    if (cartItems.length === 0) {
-      setCartError('Cart is empty. Add items from the menu first.');
-      return;
-    }
-
+    if (cartItems.length === 0) { setCartError('Cart is empty.'); return; }
     setConfirmDialog({
       isOpen: true,
       title: 'Place Order',
-      message: `Place an order for ${cartItems.length} item type${cartItems.length !== 1 ? 's' : ''}? This will send the cart to the kitchen.`,
+      message: `Send ${cartItems.length} item type${cartItems.length !== 1 ? 's' : ''} to the kitchen?`,
       confirmText: 'Place Order',
       confirmStyle: 'btn-primary btn-premium',
       onConfirm: async () => {
@@ -111,10 +202,8 @@ export default function CustomerOrderPage() {
           setCartItems([]);
           setOrderPlacedMsg('Order sent to the kitchen! 🎉');
           setTimeout(() => setOrderPlacedMsg(null), 6000);
-          // Reload session to reflect new order in history
           loadSession(devRole);
         } catch (err) {
-          console.error('[ORDER] Failed to place order:', err);
           setCartError(err.message || 'Failed to place order. Please try again.');
         } finally {
           setIsPlacingOrder(false);
@@ -128,111 +217,129 @@ export default function CustomerOrderPage() {
     const localSessionId = localStorage.getItem('sessionId');
     setDevRole(role);
     loadSession(role);
-
     if (!localSessionId) return;
-
-    // Load initial cart
     loadCart(localSessionId);
 
-    // Real-time: orders + session status
     const ordersChannel = supabase
       .channel(`customer_orders_realtime_${localSessionId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `session_id=eq.${localSessionId}` },
-        () => loadSession(role)
-      )
+        () => loadSession(role))
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'table_sessions', filter: `id=eq.${localSessionId}` },
         (payload) => {
-          if (payload.new) {
-            const newStatus = payload.new.status;
-            if (newStatus === 'locked' || newStatus === 'completed') {
-              window.location.reload();
-            } else if (newStatus === 'cleared') {
-              localStorage.removeItem('sessionId');
-              localStorage.removeItem('tableNumber');
-              localStorage.removeItem('dev-role');
-              window.location.href = `/table/${tableNumber}`;
-            } else {
-              loadSession(role);
-            }
-          }
-        }
-      )
+          if (!payload.new) return;
+          const s = payload.new.status;
+          if (s === 'locked' || s === 'completed') { window.location.reload(); }
+          else if (s === 'cleared') {
+            localStorage.removeItem('sessionId');
+            localStorage.removeItem('tableNumber');
+            localStorage.removeItem('dev-role');
+            window.location.href = `/table/${tableNumber}`;
+          } else { loadSession(role); }
+        })
       .subscribe();
 
-    // Real-time: shared cart changes
     const cartChannel = supabase
       .channel(`order_page_cart_${localSessionId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'cart_items', filter: `session_id=eq.${localSessionId}` },
         (payload) => {
           const itemId = payload.new?.menu_item_id || payload.old?.menu_item_id;
-          // Skip if we have a pending local update for this item
           if (itemId && cartPendingUpdates.current[itemId]) return;
-
           if (payload.eventType === 'UPDATE') {
-            setCartItems(prev =>
-              prev.map(ci => ci.menu_item_id === payload.new.menu_item_id
-                ? { ...ci, quantity: payload.new.quantity }
-                : ci
-              )
-            );
+            setCartItems(prev => prev.map(ci => ci.menu_item_id === payload.new.menu_item_id ? { ...ci, quantity: payload.new.quantity } : ci));
           } else if (payload.eventType === 'DELETE') {
             setCartItems(prev => prev.filter(ci => ci.menu_item_id !== payload.old?.menu_item_id));
           } else if (payload.eventType === 'INSERT') {
-            // Reload to get full menu_items join data
             loadCart(localSessionId);
           }
-        }
-      )
+        })
+      .subscribe();
+
+    // order_items realtime — detect item → ready or preparing to show toast
+    const itemsChannel = supabase
+      .channel(`order_items_customer_${localSessionId}`)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'order_items' },
+        (payload) => {
+          const newStatus = payload.new?.item_status;
+          const prevStatus = prevItemStatuses.current[payload.new.id];
+
+          if (newStatus === 'ready' && prevStatus && prevStatus !== 'ready') {
+            let itemName = 'An item';
+            const currentSession = sessionRef.current;
+            if (currentSession?.orders) {
+              const found = currentSession.orders.flatMap(o => o.items || []).find(i => i.id === payload.new.id);
+              if (found) itemName = found.name;
+            }
+            setReadyToast({ name: itemName, status: 'ready' });
+          } else if (newStatus === 'preparing' && prevStatus && prevStatus === 'pending') {
+            let itemName = 'An item';
+            const currentSession = sessionRef.current;
+            if (currentSession?.orders) {
+              const found = currentSession.orders.flatMap(o => o.items || []).find(i => i.id === payload.new.id);
+              if (found) itemName = found.name;
+            }
+            setReadyToast({ name: itemName, status: 'preparing' });
+          }
+
+          if (payload.new?.id) {
+            prevItemStatuses.current[payload.new.id] = newStatus;
+          }
+          loadSession(role);
+        })
       .subscribe();
 
     return () => {
       ordersChannel.unsubscribe();
       cartChannel.unsubscribe();
+      itemsChannel.unsubscribe();
     };
   }, [tableNumber]);
+
+  // Polling fallback to guarantee updates every 5 seconds (RLS bypass for realtime replication)
+  useEffect(() => {
+    const role = localStorage.getItem('dev-role') || 'admin';
+    const interval = setInterval(() => {
+      loadSession(role);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // After session loads, seed prevItemStatuses and update toast name if possible
+  useEffect(() => {
+    if (!session) return;
+    session.orders?.forEach(order => {
+      order.items?.forEach(item => {
+        const prev = prevItemStatuses.current[item.id];
+        if (prev && prev !== 'ready' && item.status === 'ready') {
+          setReadyToast({ name: item.name || 'Your item' });
+        }
+        prevItemStatuses.current[item.id] = item.status;
+      });
+    });
+  }, [session]);
 
   async function loadSession(currentRole) {
     try {
       const { data: tableData, error: tableError } = await supabase
-        .from('tables')
-        .select('id, is_active')
-        .eq('table_number', tableNumber)
-        .maybeSingle();
+        .from('tables').select('id, is_active').eq('table_number', tableNumber).maybeSingle();
+      if (tableError || !tableData) { setError('Table not found.'); setLoading(false); return; }
 
-      if (tableError || !tableData) {
-        setError('Table not found.');
-        setLoading(false);
-        return;
-      }
-
-      const { data: activeSessions, error: sessionError } = await supabase
-        .from('table_sessions')
-        .select('id, status')
-        .eq('table_id', tableData.id)
-        .in('status', ['open', 'locked', 'completed'])
-        .order('opened_at', { ascending: false });
+      const { data: activeSessions } = await supabase
+        .from('table_sessions').select('id, status').eq('table_id', tableData.id)
+        .in('status', ['open', 'locked', 'completed']).order('opened_at', { ascending: false });
 
       const activeSession = activeSessions?.[0];
-
-      if (sessionError || !activeSession) {
-        setError('No active session found for this table.');
-        setLoading(false);
-        return;
-      }
+      if (!activeSession) { setError('No active session for this table.'); setLoading(false); return; }
 
       if (currentRole === 'customer') {
         const localSessionId = localStorage.getItem('sessionId');
-        if (localSessionId !== activeSession.id) {
-          setAccessDenied(true);
-          setLoading(false);
-          return;
-        }
+        if (localSessionId !== activeSession.id) { setAccessDenied(true); setLoading(false); return; }
       }
 
       const details = await getSessionDetailsAction(activeSession.id);
       setSession(details);
+      const qStatus = await getQueueStatusAction(activeSession.id);
+      setQueueStatus(qStatus);
     } catch (err) {
-      console.error(err);
       setError('Failed to load order details.');
     } finally {
       setLoading(false);
@@ -241,98 +348,63 @@ export default function CustomerOrderPage() {
 
   const handleEndOrdering = () => {
     setConfirmDialog({
-      isOpen: true,
-      title: 'End Ordering & Request Bill',
-      message: 'Are you sure you want to end ordering? The menu will be locked and staff will be notified to collect payment.',
-      confirmText: 'End & Get Bill',
-      confirmStyle: 'btn-primary btn-premium',
+      isOpen: true, title: 'End Ordering & Request Bill',
+      message: 'End ordering and request the bill?',
+      confirmText: 'End & Get Bill', confirmStyle: 'btn-primary btn-premium',
       onConfirm: async () => {
-        closeConfirm();
-        setIsEndingSession(true);
+        closeConfirm(); setIsEndingSession(true);
         try {
           const sessionId = localStorage.getItem('sessionId');
-          if (sessionId) {
-            await completeTableSessionAction(sessionId);
-            loadSession(devRole);
-          }
-        } catch (err) {
-          setError(err.message || 'Failed to end ordering session.');
-        } finally {
-          setIsEndingSession(false);
-        }
+          if (sessionId) { await completeTableSessionAction(sessionId); loadSession(devRole); }
+        } catch (err) { setError(err.message || 'Failed to end session.'); }
+        finally { setIsEndingSession(false); }
       }
     });
   };
 
   const handleConfirmPayment = async () => {
     setIsConfirmingPayment(true);
-    try {
-      // Navigate to feedback page — the feedback page will clear the session
-      router.push(`/table/${tableNumber}/feedback`);
-    } catch (err) {
-      console.error('[PAYMENT] Navigation error:', err);
-      setIsConfirmingPayment(false);
-    }
+    try { router.push(`/table/${tableNumber}/feedback`); }
+    catch { setIsConfirmingPayment(false); }
   };
 
-  // --- Render states ---
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--accent)]"></div>
-          <p className="mt-4 text-[var(--text-secondary)] font-medium">Loading orders…</p>
-        </div>
+  // ── Loading / error states ──
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="text-center">
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--accent)]" />
+        <p className="mt-4 text-[var(--text-secondary)] font-medium">Loading orders…</p>
       </div>
-    );
-  }
+    </div>
+  );
 
-  if (accessDenied) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-background">
-        <div className="card max-w-md w-full bg-surface border border-destructive-border bg-destructive-bg/10 p-8 rounded-2xl shadow-xl text-center space-y-4">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-destructive-bg text-destructive text-xl">
-            <ShieldAlert size={24} />
-          </div>
-          <h2 className="text-lg font-bold text-[var(--text-primary)]">Access Denied</h2>
-          <p className="text-sm text-[var(--text-secondary)] font-semibold">
-            You do not have access to Table {tableNumber}'s orders.
-          </p>
-          <button onClick={() => router.push('/menu')} className="btn btn-primary btn-premium px-4 py-2 text-xs font-bold rounded-xl cursor-pointer">
-            Go to Menu
-          </button>
-        </div>
+  if (accessDenied) return (
+    <div className="min-h-screen flex items-center justify-center p-6 bg-background">
+      <div className="card max-w-md w-full bg-surface border border-destructive-border bg-destructive-bg/10 p-8 rounded-2xl shadow-xl text-center space-y-4">
+        <ShieldAlert size={32} className="mx-auto text-destructive" />
+        <h2 className="text-lg font-bold text-[var(--text-primary)]">Access Denied</h2>
+        <p className="text-sm text-[var(--text-secondary)] font-semibold">You do not have access to Table {tableNumber}.</p>
+        <button onClick={() => router.push('/menu')} className="btn btn-primary btn-premium px-4 py-2 text-xs font-bold rounded-xl cursor-pointer">Go to Menu</button>
       </div>
-    );
-  }
+    </div>
+  );
 
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-background">
-        <div className="card max-w-md w-full bg-surface border border-border p-8 rounded-2xl shadow-xl text-center space-y-4">
-          <span className="text-3xl">⚠️</span>
-          <h2 className="text-lg font-bold text-[var(--text-primary)]">Error</h2>
-          <p className="text-sm text-[var(--text-secondary)] font-semibold">{error}</p>
-          <Link href="/menu" className="btn btn-primary btn-premium px-4 py-2 text-xs font-bold rounded-xl">Go to Menu</Link>
-        </div>
+  if (error) return (
+    <div className="min-h-screen flex items-center justify-center p-6 bg-background">
+      <div className="card max-w-md w-full bg-surface border border-border p-8 rounded-2xl shadow-xl text-center space-y-4">
+        <span className="text-3xl">⚠️</span>
+        <h2 className="text-lg font-bold text-[var(--text-primary)]">Error</h2>
+        <p className="text-sm text-[var(--text-secondary)] font-semibold">{error}</p>
+        <Link href="/menu" className="btn btn-primary btn-premium px-4 py-2 text-xs font-bold rounded-xl">Go to Menu</Link>
       </div>
-    );
-  }
+    </div>
+  );
 
-  // Cart derived totals
+  if (session?.status === 'completed') return (
+    <PaymentScreen session={session} tableNumber={tableNumber} onConfirm={handleConfirmPayment} isConfirming={isConfirmingPayment} />
+  );
+
   const cartTotal = cartItems.reduce((sum, ci) => sum + (ci.menu_items?.price || 0) * ci.quantity, 0);
-
-  // ── Full-page Payment Screen when bill has been generated ────────────────────
-  if (session?.status === 'completed') {
-    return (
-      <PaymentScreen
-        session={session}
-        tableNumber={tableNumber}
-        onConfirm={handleConfirmPayment}
-        isConfirming={isConfirmingPayment}
-      />
-    );
-  }
 
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--text-primary)] flex flex-col md:flex-row">
@@ -350,48 +422,150 @@ export default function CustomerOrderPage() {
               <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">Table {tableNumber} Orders</h1>
             </div>
             <p className="text-xs text-[var(--text-secondary)] mt-1.5 font-medium uppercase tracking-wider">
-              Session PIN: <span className="font-sans font-bold text-[var(--accent)]">{session.pin}</span> &bull; Status: {session.status}
+              PIN: <span className="font-sans font-bold text-[var(--accent)]">{session.pin}</span> · Status: {session.status}
             </p>
           </div>
           <button
             onClick={() => { loadSession(devRole); loadCart(localStorage.getItem('sessionId')); }}
-            className="btn btn-ghost bg-background border-border hover:bg-surface flex items-center justify-center gap-2 rounded-xl text-xs font-bold cursor-pointer h-10 px-4"
+            className="btn btn-ghost bg-background border-border hover:bg-surface flex items-center gap-2 rounded-xl text-xs font-bold cursor-pointer h-10 px-4"
           >
-            <RefreshCw size={14} /><span>Refresh</span>
+            <RefreshCw size={14} /> Refresh
           </button>
         </div>
 
-        {/* Wait Time Indicator */}
+
+
+        {/* Order Progress Dashboard */}
         {(() => {
-          const activeOrders = session.orders?.filter(o => ['placed', 'preparing'].includes(o.status)) || [];
-          if (activeOrders.length === 0) return null;
-          const sortedActive = [...activeOrders].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-          const earliestOrder = sortedActive[0];
-          const totalEst = earliestOrder.estimated_wait_minutes || 15;
-          const elapsedMins = Math.floor((currentTime - new Date(earliestOrder.created_at)) / 60000);
-          const remainingTime = Math.max(1, totalEst - elapsedMins);
+          const activeOrders = session.orders?.filter(o => ['placed', 'preparing', 'ready'].includes(o.status)) || [];
+          const allSessionItems = activeOrders.flatMap(o => o.items || []);
+          const totalItems = allSessionItems.length;
+          if (totalItems === 0) return null;
+
+          const readyItems = allSessionItems.filter(i => i.status === 'ready').length;
+          const progressPercentage = Math.round((readyItems / totalItems) * 100);
+
+          // Calculate our items' max remaining prep time
+          let ourMaxSecsRemaining = 0;
+          allSessionItems.forEach(item => {
+            if (item.status === 'ready') return;
+            if (item.status === 'preparing') {
+              const left = itemTimers[item.id] ?? (item.prep_time_minutes * 60);
+              if (left > ourMaxSecsRemaining) ourMaxSecsRemaining = left;
+            } else {
+              // pending
+              const left = (item.prep_time_minutes || 15) * 60;
+              if (left > ourMaxSecsRemaining) ourMaxSecsRemaining = left;
+            }
+          });
+
+          const ourMaxMins = Math.ceil(ourMaxSecsRemaining / 60);
+          
+          // Total dynamic wait: our time + (orders ahead * 5 minutes)
+          const hasActiveItems = allSessionItems.some(i => i.status !== 'ready');
+          const dynamicWaitMin = hasActiveItems 
+            ? Math.max(10, ourMaxMins + (queueStatus.ordersAhead * 5))
+            : 0;
+
+          // Circular progress ring calculation
+          const radius = 32;
+          const strokeWidth = 6;
+          const circumference = 2 * Math.PI * radius;
+          const strokeDashoffset = circumference - (progressPercentage / 100) * circumference;
+
+          const isFullyPrepared = progressPercentage === 100;
+
           return (
-            <div className="card bg-[var(--surface-raised)] border border-[var(--accent)]/30 p-6 rounded-2xl relative overflow-hidden shadow-lg">
+            <div className="card bg-surface border border-border p-6 rounded-2xl shadow-xl flex flex-col sm:flex-row items-center gap-6 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--accent)] opacity-5 rounded-full blur-3xl pointer-events-none" />
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-[var(--accent)]/10 text-[var(--accent)] rounded-xl border border-[var(--accent)]/20 animate-pulse">
-                  <Clock size={24} />
+              
+              {/* Left Side: Circular SVG Loader */}
+              <div className="relative flex items-center justify-center shrink-0">
+                <svg className="w-20 h-20 transform -rotate-90">
+                  <circle
+                    cx="40"
+                    cy="40"
+                    r={radius}
+                    className="text-border"
+                    strokeWidth={strokeWidth}
+                    stroke="currentColor"
+                    fill="transparent"
+                  />
+                  <circle
+                    cx="40"
+                    cy="40"
+                    r={radius}
+                    className="text-[var(--accent)] transition-all duration-1000 ease-out"
+                    strokeWidth={strokeWidth}
+                    strokeDasharray={circumference}
+                    strokeDashoffset={strokeDashoffset}
+                    strokeLinecap="round"
+                    stroke="currentColor"
+                    fill="transparent"
+                  />
+                </svg>
+                <div className="absolute flex flex-col items-center">
+                  <span className="text-sm font-extrabold text-[var(--text-primary)] font-mono">{progressPercentage}%</span>
+                  <span className="text-[8px] text-[var(--text-muted)] uppercase tracking-wider font-semibold">Done</span>
                 </div>
-                <div>
-                  <h3 className="text-md font-bold text-[var(--text-primary)]">Preparing Your Order</h3>
-                  <p className="text-xs text-[var(--text-secondary)] font-medium mt-0.5">
-                    Estimated remaining time: <span className="text-[var(--accent)] font-bold font-mono text-sm">{remainingTime} mins</span>
-                  </p>
+              </div>
+
+              {/* Right Side: Status Details */}
+              <div className="flex-1 text-center sm:text-left space-y-2">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                  <h2 className="text-base font-bold text-[var(--text-primary)] flex items-center justify-center sm:justify-start gap-2">
+                    <Clock size={16} className={`text-[var(--accent)] ${!isFullyPrepared ? 'animate-pulse' : ''}`} />
+                    {isFullyPrepared ? 'All Items Prepared! 🎉' : 'Your Order Progress'}
+                  </h2>
+                  {!isFullyPrepared && (
+                    <span className="inline-flex self-center items-center rounded-full px-2 py-0.5 text-[9px] font-medium bg-warning/10 text-warning border border-warning/20">
+                      Preparing Food
+                    </span>
+                  )}
+                </div>
+
+                <div className="space-y-1">
+                  <div className="text-2xl font-black font-sans tracking-tight text-[var(--text-primary)]">
+                    {isFullyPrepared ? (
+                      <span className="text-success">Ready to Serve!</span>
+                    ) : (
+                      <>
+                        <span className="text-[var(--accent)] font-mono">{dynamicWaitMin}</span>
+                        <span className="text-sm font-bold text-[var(--text-secondary)] ml-1">mins remaining</span>
+                      </>
+                    )}
+                  </div>
+
+                  <div className="space-y-1 text-xs text-[var(--text-secondary)] font-medium">
+                    {isFullyPrepared ? (
+                      <p>🍽️ All ordered items are ready. Please collect or wait for service.</p>
+                    ) : (
+                      <>
+                        <p className="flex items-center justify-center sm:justify-start gap-1">
+                          <span>📋</span>
+                          {queueStatus.ordersAhead === 0 ? (
+                            <span>Your order is next in the kitchen queue!</span>
+                          ) : (
+                            <span>
+                              <strong>{queueStatus.ordersAhead}</strong> order{queueStatus.ordersAhead !== 1 ? 's' : ''} from other tables ahead of yours.
+                            </span>
+                          )}
+                        </p>
+                        <p className="text-[10px] text-[var(--text-muted)] italic">
+                          Wait time adjusts dynamically as previous orders complete.
+                        </p>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
           );
         })()}
 
-        {/* ─── SHARED CART SECTION ─── */}
+        {/* Shared Cart */}
         {['open', 'locked'].includes(session.status) && (
           <div className="card bg-surface border border-border p-6 rounded-2xl shadow-xl space-y-4">
-            {/* Header */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <ShoppingCart size={18} className="text-[var(--accent)]" />
@@ -401,22 +575,16 @@ export default function CustomerOrderPage() {
                 ⚡ Real-time · All devices
               </span>
             </div>
-
-            {/* Cart error */}
             {cartError && (
               <div className="flex items-center gap-2 text-destructive text-xs font-semibold p-3 bg-destructive-bg rounded-lg border border-destructive-border/50">
-                <span className="shrink-0">⚠️</span><span>{cartError}</span>
+                <span>⚠️</span><span>{cartError}</span>
               </div>
             )}
-
-            {/* Order placed success */}
             {orderPlacedMsg && (
-              <div className="flex items-center gap-2 text-success text-xs font-semibold p-3 bg-success-bg rounded-lg border border-[#205a30]/50">
+              <div className="flex items-center gap-2 text-success text-xs font-semibold p-3 bg-success-bg rounded-lg border border-success/30">
                 <CheckCircle2 size={14} className="shrink-0" /><span>{orderPlacedMsg}</span>
               </div>
             )}
-
-            {/* Cart body */}
             {isCartLoading ? (
               <div className="text-center py-6">
                 <Loader2 size={20} className="animate-spin inline text-[var(--accent)]" />
@@ -424,192 +592,204 @@ export default function CustomerOrderPage() {
               </div>
             ) : cartItems.length === 0 ? (
               <div className="text-center py-8 space-y-3">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-background border border-border text-[var(--text-secondary)]">
-                  <ShoppingCart size={22} />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-[var(--text-secondary)]">Cart is empty</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">Go to the menu, pick your items, and tap <strong>Add to Cart</strong>.</p>
-                </div>
-                <Link
-                  href="/menu"
-                  className="inline-block btn bg-background border border-border hover:bg-surface text-xs px-5 py-2 rounded-xl font-bold text-[var(--text-primary)]"
-                >
+                <ShoppingCart size={28} className="mx-auto text-[var(--text-secondary)]" />
+                <p className="text-sm font-semibold text-[var(--text-secondary)]">Cart is empty</p>
+                <Link href="/menu" className="inline-block btn bg-background border border-border hover:bg-surface text-xs px-5 py-2 rounded-xl font-bold text-[var(--text-primary)]">
                   Browse Menu →
                 </Link>
               </div>
             ) : (
               <>
-                {/* Cart items list */}
                 <div className="space-y-3">
                   {cartItems.map(ci => (
-                    <div key={ci.menu_item_id} className="flex items-center gap-3 group">
-                      {/* Name + price per unit */}
+                    <div key={ci.menu_item_id} className="flex items-center gap-3">
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-[var(--text-primary)] truncate">
-                          {ci.menu_items?.name || 'Item'}
-                        </p>
-                        <p className="text-xs text-[var(--text-muted)] font-mono">
-                          {formatCurrency(ci.menu_items?.price || 0)} each
-                        </p>
+                        <p className="text-sm font-semibold text-[var(--text-primary)] truncate">{ci.menu_items?.name || 'Item'}</p>
+                        <p className="text-xs text-[var(--text-muted)] font-mono">{formatCurrency(ci.menu_items?.price || 0)} each</p>
                       </div>
-
-                      {/* Qty controls */}
                       <div className="flex items-center gap-1.5 shrink-0">
-                        <button
-                          onClick={() => updateCartItemQty(ci.menu_item_id, ci.quantity - 1)}
-                          className="w-7 h-7 rounded-lg bg-background hover:bg-surface-raised border border-border flex items-center justify-center text-[var(--text-primary)] transition-all cursor-pointer"
-                          title={ci.quantity === 1 ? 'Remove item' : 'Decrease quantity'}
-                        >
+                        <button onClick={() => updateCartItemQty(ci.menu_item_id, ci.quantity - 1)}
+                          className="w-7 h-7 rounded-lg bg-background hover:bg-surface-raised border border-border flex items-center justify-center text-[var(--text-primary)] transition-all cursor-pointer">
                           {ci.quantity === 1 ? <Trash2 size={11} className="text-red-400" /> : <Minus size={11} />}
                         </button>
-                        <span className="w-8 text-center text-sm font-bold text-[var(--text-primary)]">
-                          {ci.quantity}
-                        </span>
-                        <button
-                          onClick={() => updateCartItemQty(ci.menu_item_id, ci.quantity + 1)}
-                          className="w-7 h-7 rounded-lg bg-background hover:bg-surface-raised border border-border flex items-center justify-center text-[var(--text-primary)] transition-all cursor-pointer"
-                        >
+                        <span className="w-8 text-center text-sm font-bold text-[var(--text-primary)]">{ci.quantity}</span>
+                        <button onClick={() => updateCartItemQty(ci.menu_item_id, ci.quantity + 1)}
+                          className="w-7 h-7 rounded-lg bg-background hover:bg-surface-raised border border-border flex items-center justify-center text-[var(--text-primary)] transition-all cursor-pointer">
                           <Plus size={11} />
                         </button>
                       </div>
-
-                      {/* Line total */}
                       <span className="w-20 text-right text-sm font-mono font-bold text-[var(--accent)] shrink-0">
                         {formatCurrency((ci.menu_items?.price || 0) * ci.quantity)}
                       </span>
                     </div>
                   ))}
                 </div>
-
-                {/* Divider + Cart total */}
                 <div className="flex justify-between items-center pt-3 border-t border-border/60">
                   <span className="text-sm font-semibold text-[var(--text-secondary)]">
-                    Cart Total <span className="text-[var(--text-muted)] font-normal">({cartItems.length} item type{cartItems.length !== 1 ? 's' : ''})</span>
+                    Cart Total <span className="text-[var(--text-muted)] font-normal">({cartItems.length} item{cartItems.length!==1?'s':''})</span>
                   </span>
-                  <span className="text-xl font-mono font-bold text-[var(--accent)]">
-                    {formatCurrency(cartTotal)}
-                  </span>
+                  <span className="text-xl font-mono font-bold text-[var(--accent)]">{formatCurrency(cartTotal)}</span>
                 </div>
-
-                {/* Place Order button */}
-                <button
-                  onClick={handlePlaceOrder}
-                  disabled={isPlacingOrder || cartItems.length === 0}
-                  className="btn btn-primary btn-premium w-full flex items-center justify-center gap-2 rounded-xl h-12 font-bold cursor-pointer mt-1 disabled:opacity-60"
-                >
-                  {isPlacingOrder ? (
-                    <><Loader2 size={16} className="animate-spin" /><span>Placing Order…</span></>
-                  ) : (
-                    <><UtensilsCrossed size={16} /><span>Place Order</span></>
-                  )}
+                <button onClick={handlePlaceOrder} disabled={isPlacingOrder || cartItems.length === 0}
+                  className="btn btn-primary btn-premium w-full flex items-center justify-center gap-2 rounded-xl h-12 font-bold cursor-pointer disabled:opacity-60">
+                  {isPlacingOrder
+                    ? <><Loader2 size={16} className="animate-spin" /><span>Placing Order…</span></>
+                    : <><UtensilsCrossed size={16} /><span>Place Order</span></>
+                  }
                 </button>
-                <p className="text-center text-[10px] text-[var(--text-muted)] -mt-1">
-                  Changes sync in real-time across all devices at this table
-                </p>
               </>
             )}
           </div>
         )}
 
-        {/* ─── ORDER HISTORY ─── */}
-        <div className="space-y-6">
+        {/* Order History */}
+        <div className="space-y-4">
           <h2 className="text-lg font-bold text-[var(--text-primary)]">Order History</h2>
 
           {session.orders && session.orders.length > 0 ? (
             <div className="space-y-4">
-              {session.orders.map((order, idx) => (
-                <div key={order.id} className="card bg-surface border border-border p-6 rounded-2xl shadow-md transition-all">
-                  <div className="flex items-start justify-between mb-4 pb-3 border-b border-border/60">
-                    <div>
-                      <h3 className="text-sm font-bold text-[var(--text-primary)]">Order #{session.orders.length - idx}</h3>
-                      <p className="text-[10px] text-[var(--text-muted)] mt-0.5 font-mono">ID: {order.id.substring(0, 8)}</p>
-                    </div>
-                    {(() => {
-                      let badgeColor = 'bg-gray-700 text-gray-200';
-                      if (order.status === 'placed') badgeColor = 'bg-yellow-900/60 border border-yellow-800 text-yellow-200';
-                      if (order.status === 'preparing') badgeColor = 'bg-orange-950/60 border border-orange-800 text-orange-300';
-                      if (order.status === 'ready') badgeColor = 'bg-blue-950/60 border border-blue-800 text-blue-300';
-                      if (order.status === 'delivered') badgeColor = 'bg-green-950/60 border border-green-800 text-green-300';
-                      if (order.status === 'cancelled') badgeColor = 'bg-red-950/60 border border-red-800 text-red-300';
-                      return (
-                        <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${badgeColor}`}>
-                          {order.status}
-                        </span>
-                      );
-                    })()}
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="space-y-2.5">
-                      {order.items?.map((item, itemIdx) => (
-                        <div key={itemIdx} className="flex justify-between items-center text-sm font-semibold">
-                          <span className="text-[var(--text-primary)]">
-                            {item.name} <span className="text-zinc-500 font-bold ml-1.5">x{item.quantity}</span>
-                          </span>
-                          <span className="text-zinc-400 font-mono text-xs">{formatCurrency(item.price_at_order * item.quantity)}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    {order.status === 'preparing' && order.estimated_wait_minutes && (
-                      <div className="flex justify-between items-center text-sm font-semibold pt-1 border-t border-border/20">
-                        <span className="text-[var(--text-secondary)]">Est. Prep Time</span>
-                        <span className="text-[var(--accent)] font-mono">{order.estimated_wait_minutes} mins</span>
+              {session.orders.map((order, idx) => {
+                const progressMeta = getOrderProgressMeta(order);
+                return (
+                  <div key={order.id} className="card bg-surface border border-border rounded-2xl shadow-md overflow-hidden">
+                    {/* Order header */}
+                    <div className="flex items-start justify-between px-5 py-4 border-b border-border/60">
+                      <div>
+                        <h3 className="text-sm font-bold text-[var(--text-primary)]">Order #{session.orders.length - idx}</h3>
+                        <p className="text-[10px] text-[var(--text-muted)] mt-0.5 font-mono">ID: {order.id.substring(0, 8)}</p>
                       </div>
-                    )}
+                      {(() => {
+                        let bc = 'bg-gray-700 text-gray-200';
+                        if (order.status === 'placed')    bc = 'bg-yellow-900/60 border border-yellow-800 text-yellow-200';
+                        if (order.status === 'preparing') bc = 'bg-orange-950/60 border border-orange-800 text-orange-300';
+                        if (order.status === 'ready')     bc = 'bg-blue-950/60 border border-blue-800 text-blue-300';
+                        if (order.status === 'delivered') bc = 'bg-green-950/60 border border-green-800 text-green-300';
+                        if (order.status === 'cancelled') bc = 'bg-red-950/60 border border-red-800 text-red-300';
+                        return <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${bc}`}>{order.status}</span>;
+                      })()}
+                    </div>
 
-                    <div className="flex justify-between items-center text-sm font-bold pt-2 border-t border-border/40">
-                      <span className="text-[var(--text-secondary)]">Order Subtotal</span>
-                      <span className="text-[var(--accent)] font-mono">{formatCurrency(order.total_price)}</span>
+                    {/* Progress pill */}
+                    <div className="px-5 pt-3">
+                      <div className={`inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider ${progressMeta.className}`}>
+                        <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                        <span>{progressMeta.label}</span>
+                        <span className="normal-case tracking-normal opacity-75 font-normal">{progressMeta.description}</span>
+                      </div>
+                    </div>
+
+                    {/* ── Items — scrollable box ── */}
+                    <div className="px-5 pt-3 pb-1">
+                      <div className="max-h-64 overflow-y-auto space-y-2 pr-1 scrollbar-thin">
+                        {order.items?.filter(item => item.status !== 'ready').map((item) => {
+                          const statusMeta  = getItemStatusMeta(item.status);
+                          const isReady     = item.status === 'ready';
+                          const isPreparing = item.status === 'preparing';
+                          const secsLeft    = itemTimers[item.id] ?? null;
+                          const timeLabel   = isPreparing ? formatMinsLeft(secsLeft) : null;
+
+                          return (
+                            <div
+                              key={item.id || item.name}
+                              className={`rounded-xl border p-3 transition-all ${
+                                isReady
+                                  ? 'bg-success/5 border-success/20 opacity-80'
+                                  : isPreparing
+                                  ? 'bg-warning/5 border-warning/20'
+                                  : 'bg-[var(--surface-raised)] border-border'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  {/* Status icon */}
+                                  {isReady ? (
+                                    <CheckCircle2 size={14} className="text-success shrink-0" />
+                                  ) : (
+                                    <span className={`w-2 h-2 rounded-full shrink-0 ${isPreparing ? 'bg-warning animate-pulse' : 'bg-[var(--text-secondary)]'}`} />
+                                  )}
+                                  <div className="min-w-0">
+                                    <p className={`text-sm font-semibold truncate ${isReady ? 'line-through text-[var(--text-secondary)]' : 'text-[var(--text-primary)]'}`}>
+                                      {item.name}
+                                      <span className="text-[var(--text-secondary)] font-normal ml-1.5">×{item.quantity}</span>
+                                    </p>
+                                    <p className="text-[10px] text-[var(--text-secondary)]">
+                                      {formatCurrency(item.price_at_order)} each
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="shrink-0 text-right">
+                                  <span className={`text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full border ${statusMeta.className}`}>
+                                    {statusMeta.label}
+                                  </span>
+                                  {/* Live countdown or prep time for customer */}
+                                  {item.status === 'pending' && item.prep_time_minutes && (
+                                    <p className="text-[10px] text-[var(--text-secondary)] font-mono mt-1 flex items-center justify-end gap-0.5">
+                                      <Clock size={9} /> Est: {item.prep_time_minutes}m
+                                    </p>
+                                  )}
+                                  {isPreparing && timeLabel && (
+                                    <p className="text-[10px] text-warning font-mono mt-1 flex items-center justify-end gap-0.5">
+                                      <Clock size={9} /> {timeLabel}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex justify-between items-center mt-2 pt-1.5 border-t border-border/30 text-[10px] text-[var(--text-secondary)]">
+                                <span>Line total</span>
+                                <span className="font-mono">{formatCurrency(item.subtotal)}</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Order footer */}
+                    <div className="px-5 py-4 space-y-1">
+                      {order.status === 'preparing' && order.estimated_wait_minutes && (
+                        <div className="flex justify-between items-center text-xs font-semibold">
+                          <span className="text-[var(--text-secondary)]">Est. prep time</span>
+                          <span className="text-[var(--accent)] font-mono">{order.estimated_wait_minutes} mins</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between items-center text-sm font-bold pt-1 border-t border-border/40">
+                        <span className="text-[var(--text-secondary)]">Order Subtotal</span>
+                        <span className="text-[var(--accent)] font-mono">{formatCurrency(order.total_price)}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="card p-12 border border-border rounded-2xl text-center">
-              <div className="inline-flex items-center justify-center p-3 bg-surface text-[var(--text-secondary)] rounded-2xl mb-4 border border-border">
-                <ChefHat size={32} />
-              </div>
+              <ChefHat size={32} className="mx-auto text-[var(--text-secondary)] mb-4" />
               <p className="text-sm text-[var(--text-secondary)] font-semibold">No orders placed yet.</p>
-              <p className="text-xs text-[var(--text-muted)] font-semibold mt-1">Add items to the cart above and place your first order!</p>
             </div>
           )}
         </div>
 
-        {/* ─── SESSION SUMMARY ─── */}
+        {/* Session Summary */}
         <div className="card bg-surface border border-border p-6 rounded-2xl shadow-xl space-y-4">
           <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--text-secondary)]">Session Summary</h2>
           <div className="flex justify-between items-center">
             <span className="text-sm font-semibold text-[var(--text-secondary)]">Total running bill</span>
             <span className="text-xl font-mono font-bold text-[var(--accent)]">{formatCurrency(session.running_total)}</span>
           </div>
-
-          {/* End Ordering & Get Bill — only for customers while session is locked */}
           {devRole === 'customer' && session.status === 'locked' && (
             <div className="pt-2 border-t border-border/40">
-              <button
-                onClick={handleEndOrdering}
-                disabled={isEndingSession}
-                className="btn w-full flex items-center justify-center gap-2 rounded-xl h-11 font-bold cursor-pointer bg-background border border-border hover:bg-surface text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all"
-              >
-                {isEndingSession ? (
-                  <><Loader2 className="animate-spin" size={16} /><span>Processing…</span></>
-                ) : (
-                  <span>End Ordering &amp; Request Bill</span>
-                )}
+              <button onClick={handleEndOrdering} disabled={isEndingSession}
+                className="btn w-full flex items-center justify-center gap-2 rounded-xl h-11 font-bold cursor-pointer bg-background border border-border hover:bg-surface text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all">
+                {isEndingSession ? <><Loader2 className="animate-spin" size={16} /><span>Processing…</span></> : <span>End Ordering &amp; Request Bill</span>}
               </button>
               <p className="text-center text-[10px] text-[var(--text-muted)] mt-2">
                 Locks the menu and notifies staff to collect payment
               </p>
             </div>
           )}
-
-          {/* Status message when locked */}
           {session.status === 'locked' && (
-            <div className="pt-3 border-t border-border/40 text-center space-y-1">
-              <p className="text-xs text-[var(--text-muted)] font-medium">🔒 Session locked. No new devices can join, but you can continue ordering.</p>
+            <div className="pt-3 border-t border-border/40 text-center">
+              <p className="text-xs text-[var(--text-muted)] font-medium">🔒 Session locked. You can still add more items.</p>
             </div>
           )}
         </div>
@@ -617,6 +797,19 @@ export default function CustomerOrderPage() {
       </main>
 
       <ConfirmDialog {...confirmDialog} onCancel={closeConfirm} />
+
+      {/* Customer ready toast — centered bottom */}
+      {readyToast && (
+        <CustomerReadyToast item={readyToast} onDismiss={() => setReadyToast(null)} />
+      )}
+
+      <style>{`
+        @keyframes slide-up {
+          from { opacity: 0; transform: translateX(-50%) translateY(16px); }
+          to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        .animate-slide-up { animation: slide-up 0.3s ease-out forwards; }
+      `}</style>
     </div>
   );
 }
