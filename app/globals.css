@@ -179,21 +179,21 @@
     text-transform: uppercase;
   }
 
-  .badge-placed { background-color: #1E2430; color: #6B8BBF; }
-  .badge-preparing { background-color: #2A1F0A; color: #D4862A; }
-  .badge-ready { background-color: #0F2318; color: #4A9B6A; }
-  .badge-delivered { background-color: #1E1E1E; color: #6A6460; }
-  .badge-cancelled { background-color: #2A1010; color: #C45A5A; }
-  .badge-pending { background-color: #1E1E1E; color: #8A8480; }
-  .badge-approved { background-color: #0F2318; color: #4A9B6A; }
-  .badge-rejected { background-color: #2A1010; color: #C45A5A; }
-  .badge-inactive { background-color: #1A1A1A; color: #4A4744; }
-  .badge-open { background-color: #1A2410; color: #6A9B4A; }
-  .badge-locked { background-color: #2A1F0A; color: #D4862A; }
-  .badge-completed { background-color: #0F1E2A; color: #4A7AAB; }
-  .badge-cleared { background-color: #1A1A1A; color: #4A4744; }
-  .badge-admin { background-color: #2A1F0A; color: #D4862A; }
-  .badge-staff { background-color: #1E1E1E; color: #8A8480; }
+  .badge-placed { background-color: var(--info-bg); color: var(--info); }
+  .badge-preparing { background-color: var(--warning-bg); color: var(--warning); }
+  .badge-ready { background-color: var(--success-bg); color: var(--success); }
+  .badge-delivered { background-color: var(--surface-raised); color: var(--text-secondary); }
+  .badge-cancelled { background-color: var(--destructive-bg); color: var(--destructive); }
+  .badge-pending { background-color: var(--surface-raised); color: var(--text-secondary); }
+  .badge-approved { background-color: var(--success-bg); color: var(--success); }
+  .badge-rejected { background-color: var(--destructive-bg); color: var(--destructive); }
+  .badge-inactive { background-color: var(--surface-raised); color: var(--text-muted); }
+  .badge-open { background-color: var(--success-bg); color: var(--success); }
+  .badge-locked { background-color: var(--warning-bg); color: var(--warning); }
+  .badge-completed { background-color: var(--info-bg); color: var(--info); }
+  .badge-cleared { background-color: var(--surface-raised); color: var(--text-muted); }
+  .badge-admin { background-color: var(--warning-bg); color: var(--warning); }
+  .badge-staff { background-color: var(--surface-raised); color: var(--text-secondary); }
 
   /* Buttons */
   .btn {

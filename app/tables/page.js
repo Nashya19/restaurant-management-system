@@ -569,7 +569,7 @@ useEffect(() => {
                         navigator.clipboard.writeText(table.session_id);
                         await showAlert('Session ID copied to clipboard!');
                       }}
-                      className="text-[10px] hover:text-[var(--accent)] cursor-pointer select-none bg-[#27272a]/60 px-1 py-0.5 rounded border border-[#3f3f46] hover:bg-[#3f3f46]/60 transition-all"
+                      className="text-[10px] hover:text-[var(--accent)] cursor-pointer select-none bg-surface-raised/60 px-1 py-0.5 rounded border border-border hover:bg-border/60 transition-all"
                       title="Copy Full Session ID"
                     >
                       Copy

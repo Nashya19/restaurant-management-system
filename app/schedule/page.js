@@ -650,7 +650,7 @@ export default function SchedulePage() {
       )}
 
       {successMsg && (
-        <div className="flex items-start gap-2 bg-success-bg border border-[#2a5c3a] text-success text-sm p-4 rounded-xl">
+        <div className="flex items-start gap-2 bg-success-bg border border-success-border text-success text-sm p-4 rounded-xl">
           <CheckCircle size={16} className="shrink-0 mt-0.5" />
           <span>{successMsg}</span>
         </div>
@@ -781,7 +781,7 @@ export default function SchedulePage() {
               onClick={() => setShowAdmins(prev => !prev)}
               className={`text-xs font-bold px-3.5 py-1.5 rounded-lg transition-all cursor-pointer ${
                 showAdmins
-                  ? 'bg-success-bg text-success border border-[#2a5c3a]/50'
+                  ? 'bg-success-bg text-success border border-success-border/50'
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-transparent'
               }`}
             >
@@ -851,7 +851,7 @@ export default function SchedulePage() {
                             <span className="text-[9px] uppercase text-[var(--accent)] font-bold tracking-wider block">Requester</span>
                             <p className="text-xs font-bold text-[var(--text-primary)]">{req.requester?.full_name}</p>
                             <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-[var(--text-secondary)] mt-1">
-                              <span className="px-1.5 py-0.5 bg-[#27272a]/60 border border-[#3f3f46]/40 rounded text-[9px] font-mono text-[var(--text-primary)] uppercase font-semibold">
+                              <span className="px-1.5 py-0.5 bg-surface-raised/60 border border-border/40 rounded text-[9px] font-mono text-[var(--text-primary)] uppercase font-semibold">
                                 {formatStationAsLayer(req.requester_shift?.station)}
                               </span>
                               <span className="block font-medium truncate max-w-[120px]">{formatDate(req.requester_shift?.start_time, 'datetime')}</span>
@@ -869,7 +869,7 @@ export default function SchedulePage() {
                             <p className="text-xs font-bold text-[var(--text-primary)]">{req.target?.full_name}</p>
                             <div className="flex flex-wrap items-center justify-end gap-1.5 text-[10px] text-[var(--text-secondary)] mt-1">
                               <span className="block font-medium truncate max-w-[120px]">{formatDate(req.target_shift?.start_time, 'datetime')}</span>
-                              <span className="px-1.5 py-0.5 bg-[#27272a]/60 border border-[#3f3f46]/40 rounded text-[9px] font-mono text-[var(--text-primary)] uppercase font-semibold">
+                              <span className="px-1.5 py-0.5 bg-surface-raised/60 border border-border/40 rounded text-[9px] font-mono text-[var(--text-primary)] uppercase font-semibold">
                                 {formatStationAsLayer(req.target_shift?.station)}
                               </span>
                             </div>
@@ -909,11 +909,11 @@ export default function SchedulePage() {
                         <span className="font-bold text-[var(--text-primary)]">{req.target?.full_name}</span>
                       </div>
                       <div className="flex items-center gap-1.5 text-[10px] text-[var(--text-secondary)]">
-                        <span className="px-1.5 py-0.5 bg-[#27272a]/60 border border-[#3f3f46]/40 rounded text-[9px] font-mono uppercase text-[var(--text-primary)] font-semibold">
+                        <span className="px-1.5 py-0.5 bg-surface-raised/60 border border-border/40 rounded text-[9px] font-mono uppercase text-[var(--text-primary)] font-semibold">
                           {formatStationAsLayer(req.requester_shift?.station)}
                         </span>
                         <span className="opacity-50">&</span>
-                        <span className="px-1.5 py-0.5 bg-[#27272a]/60 border border-[#3f3f46]/40 rounded text-[9px] font-mono uppercase text-[var(--text-primary)] font-semibold">
+                        <span className="px-1.5 py-0.5 bg-surface-raised/60 border border-border/40 rounded text-[9px] font-mono uppercase text-[var(--text-primary)] font-semibold">
                           {formatStationAsLayer(req.target_shift?.station)}
                         </span>
                       </div>
@@ -921,7 +921,7 @@ export default function SchedulePage() {
                     <span
                       className={`px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase tracking-wider border shrink-0 ${
                         req.status === 'approved'
-                          ? 'bg-success-bg border-[#2a5c3a]/60 text-success'
+                          ? 'bg-success-bg border-success-border/60 text-success'
                           : 'bg-destructive-bg border-destructive-border/60 text-destructive'
                       }`}
                     >

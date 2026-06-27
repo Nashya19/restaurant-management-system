@@ -451,7 +451,7 @@ export default function SessionHistoryPage() {
                                 navigator.clipboard.writeText(session.id);
                                 await showAlert('Session ID copied!');
                               }}
-                              className="ml-2 text-[10px] bg-[#27272a]/80 px-1 py-0.5 rounded border border-[#3f3f46] hover:bg-[#3f3f46] hover:text-[var(--accent)] transition-all cursor-pointer"
+                              className="ml-2 text-[10px] bg-surface-raised/80 px-1 py-0.5 rounded border border-border hover:bg-border hover:text-[var(--accent)] transition-all cursor-pointer"
                             >
                               Copy
                             </button>
@@ -636,7 +636,7 @@ export default function SessionHistoryPage() {
             </div>
 
             {/* Total */}
-            <div className="bg-success-bg border border-[#2a5c3a]/50 text-success p-4 rounded-xl mb-6 flex items-center justify-between">
+            <div className="bg-success-bg border border-success-border/50 text-success p-4 rounded-xl mb-6 flex items-center justify-between">
               <div>
                 <p className="text-xs uppercase font-bold tracking-wider text-success/80">Running / Total Amount</p>
                 <p className="text-2xl font-mono font-bold mt-1">${(selectedSession.running_total || 0).toFixed(2)}</p>

@@ -207,7 +207,7 @@ export default function UsersPage() {
                       {user.full_name}
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase ${user.role === 'admin' ? 'bg-warning-bg text-warning' : 'bg-[#1e1e1e] text-[#8a8480]'}`}>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase ${user.role === 'admin' ? 'bg-warning-bg text-warning' : 'bg-surface-raised text-text-secondary'}`}>
                         {formatRole(user.role)}
                       </span>
                     </td>

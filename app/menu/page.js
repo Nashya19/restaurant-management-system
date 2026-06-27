@@ -377,7 +377,7 @@ export default function MenuPage() {
                 >
                   <div className="flex items-center gap-3">
                     <span className="text-md font-bold text-[var(--text-primary)] capitalize">{category.name}</span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#27272a] text-[var(--text-secondary)]">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-surface-raised text-[var(--text-secondary)]">
                       {groupItems.length} item{groupItems.length !== 1 ? 's' : ''}
                     </span>
                   </div>
@@ -409,7 +409,7 @@ export default function MenuPage() {
                         {groupItems.map(item => (
                           <tr
                             key={item.id}
-                            className={`hover:bg-background/20 transition-colors ${item.is_archived ? 'opacity-50' : ''} ${devRole === 'customer' && !item.is_available ? 'opacity-60 bg-[#121214]/50' : ''}`}
+                            className={`hover:bg-background/20 transition-colors ${item.is_archived ? 'opacity-50' : ''} ${devRole === 'customer' && !item.is_available ? 'opacity-60 bg-background/50' : ''}`}
                           >
                             <td className={`px-6 py-4 text-sm font-semibold ${item.is_archived ? 'line-through text-[var(--text-muted)]' : 'text-[var(--text-primary)]'}`}>
                               <div>
@@ -427,7 +427,7 @@ export default function MenuPage() {
                                 <td className="px-6 py-4 text-sm font-medium text-[var(--text-secondary)]">{item.prep_time_minutes} min</td>
                                 <td className="px-6 py-4">
                                   {item.is_archived ? (
-                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase bg-[#242424] text-[var(--text-secondary)]">Archived</span>
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase bg-surface-raised text-[var(--text-secondary)]">Archived</span>
                                   ) : (
                                     <span className={`px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase ${item.is_available ? 'bg-success-bg text-success' : 'bg-destructive-bg text-destructive'}`}>
                                       {item.is_available ? 'Available' : 'Unavailable'}
@@ -522,7 +522,7 @@ export default function MenuPage() {
           )}
           {/* Success banner */}
           {addedToCart && (
-            <div className="px-6 pt-3 pb-1 flex items-center gap-2 text-success text-xs font-semibold bg-success-bg border-b border-[#205a30]/50">
+            <div className="px-6 pt-3 pb-1 flex items-center gap-2 text-success text-xs font-semibold bg-success-bg border-b border-success-border/50">
               <CheckCircle2 size={14} className="shrink-0" />
               <span>Added to cart! <Link href={`/table/${localStorage.getItem('tableNumber') || ''}/order`} className="underline font-bold">View cart →</Link></span>
             </div>

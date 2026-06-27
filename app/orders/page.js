@@ -365,14 +365,14 @@ export default function OrdersPage() {
                   onClick={() => setSelectedSessionId(table.session_id)}
                   className={`flex items-center gap-2.5 px-6 py-3 border-t-2 border-x text-sm font-semibold rounded-t-xl transition-all whitespace-nowrap cursor-pointer ${
                     isActive
-                      ? 'border-x-[#27272a] border-t-[var(--accent)] bg-surface text-[var(--text-primary)] shadow-sm'
+                      ? 'border-x-border border-t-[var(--accent)] bg-surface text-[var(--text-primary)] shadow-sm'
                       : 'border-x-transparent border-t-transparent bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-surface/30'
                   }`}
                 >
                   <span className={`w-2 h-2 rounded-full ${dotColor}`} />
                   <span>Table {table.table_number}</span>
                   {table.orders_count > 0 && (
-                    <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-[#27272a] text-[var(--text-secondary)]">
+                    <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-surface-raised text-[var(--text-secondary)]">
                       {table.orders_count}
                     </span>
                   )}
