@@ -4,7 +4,17 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { LogOut, LayoutDashboard, Users, ListChecks, Grid3x3, Shield, Menu, X, ChevronLeft, ChevronRight, Calendar, Sun, Moon, ReceiptText, Utensils } from 'lucide-react';
+import { LogOut, LayoutDashboard, Users, ListChecks, Grid3x3, ClipboardList, Menu, X, ChevronLeft, ChevronRight, Calendar, Sun, Moon, ReceiptText, Utensils, Heart } from 'lucide-react';
+
+export const LogoIcon = ({ size = 24, className = '' }) => (
+  <img
+    src="/images/logo.png"
+    alt="Sauté Logo"
+    width={size}
+    height={size}
+    className={`shrink-0 object-contain filter drop-shadow-[0_0_8px_rgba(245,158,11,0.45)] ${className}`}
+  />
+);
 
 export function AdminNavBar({ title, subtitle }) {
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -35,6 +45,17 @@ export function AdminNavBar({ title, subtitle }) {
       // Theme initialization
       const activeTheme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
       setTheme(activeTheme);
+
+      // Listen for theme mutations dynamically
+      const observer = new MutationObserver(() => {
+        const isDark = document.documentElement.classList.contains('dark');
+        setTheme(isDark ? 'dark' : 'light');
+      });
+      observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class']
+      });
+      return () => observer.disconnect();
     }
   }, []);
 
@@ -115,20 +136,22 @@ export function AdminNavBar({ title, subtitle }) {
       return [
         { href: '/kitchen', label: 'Kitchen Display', icon: Utensils },
         { href: '/tables', label: 'Tables', icon: Grid3x3 },
-        { href: '/orders', label: 'Order Management', icon: Shield },
+        { href: '/orders', label: 'Order Management', icon: ClipboardList },
         { href: '/schedule', label: 'Schedule', icon: Calendar },
         { href: '/menu', label: 'Menu', icon: ListChecks },
+        { href: '/surplus', label: 'Surplus Management', icon: Heart },
       ];
     } else {
       return [
         { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { href: '/kitchen', label: 'Kitchen Display', icon: Utensils },
         { href: '/tables', label: 'Tables', icon: Grid3x3 },
-        { href: '/orders', label: 'Order Management', icon: Shield },
+        { href: '/orders', label: 'Order Management', icon: ClipboardList },
         { href: '/billing', label: 'Billing', icon: ReceiptText },
         { href: '/schedule', label: 'Schedule', icon: Calendar },
         { href: '/users', label: 'Users', icon: Users },
         { href: '/menu', label: 'Menu', icon: ListChecks },
+        { href: '/surplus', label: 'Surplus Management', icon: Heart },
       ];
     }
   };
@@ -171,9 +194,12 @@ export function AdminNavBar({ title, subtitle }) {
 
       {/* Mobile Top Bar */}
       <div className="md:hidden flex items-center justify-between p-4 bg-surface border-b border-border w-full z-40">
-        <div className="flex items-center gap-2 text-[var(--accent)]">
-          <Shield size={20} />
-          <span className="font-bold text-sm text-[var(--text-primary)]">Zenith RMS</span>
+        <div className="flex items-center text-[var(--accent)]">
+          <img 
+            src={theme === 'dark' ? '/images/logo-text-darkmode.png' : '/images/logo-text-lightmode.png'} 
+            alt="Sauté" 
+            className="h-9 w-auto object-contain" 
+          />
         </div>
         <button
           onClick={() => setIsOpen(!isOpen)}
@@ -192,25 +218,18 @@ export function AdminNavBar({ title, subtitle }) {
         <div className="flex flex-col h-full justify-between">
           <div className="space-y-8">
             {/* Logo and App Title */}
-            <div className="hidden md:flex items-center justify-between text-[var(--accent)]">
-              <div className={`flex items-center ${isCollapsed ? 'justify-center w-full' : 'gap-2.5'}`}>
-                <Shield size={24} className="shrink-0" />
-                {!isCollapsed && (
-                  <div>
-                    <h2 className="text-lg font-bold tracking-tight text-[var(--text-primary)]">Zenith RMS</h2>
-                    <p className="text-[10px] text-[var(--text-secondary)] font-bold uppercase tracking-widest">Operations</p>
-                  </div>
+            <div className="relative hidden md:flex items-center justify-between text-[var(--accent)] gap-3 w-full">
+              <div className={`flex items-center ${isCollapsed ? 'justify-center w-full' : 'justify-center flex-1'}`}>
+                {isCollapsed ? (
+                  <LogoIcon size={36} className="shrink-0" />
+                ) : (
+                  <img 
+                    src={theme === 'dark' ? '/images/logo-text-darkmode.png' : '/images/logo-text-lightmode.png'}
+                    alt="Sauté" 
+                    className="h-20 w-auto object-contain" 
+                  />
                 )}
               </div>
-              {!isCollapsed && (
-                <button
-                  onClick={toggleCollapse}
-                  className="p-1.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-background rounded-lg cursor-pointer border border-border transition-all"
-                  title="Collapse Sidebar"
-                >
-                  <ChevronLeft size={16} />
-                </button>
-              )}
             </div>
 
             {/* Expand button (visible only when collapsed) */}
@@ -228,13 +247,22 @@ export function AdminNavBar({ title, subtitle }) {
 
             {/* Page specific Header (shown in sidebar) */}
             {!isCollapsed && (
-              <div className="space-y-1 py-3 border-b border-border">
-                <h3 className="text-sm font-bold text-[var(--text-primary)]">{displayTitle}</h3>
-                {displaySubtitle && (
-                  <p className="text-xs text-[var(--text-secondary)] font-medium leading-relaxed">
-                    {displaySubtitle}
-                  </p>
-                )}
+              <div className="flex items-start justify-between gap-3 py-3 border-b border-border">
+                <div className="space-y-1 flex-1">
+                  <h3 className="text-sm font-bold text-[var(--text-primary)]">{displayTitle}</h3>
+                  {displaySubtitle && (
+                    <p className="text-xs text-[var(--text-secondary)] font-medium leading-relaxed">
+                      {displaySubtitle}
+                    </p>
+                  )}
+                </div>
+                <button
+                  onClick={toggleCollapse}
+                  className="p-1.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-background rounded-lg cursor-pointer border border-border transition-all shrink-0 mt-0.5"
+                  title="Collapse Sidebar"
+                >
+                  <ChevronLeft size={16} />
+                </button>
               </div>
             )}
 

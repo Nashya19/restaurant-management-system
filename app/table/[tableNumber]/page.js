@@ -231,8 +231,13 @@ export default function CustomerTablePage() {
       <div className="card max-w-md w-full bg-surface/80 border border-border p-8 rounded-3xl shadow-2xl backdrop-blur-md space-y-8 animate-fade-in relative z-10">
         {/* Brand/Table Header */}
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[var(--surface-raised)] border border-border text-[var(--accent)] mb-2 shadow-inner">
-            <Shield size={28} />
+          <div className="flex flex-col items-center justify-center space-y-1.5 mb-2">
+            <img 
+              src="/images/logo.png" 
+              alt="Sauté Logo" 
+              className="w-14 h-14 object-contain filter drop-shadow-[0_0_8px_rgba(245,158,11,0.25)]" 
+            />
+            <span className="text-xs font-black tracking-[0.25em] uppercase text-[var(--accent)] font-sans">Sauté</span>
           </div>
           <h1 className="text-3xl font-extrabold tracking-tight text-[var(--text-primary)] flex items-center justify-center gap-2">
             Table {tableNumber} <Sparkles size={18} className="text-[var(--accent)]" />

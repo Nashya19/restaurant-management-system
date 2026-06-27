@@ -35,6 +35,8 @@ import {
 import { useFormState } from '@/lib/hooks/useFormState';
 import { validateMenuItemForm } from '@/lib/utils/validation';
 import { ArrowLeft, Loader2 } from 'lucide-react';
+import { UploadButton } from '@/lib/uploadthing';
+import '@uploadthing/react/styles.css';
 
 export default function MenuItemDetailPage() {
   const router = useRouter();
@@ -44,6 +46,7 @@ export default function MenuItemDetailPage() {
 
   const [isLoading, setIsLoading] = useState(!isNewItem);
   const [categories, setCategories] = useState([]);
+  const [imageUrl, setImageUrl] = useState('');
 
   const {
     formData,
@@ -68,6 +71,7 @@ export default function MenuItemDetailPage() {
           categoryId: data.categoryId,
           price: data.price,
           prepTime: data.prepTime,
+          imageUrl: imageUrl || null,
         });
       } else {
         await updateMenuItem(itemId, {
@@ -77,6 +81,7 @@ export default function MenuItemDetailPage() {
           prepTime: data.prepTime,
           isAvailable: true, // Keep unchanged
           isArchived: false, // Keep unchanged
+          imageUrl: imageUrl || null,
         });
       }
     },
@@ -101,6 +106,7 @@ export default function MenuItemDetailPage() {
           setFieldValue('categoryId', item.category_id);
           setFieldValue('price', item.price.toString());
           setFieldValue('prepTime', item.prep_time_minutes.toString());
+          setImageUrl(item.image_url || '');
         }
       } catch (err) {
         setFieldError('submit', err.message);
@@ -256,6 +262,44 @@ export default function MenuItemDetailPage() {
           <p className="text-xs text-[var(--text-muted)] mt-1 font-semibold">
             Estimate how long this item takes to prepare (1 min - 24 hours)
           </p>
+        </div>
+
+        {/* Image Upload Field */}
+        <div className="space-y-2.5">
+          <label className="text-xs uppercase text-[var(--text-secondary)] font-bold tracking-wider">
+            Menu Item Image (UploadThing)
+          </label>
+          
+          {imageUrl ? (
+            <div className="relative w-40 h-40 rounded-xl overflow-hidden border border-border group bg-zinc-950">
+              <img src={imageUrl} alt="Menu Item Preview" className="w-full h-full object-cover" />
+              <button
+                type="button"
+                onClick={() => setImageUrl('')}
+                className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white rounded-lg p-1.5 transition-colors cursor-pointer text-xs font-bold shadow-md border-0"
+              >
+                Remove
+              </button>
+            </div>
+          ) : (
+            <div className="border-2 border-dashed border-border/85 rounded-2xl p-6 flex flex-col items-center justify-center bg-background/20 hover:border-[var(--accent)] transition-all">
+              <UploadButton
+                endpoint="imageUploader"
+                onClientUploadComplete={(res) => {
+                  if (res?.[0]) {
+                    setImageUrl(res[0].url);
+                  }
+                }}
+                onUploadError={(error) => {
+                  alert(`Upload failed: ${error.message}`);
+                }}
+                appearance={{
+                  button: "bg-[var(--accent)] hover:bg-[var(--accent)]/90 text-sm font-bold h-10 px-4 rounded-xl cursor-pointer shadow-md transition-colors text-white border-0",
+                  allowedContent: "text-[10px] text-[var(--text-secondary)] mt-2 font-semibold"
+                }}
+              />
+            </div>
+          )}
         </div>
 
         {/* Buttons */}

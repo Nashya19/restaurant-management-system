@@ -1,7 +1,32 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Utensils, HeartHandshake, LogIn, ChevronRight, Shield } from 'lucide-react';
+import { HeartHandshake, LogIn, ChevronRight, Shield } from 'lucide-react';
 
 export default function LandingPage() {
+  const [theme, setTheme] = useState('light');
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const activeTheme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+    setTheme(activeTheme);
+
+    const observer = new MutationObserver(() => {
+      const isDark = document.documentElement.classList.contains('dark');
+      setTheme(isDark ? 'dark' : 'light');
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
+  const logoSrc = theme === 'dark' ? '/images/logo-text-tagline-darkmode.png' : '/images/logo-text-tagline-lightmode.png';
+
   return (
     <div className="flex-1 relative flex flex-col items-center justify-center min-h-screen bg-background text-[var(--text-primary)] overflow-hidden font-sans">
       {/* Background Image with Cozy Warm Opacity and Sepia Overlay */}
@@ -29,16 +54,17 @@ export default function LandingPage() {
 
       {/* Main Content Wrapper */}
       <div className="relative z-10 w-full max-w-4xl px-6 py-16 flex flex-col items-center text-center animate-fade-in">
-        {/* Brand Badge */}
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-surface border border-border text-[var(--accent)] mb-8 shadow-2xl transition-all duration-300 hover:border-[var(--accent)] hover:rotate-6">
-          <Utensils size={30} strokeWidth={1.8} aria-hidden="true" />
+        {/* Brand Logo & Tagline Image */}
+        <div className="max-w-lg w-full px-4 mb-10 animate-fade-in flex justify-center">
+          <img 
+            src={logoSrc} 
+            alt="Sauté" 
+            className="w-full h-auto max-h-72 object-contain" 
+          />
         </div>
 
         {/* Headings */}
         <div className="space-y-4 max-w-2xl">
-          <h1 className="text-display text-4xl md:text-5xl lg:text-6xl text-[var(--text-primary)] font-bold tracking-tight text-balance">
-            Zenith <span className="text-[var(--accent)]">RMS</span>
-          </h1>
           <p className="text-body text-[var(--text-secondary)] text-base md:text-lg mb-12 max-w-lg mx-auto text-pretty leading-relaxed">
             Cohesive operations suite for table logistics, staff schedules, and surplus food distribution.
           </p>

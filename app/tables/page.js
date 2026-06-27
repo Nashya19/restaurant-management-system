@@ -12,7 +12,7 @@
   } from '@/lib/api/table-sessions';
   import { formatDate } from '@/lib/utils/formatters';
   import { temporarilyUnlockSessionAction } from '@/lib/actions/orders';
-  import { Plus, Lock, Check, Trash2, AlertCircle, X, Eye, Loader2, Clock, Users, DollarSign, Zap, RefreshCw } from 'lucide-react';
+  import { Plus, Lock, Check, Trash2, AlertCircle, X, Eye, Loader2, Clock, Users, IndianRupee, Zap, RefreshCw } from 'lucide-react';
   import { createClient } from '@/lib/supabase/client';
   import CustomSelect from '@/components/ui/CustomSelect';
   import Link from 'next/link';
@@ -593,7 +593,7 @@ useEffect(() => {
   📦 {table.orders_count} order{table.orders_count !== 1 ? 's' : ''}
 </div>
                   <div className="flex items-center gap-2">
-                    <DollarSign size={14} /> Running total: ${table.running_total?.toFixed(2) || '0.00'}
+                    <IndianRupee size={14} /> Running total: ₹{table.running_total?.toFixed(2) || '0.00'}
                   </div>
                   <div className="flex items-center gap-2">
                     <Clock size={14} /> Started: {table.session_started_at ? new Date(table.session_started_at).toLocaleTimeString() : 'N/A'}
@@ -757,7 +757,7 @@ useEffect(() => {
                         <p className="text-body">{order.item_name}</p>
                         <p className="text-small text-[var(--text-secondary)]">Qty: {order.quantity}</p>
                       </div>
-                      <p className="font-bold text-[var(--accent)]">${order.total_price?.toFixed(2) || '0.00'}</p>
+                      <p className="font-bold text-[var(--accent)]">₹{order.total_price?.toFixed(2) || '0.00'}</p>
                     </div>
                   ))}
                 </div>
@@ -769,7 +769,7 @@ useEffect(() => {
             {/* Running Total */}
             <div className="bg-[var(--accent)] text-[var(--background)] p-4 rounded mb-6">
               <p className="text-small mb-1">Running Total</p>
-              <p className="text-display font-bold">${sessionRunningTotal.toFixed(2)}</p>
+              <p className="text-display font-bold">₹{sessionRunningTotal.toFixed(2)}</p>
             </div>
 
             {/* Connected Devices */}

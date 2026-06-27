@@ -1,12 +1,24 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 
 export default function ThankYouPage() {
   const params = useParams();
   const searchParams = useSearchParams();
+  const [closeStatus, setCloseStatus] = useState("Closing tab in 3 seconds...");
 
   const feedbackGiven = searchParams.get('feedback') === 'true';
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      window.close();
+      // If window.close() fails (e.g. browser security blocks it), update status
+      setCloseStatus("You can now safely close this browser tab.");
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[var(--background)] p-6">
@@ -42,7 +54,11 @@ export default function ThankYouPage() {
           </>
         )}
 
-        <div className="mt-6 text-sm text-gray-400">
+        <div className="mt-6 text-sm text-[var(--accent)] font-bold animate-pulse">
+          {closeStatus}
+        </div>
+
+        <div className="mt-4 text-xs text-gray-400 font-medium">
           Table {params.tableNumber}
         </div>
       </div>
