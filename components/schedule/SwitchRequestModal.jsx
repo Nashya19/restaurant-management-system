@@ -224,7 +224,7 @@ export default function SwitchRequestModal({
                 <span
                   className={`inline-block px-3 py-1 rounded text-xs font-bold uppercase ${
                     switchRequest.status === 'approved'
-                      ? 'bg-success-bg text-success border border-[#2a5c3a]'
+                      ? 'bg-success-bg text-success border border-success-border'
                       : 'bg-destructive-bg text-destructive border border-destructive-border'
                   }`}
                 >

@@ -50,6 +50,19 @@ function formatMinsLeft(secs) {
   return m > 0 ? `~${m}m ${s}s` : `~${s}s`;
 }
 
+function timeAgo(dateString, referenceTime = new Date()) {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const seconds = Math.floor((referenceTime - date) / 1000);
+  
+  if (seconds < 60) return 'Just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return date.toLocaleDateString();
+}
+
 // ─── Customer Item Ready Toast ────────────────────────────────────────────────
 function CustomerReadyToast({ item, onDismiss }) {
   useEffect(() => {
@@ -119,6 +132,15 @@ export default function CustomerOrderPage() {
   const [accessDenied, setAccessDenied]     = useState(false);
   const [error, setError]                   = useState(null);
   const [currentTime, setCurrentTime]       = useState(new Date());
+  const [skewMs, setSkewMs]                 = useState(0);
+
+  useEffect(() => {
+    if (session?.server_time) {
+      const server = new Date(session.server_time).getTime();
+      const local = Date.now();
+      setSkewMs(local - server);
+    }
+  }, [session?.server_time]);
   const [confirmDialog, setConfirmDialog]   = useState({ isOpen: false, title: '', message: '', onConfirm: () => {}, confirmStyle: 'btn-danger', confirmText: 'Confirm' });
   const [isEndingSession, setIsEndingSession]     = useState(false);
   const [isConfirmingPayment, setIsConfirmingPayment] = useState(false);
@@ -142,9 +164,9 @@ export default function CustomerOrderPage() {
 
   const closeConfirm = () => setConfirmDialog(prev => ({ ...prev, isOpen: false }));
 
-  // Clock ticker (for overall wait time display)
+  // Clock ticker (for overall wait time display and temporary unlock checking)
   useEffect(() => {
-    const t = setInterval(() => setCurrentTime(new Date()), 10000);
+    const t = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(t);
   }, []);
 
@@ -228,7 +250,7 @@ export default function CustomerOrderPage() {
         (payload) => {
           if (!payload.new) return;
           const s = payload.new.status;
-          if (s === 'locked' || s === 'completed') { window.location.reload(); }
+          if (s === 'open' || s === 'locked' || s === 'completed') { window.location.reload(); }
           else if (s === 'cleared') {
             localStorage.removeItem('sessionId');
             localStorage.removeItem('tableNumber');
@@ -406,6 +428,9 @@ export default function CustomerOrderPage() {
 
   const cartTotal = cartItems.reduce((sum, ci) => sum + (ci.menu_items?.price || 0) * ci.quantity, 0);
 
+  const isUnlocked = session?.unlock_until && new Date(session.unlock_until).getTime() > (currentTime.getTime() - skewMs);
+  const statusDisplay = isUnlocked ? 'TEMPORARILY UNLOCKED' : session?.status;
+
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--text-primary)] flex flex-col md:flex-row">
       <AdminNavBar title="Order View" subtitle={`Table ${tableNumber} active session`} />
@@ -422,7 +447,7 @@ export default function CustomerOrderPage() {
               <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">Table {tableNumber} Orders</h1>
             </div>
             <p className="text-xs text-[var(--text-secondary)] mt-1.5 font-medium uppercase tracking-wider">
-              PIN: <span className="font-sans font-bold text-[var(--accent)]">{session.pin}</span> · Status: {session.status}
+              PIN: <span className="font-sans font-bold text-[var(--accent)]">{session.pin}</span> · Status: <span className={isUnlocked ? 'text-success font-bold' : ''}>{statusDisplay}</span>
             </p>
           </div>
           <button
@@ -655,8 +680,10 @@ export default function CustomerOrderPage() {
                     {/* Order header */}
                     <div className="flex items-start justify-between px-5 py-4 border-b border-border/60">
                       <div>
-                        <h3 className="text-sm font-bold text-[var(--text-primary)]">Order #{session.orders.length - idx}</h3>
-                        <p className="text-[10px] text-[var(--text-muted)] mt-0.5 font-mono">ID: {order.id.substring(0, 8)}</p>
+                        <h3 className="text-sm font-bold text-[var(--text-primary)]">Order #{idx + 1}</h3>
+                        <p className="text-[10px] text-[var(--text-muted)] mt-0.5 font-mono">
+                          ID: {order.id.substring(0, 8)} · Placed {timeAgo(order.created_at, currentTime)}
+                        </p>
                       </div>
                       {(() => {
                         let bc = 'bg-gray-700 text-gray-200';
@@ -681,7 +708,7 @@ export default function CustomerOrderPage() {
                     {/* ── Items — scrollable box ── */}
                     <div className="px-5 pt-3 pb-1">
                       <div className="max-h-64 overflow-y-auto space-y-2 pr-1 scrollbar-thin">
-                        {order.items?.filter(item => item.status !== 'ready').map((item) => {
+                        {order.items?.map((item) => {
                           const statusMeta  = getItemStatusMeta(item.status);
                           const isReady     = item.status === 'ready';
                           const isPreparing = item.status === 'preparing';
@@ -776,17 +803,33 @@ export default function CustomerOrderPage() {
             <span className="text-sm font-semibold text-[var(--text-secondary)]">Total running bill</span>
             <span className="text-xl font-mono font-bold text-[var(--accent)]">{formatCurrency(session.running_total)}</span>
           </div>
-          {devRole === 'customer' && session.status === 'locked' && (
-            <div className="pt-2 border-t border-border/40">
-              <button onClick={handleEndOrdering} disabled={isEndingSession}
-                className="btn w-full flex items-center justify-center gap-2 rounded-xl h-11 font-bold cursor-pointer bg-background border border-border hover:bg-surface text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all">
-                {isEndingSession ? <><Loader2 className="animate-spin" size={16} /><span>Processing…</span></> : <span>End Ordering &amp; Request Bill</span>}
-              </button>
-              <p className="text-center text-[10px] text-[var(--text-muted)] mt-2">
-                Locks the menu and notifies staff to collect payment
-              </p>
-            </div>
-          )}
+          {devRole === 'customer' && session.status === 'locked' && (() => {
+            const hasUnprocessed = session.orders?.some(o => ['placed', 'preparing', 'ready'].includes(o.status));
+            return (
+              <div className="pt-2 border-t border-border/40">
+                <button
+                  onClick={handleEndOrdering}
+                  disabled={isEndingSession || hasUnprocessed}
+                  className="btn w-full flex items-center justify-center gap-2 rounded-xl h-11 font-bold cursor-pointer bg-background border border-border hover:bg-surface text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isEndingSession ? (
+                    <><Loader2 className="animate-spin" size={16} /><span>Processing…</span></>
+                  ) : (
+                    <span>End Ordering &amp; Request Bill</span>
+                  )}
+                </button>
+                {hasUnprocessed ? (
+                  <p className="text-center text-[10px] text-orange-400 mt-2 font-semibold animate-pulse">
+                    ⚠️ Please wait for all ordered items to be served before requesting the bill.
+                  </p>
+                ) : (
+                  <p className="text-center text-[10px] text-[var(--text-muted)] mt-2">
+                    Locks the menu and notifies staff to collect payment
+                  </p>
+                )}
+              </div>
+            );
+          })()}
           {session.status === 'locked' && (
             <div className="pt-3 border-t border-border/40 text-center">
               <p className="text-xs text-[var(--text-muted)] font-medium">🔒 Session locked. You can still add more items.</p>

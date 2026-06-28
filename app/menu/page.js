@@ -19,17 +19,39 @@ import CustomSelect from '@/components/ui/CustomSelect';
 import { createClient } from '@/lib/supabase/client';
 import { useHeartbeat } from '@/lib/hooks/useHeartbeat';
 
+function getItemImage(itemName = '', categoryName = '') {
+  const name = itemName.toLowerCase();
+  const cat = categoryName.toLowerCase();
+
+  if (name.includes('pizza')) return 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=400&h=300&q=80';
+  if (name.includes('pasta') || name.includes('spaghetti') || name.includes('noodle')) return 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?auto=format&fit=crop&w=400&h=300&q=80';
+  if (name.includes('salad') || name.includes('soup') || name.includes('vegan')) return 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=400&h=300&q=80';
+  if (name.includes('cake') || name.includes('dessert') || name.includes('sweet') || name.includes('ice cream') || name.includes('waffle')) return 'https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=400&h=300&q=80';
+  if (name.includes('drink') || name.includes('beverage') || name.includes('soda') || name.includes('juice') || name.includes('coffee') || name.includes('tea') || name.includes('mocktail')) return 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=400&h=300&q=80';
+  if (name.includes('chicken') || name.includes('tikka') || name.includes('kabab') || name.includes('tandoori') || name.includes('meat') || name.includes('fish')) return 'https://images.unsplash.com/photo-1532550907401-a500c9a57435?auto=format&fit=crop&w=400&h=300&q=80';
+  if (name.includes('paneer') || name.includes('curry') || name.includes('masala') || name.includes('rice') || name.includes('biryani') || name.includes('naan') || name.includes('roti')) return 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=400&h=300&q=80';
+  
+  if (cat.includes('dessert')) return 'https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=400&h=300&q=80';
+  if (cat.includes('beverage') || cat.includes('drink')) return 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=400&h=300&q=80';
+  if (cat.includes('starter') || cat.includes('appetizer')) return 'https://images.unsplash.com/photo-1541532713592-79a0317b6b77?auto=format&fit=crop&w=400&h=300&q=80';
+  if (cat.includes('main')) return 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&h=300&q=80';
+  
+  return 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&h=300&q=80';
+}
+
 export default function MenuPage() {
   useHeartbeat();
   const supabase = createClient();
   const [items, setItems] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [layoutMode, setLayoutMode] = useState('card');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredItems, setFilteredItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [devRole, setDevRole] = useState('admin');
+  const [hideArchived, setHideArchived] = useState(true);
 
   // Local selection state — user picks quantities, then clicks "Add to Cart"
   const [orderQuantities, setOrderQuantities] = useState({});
@@ -70,6 +92,7 @@ export default function MenuPage() {
       try {
         const role = localStorage.getItem('dev-role') || 'admin';
         setDevRole(role);
+        setLayoutMode(role === 'customer' ? 'card' : 'list');
 
         if (role === 'customer') {
           const sessionId = localStorage.getItem('sessionId');
@@ -140,14 +163,18 @@ export default function MenuPage() {
   // Filter / search
   useEffect(() => {
     let result = items;
-    if (devRole !== 'admin') result = result.filter(item => !item.is_archived);
+    if (devRole !== 'admin') {
+      result = result.filter(item => !item.is_archived);
+    } else if (hideArchived) {
+      result = result.filter(item => !item.is_archived);
+    }
     if (selectedCategory !== 'all') result = result.filter(item => item.category_id === selectedCategory);
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       result = result.filter(item => item.name.toLowerCase().includes(q));
     }
     setFilteredItems(result);
-  }, [selectedCategory, searchQuery, items, devRole]);
+  }, [selectedCategory, searchQuery, items, devRole, hideArchived]);
 
   const groupedItems = useMemo(() => {
     const groups = {};
@@ -316,8 +343,8 @@ export default function MenuPage() {
       )}
 
       {/* Filters Card */}
-      <div className="card bg-surface border border-border p-6 rounded-2xl shadow-lg">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="card bg-surface border border-border p-6 rounded-2xl shadow-lg animate-fade-in">
+        <div className={`grid grid-cols-1 ${devRole !== 'customer' ? 'md:grid-cols-4' : 'md:grid-cols-3'} gap-6`}>
           <div className="space-y-2">
             <label htmlFor="category" className="text-xs uppercase text-[var(--text-secondary)] font-bold tracking-wider block">
               Filter by Category
@@ -347,6 +374,48 @@ export default function MenuPage() {
               />
             </div>
           </div>
+          <div className="space-y-2">
+            <label className="text-xs uppercase text-[var(--text-secondary)] font-bold tracking-wider block">
+              View Mode
+            </label>
+            <div className="flex bg-background border border-border rounded-xl p-1 h-10 w-fit">
+              <button
+                type="button"
+                onClick={() => setLayoutMode('card')}
+                className={`px-4 h-full rounded-lg text-xs font-bold transition-all cursor-pointer border-0 ${layoutMode === 'card' ? 'bg-[var(--accent)] text-white shadow-sm' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-transparent'}`}
+              >
+                Card Grid
+              </button>
+              <button
+                type="button"
+                onClick={() => setLayoutMode('list')}
+                className={`px-4 h-full rounded-lg text-xs font-bold transition-all cursor-pointer border-0 ${layoutMode === 'list' ? 'bg-[var(--accent)] text-white shadow-sm' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-transparent'}`}
+              >
+                List Table
+              </button>
+            </div>
+          </div>
+          {devRole !== 'customer' && (
+            <div className="space-y-2">
+              <label className="text-xs uppercase text-[var(--text-secondary)] font-bold tracking-wider block">
+                Archived Items
+              </label>
+              <div className="flex items-center gap-3 bg-background border border-border rounded-xl px-3.5 h-10 w-fit select-none">
+                <button
+                  type="button"
+                  onClick={() => setHideArchived(!hideArchived)}
+                  className="flex items-center gap-2.5 cursor-pointer border-0 bg-transparent p-0 outline-none text-[var(--text-primary)]"
+                >
+                  {hideArchived ? (
+                    <ToggleRight size={28} className="text-[var(--accent)]" />
+                  ) : (
+                    <ToggleLeft size={28} className="text-[var(--text-muted)]" />
+                  )}
+                  <span className="text-xs font-bold">Hide Archived</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -377,7 +446,7 @@ export default function MenuPage() {
                 >
                   <div className="flex items-center gap-3">
                     <span className="text-md font-bold text-[var(--text-primary)] capitalize">{category.name}</span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#27272a] text-[var(--text-secondary)]">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-surface-raised text-[var(--text-secondary)]">
                       {groupItems.length} item{groupItems.length !== 1 ? 's' : ''}
                     </span>
                   </div>
@@ -388,117 +457,256 @@ export default function MenuPage() {
                 </button>
 
                 {!isCollapsed && (
-                  <div className="overflow-x-auto animate-fade-in">
-                    <table className="w-full">
-                      <thead className="bg-background/30 border-b border-border">
-                        <tr>
-                          <th className="text-left text-xs uppercase text-[var(--text-secondary)] font-bold px-6 py-4 tracking-wider">Name</th>
-                          <th className="text-left text-xs uppercase text-[var(--text-secondary)] font-bold px-6 py-4 tracking-wider">Price</th>
-                          {devRole !== 'customer' && (
-                            <>
-                              <th className="text-left text-xs uppercase text-[var(--text-secondary)] font-bold px-6 py-4 tracking-wider">Prep Time</th>
-                              <th className="text-left text-xs uppercase text-[var(--text-secondary)] font-bold px-6 py-4 tracking-wider">Status</th>
-                            </>
-                          )}
-                          <th className={`${devRole === 'customer' ? 'text-center' : 'text-right'} text-xs uppercase text-[var(--text-secondary)] font-bold px-6 py-4 tracking-wider`}>
-                            {devRole === 'customer' ? 'Qty' : 'Actions'}
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-border/60">
-                        {groupItems.map(item => (
-                          <tr
+                  layoutMode === 'card' ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 p-6 bg-background/20 border-t border-border/40">
+                      {groupItems.map(item => {
+                        const quantity = orderQuantities[item.id] || 0;
+                        const imageUrl = item.image_url || getItemImage(item.name, category.name);
+                        return (
+                          <div
                             key={item.id}
-                            className={`hover:bg-background/20 transition-colors ${item.is_archived ? 'opacity-50' : ''} ${devRole === 'customer' && !item.is_available ? 'opacity-60 bg-[#121214]/50' : ''}`}
+                            className={`flex flex-col bg-surface border border-border/80 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 ${!item.is_available ? 'opacity-65 bg-background/40' : ''} ${item.is_archived ? 'opacity-50 grayscale border-dashed bg-background/30' : ''}`}
                           >
-                            <td className={`px-6 py-4 text-sm font-semibold ${item.is_archived ? 'line-through text-[var(--text-muted)]' : 'text-[var(--text-primary)]'}`}>
-                              <div>
-                                <span>{item.name}</span>
-                                {devRole === 'customer' && !item.is_available && (
-                                  <span className="block text-[10px] text-red-500 font-bold uppercase mt-0.5 tracking-wider">Unavailable Today</span>
-                                )}
+                            {/* Food Image */}
+                            <div className="h-52 w-full overflow-hidden relative bg-zinc-900 border-b border-border/40">
+                              <img
+                                src={imageUrl}
+                                alt={item.name}
+                                className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+                                onError={(e) => {
+                                  e.target.src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&h=300&q=80';
+                                }}
+                              />
+                              {!item.is_available && (
+                                <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                  <span className="text-white text-xs font-black uppercase tracking-wider bg-red-600 px-3 py-1 rounded-full border border-red-500 shadow">
+                                    Unavailable
+                                  </span>
+                                </div>
+                              )}
+                              {item.is_archived && (
+                                <div className="absolute top-2.5 left-2.5 z-10">
+                                  <span className="text-white text-[9px] font-black uppercase tracking-wider bg-zinc-700 px-2 py-0.5 rounded border border-zinc-500 shadow">
+                                    Archived
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Card Details */}
+                            <div className="p-4 flex-1 flex flex-col justify-between">
+                              <div className="space-y-1">
+                                <div className="flex justify-between items-start gap-2">
+                                  <h4 className="font-bold text-sm text-[var(--text-primary)] leading-snug line-clamp-2">
+                                    {item.name}
+                                  </h4>
+                                  <span className="font-mono font-bold text-sm text-[var(--accent)] whitespace-nowrap">
+                                    {formatCurrency(item.price)}
+                                  </span>
+                                </div>
+                                <p className="text-[11px] text-[var(--text-secondary)]">
+                                  Freshly prepared in {item.prep_time_minutes} min
+                                </p>
                               </div>
-                            </td>
-                            <td className="px-6 py-4 font-mono text-sm font-semibold text-[var(--accent)]">
-                              {formatCurrency(item.price)}
-                            </td>
-                            {devRole !== 'customer' && (
-                              <>
-                                <td className="px-6 py-4 text-sm font-medium text-[var(--text-secondary)]">{item.prep_time_minutes} min</td>
-                                <td className="px-6 py-4">
-                                  {item.is_archived ? (
-                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase bg-[#242424] text-[var(--text-secondary)]">Archived</span>
-                                  ) : (
-                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase ${item.is_available ? 'bg-success-bg text-success' : 'bg-destructive-bg text-destructive'}`}>
-                                      {item.is_available ? 'Available' : 'Unavailable'}
-                                    </span>
-                                  )}
-                                </td>
-                              </>
-                            )}
-                            <td className="px-6 py-4">
+
+                              {/* Customer Controls vs Admin/Staff Action Buttons */}
                               {devRole === 'customer' ? (
-                                <div className="flex items-center justify-center gap-2">
-                                  {item.is_available ? (
-                                    <>
-                                      <button
-                                        type="button"
-                                        onClick={() => updateQuantity(item.id, -1)}
-                                        className="w-8 h-8 rounded-lg bg-background hover:bg-surface-raised border border-border flex items-center justify-center text-[var(--text-primary)] transition-all cursor-pointer"
-                                      >
-                                        <Minus size={14} />
-                                      </button>
-                                      <input
-                                        type="text"
-                                        value={orderQuantities[item.id] || 0}
-                                        onChange={e => handleQuantityInputChange(item.id, e.target.value)}
-                                        className="w-12 h-8 bg-background border border-border rounded-lg text-center text-sm font-semibold focus:outline-none focus:border-[var(--accent)]"
-                                      />
-                                      <button
-                                        type="button"
-                                        onClick={() => updateQuantity(item.id, 1)}
-                                        className="w-8 h-8 rounded-lg bg-background hover:bg-surface-raised border border-border flex items-center justify-center text-[var(--text-primary)] transition-all cursor-pointer"
-                                      >
-                                        <Plus size={14} />
-                                      </button>
-                                    </>
-                                  ) : (
-                                    <span className="text-xs text-[var(--text-muted)] font-semibold italic">Unavailable</span>
-                                  )}
+                                <div className="mt-4 pt-3 border-t border-border/40 flex items-center justify-between">
+                                  <span className="text-[10px] uppercase font-bold text-[var(--text-secondary)] tracking-wider">
+                                    {quantity > 0 ? `Selected: ${quantity}` : 'Add to order'}
+                                  </span>
+
+                                  <div className="flex items-center gap-2">
+                                    {item.is_available ? (
+                                      <>
+                                        <button
+                                          type="button"
+                                          onClick={() => updateQuantity(item.id, -1)}
+                                          className="w-8 h-8 rounded-lg bg-background hover:bg-surface-raised border border-border flex items-center justify-center text-[var(--text-primary)] transition-all cursor-pointer shadow-sm active:scale-95"
+                                        >
+                                          <Minus size={12} />
+                                        </button>
+                                        <span className="w-8 text-center text-xs font-bold text-[var(--text-primary)]">
+                                          {quantity}
+                                        </span>
+                                        <button
+                                          type="button"
+                                          onClick={() => updateQuantity(item.id, 1)}
+                                          className="w-8 h-8 rounded-lg bg-background hover:bg-surface-raised border border-border flex items-center justify-center text-[var(--text-primary)] transition-all cursor-pointer shadow-sm active:scale-95"
+                                        >
+                                          <Plus size={12} />
+                                        </button>
+                                      </>
+                                    ) : (
+                                      <span className="text-xs text-[var(--text-muted)] font-semibold italic">Sold Out</span>
+                                    )}
+                                  </div>
                                 </div>
                               ) : (
-                                <div className="inline-flex items-center gap-2 float-right">
+                                <div className="mt-4 pt-3 border-t border-border/40 flex items-center justify-between gap-2">
+                                  <div className="flex items-center gap-1.5">
+                                    {devRole === 'admin' && (
+                                      <Link
+                                        href={`/menu/${item.id}`}
+                                        className="btn bg-background border-border hover:bg-surface text-[10px] px-2.5 py-1.5 h-8 rounded-lg font-bold inline-flex items-center gap-1 cursor-pointer no-underline text-[var(--text-primary)]"
+                                      >
+                                        <Edit2 size={12} />
+                                        <span>Edit</span>
+                                      </Link>
+                                    )}
+                                    {!item.is_archived && (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleToggleAvailability(item.id)}
+                                        title="Toggle Availability"
+                                        className="btn bg-background border-border hover:bg-surface text-[10px] px-2 h-8 rounded-lg font-bold inline-flex items-center cursor-pointer border-0"
+                                      >
+                                        {item.is_available ? <ToggleRight size={18} className="text-green-500" /> : <ToggleLeft size={18} className="text-gray-500" />}
+                                      </button>
+                                    )}
+                                  </div>
+
                                   {devRole === 'admin' && (
-                                    <Link href={`/menu/${item.id}`} className="btn bg-background border-border hover:bg-surface text-xs px-3 py-1.5 h-8 rounded-lg font-bold inline-flex items-center gap-1.5 cursor-pointer">
-                                      <Edit2 size={13} /><span>Edit</span>
-                                    </Link>
-                                  )}
-                                  {!item.is_archived && (
-                                    <button onClick={() => handleToggleAvailability(item.id)} title="Toggle Availability" className="btn bg-background border-border hover:bg-surface text-xs px-3 py-1.5 h-8 rounded-lg font-bold inline-flex items-center cursor-pointer">
-                                      {item.is_available ? <ToggleRight size={15} className="text-green-500" /> : <ToggleLeft size={15} className="text-gray-500" />}
-                                    </button>
-                                  )}
-                                  {devRole === 'admin' && (
-                                    <>
-                                      {!item.is_archived ? (
-                                        <button onClick={() => handleArchive(item.id, item.name)} className="btn border border-destructive-border bg-destructive-bg text-destructive hover:bg-red-900 text-xs px-3 py-1.5 h-8 rounded-lg font-bold inline-flex items-center gap-1.5 cursor-pointer">
-                                          <Archive size={13} /><span>Archive</span>
-                                        </button>
-                                      ) : (
-                                        <button onClick={() => handleRestore(item.id, item.name)} className="btn border border-green-950 bg-success-bg text-success hover:bg-green-900 text-xs px-3 py-1.5 h-8 rounded-lg font-bold inline-flex items-center gap-1.5 cursor-pointer">
-                                          <RotateCcw size={13} /><span>Restore</span>
-                                        </button>
-                                      )}
-                                    </>
+                                    item.is_archived ? (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleRestore(item.id, item.name)}
+                                        className="btn border border-green-950 bg-success-bg text-success hover:bg-green-900 text-[10px] px-2.5 py-1.5 h-8 rounded-lg font-bold inline-flex items-center gap-1 cursor-pointer"
+                                      >
+                                        <RotateCcw size={12} />
+                                        <span>Restore</span>
+                                      </button>
+                                    ) : (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleArchive(item.id, item.name)}
+                                        className="btn border border-destructive-border bg-destructive-bg text-destructive hover:bg-red-950 text-[10px] px-2.5 py-1.5 h-8 rounded-lg font-bold inline-flex items-center gap-1 cursor-pointer"
+                                      >
+                                        <Archive size={12} />
+                                        <span>Archive</span>
+                                      </button>
+                                    )
                                   )}
                                 </div>
                               )}
-                            </td>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto animate-fade-in">
+                      <table className="w-full">
+                        <thead className="bg-background/30 border-b border-border">
+                          <tr>
+                            <th className="text-left text-xs uppercase text-[var(--text-secondary)] font-bold px-6 py-4 tracking-wider">Name</th>
+                            <th className="text-left text-xs uppercase text-[var(--text-secondary)] font-bold px-6 py-4 tracking-wider">Price</th>
+                            {devRole !== 'customer' && (
+                              <>
+                                <th className="text-left text-xs uppercase text-[var(--text-secondary)] font-bold px-6 py-4 tracking-wider">Prep Time</th>
+                                <th className="text-left text-xs uppercase text-[var(--text-secondary)] font-bold px-6 py-4 tracking-wider">Status</th>
+                              </>
+                            )}
+                            <th className={`${devRole === 'customer' ? 'text-center' : 'text-right'} text-xs uppercase text-[var(--text-secondary)] font-bold px-6 py-4 tracking-wider`}>
+                              {devRole === 'customer' ? 'Qty' : 'Actions'}
+                            </th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody className="divide-y divide-border/60">
+                          {groupItems.map(item => (
+                            <tr
+                              key={item.id}
+                              className={`hover:bg-background/20 transition-colors ${item.is_archived ? 'opacity-50' : ''} ${devRole === 'customer' && !item.is_available ? 'opacity-60 bg-background/50' : ''}`}
+                            >
+                              <td className={`px-6 py-4 text-sm font-semibold ${item.is_archived ? 'line-through text-[var(--text-muted)]' : 'text-[var(--text-primary)]'}`}>
+                                <div>
+                                  <span>{item.name}</span>
+                                  {devRole === 'customer' && !item.is_available && (
+                                    <span className="block text-[10px] text-red-500 font-bold uppercase mt-0.5 tracking-wider">Unavailable Today</span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 font-mono text-sm font-semibold text-[var(--accent)]">
+                                {formatCurrency(item.price)}
+                              </td>
+                              {devRole !== 'customer' && (
+                                <>
+                                  <td className="px-6 py-4 text-sm font-medium text-[var(--text-secondary)]">{item.prep_time_minutes} min</td>
+                                  <td className="px-6 py-4">
+                                    {item.is_archived ? (
+                                      <span className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase bg-surface-raised text-[var(--text-secondary)]">Archived</span>
+                                    ) : (
+                                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase ${item.is_available ? 'bg-success-bg text-success' : 'bg-destructive-bg text-destructive'}`}>
+                                        {item.is_available ? 'Available' : 'Unavailable'}
+                                      </span>
+                                    )}
+                                  </td>
+                                </>
+                              )}
+                              <td className="px-6 py-4">
+                                {devRole === 'customer' ? (
+                                  <div className="flex items-center justify-center gap-2">
+                                    {item.is_available ? (
+                                      <>
+                                        <button
+                                          type="button"
+                                          onClick={() => updateQuantity(item.id, -1)}
+                                          className="w-8 h-8 rounded-lg bg-background hover:bg-surface-raised border border-border flex items-center justify-center text-[var(--text-primary)] transition-all cursor-pointer"
+                                        >
+                                          <Minus size={14} />
+                                        </button>
+                                        <input
+                                          type="text"
+                                          value={orderQuantities[item.id] || 0}
+                                          onChange={e => handleQuantityInputChange(item.id, e.target.value)}
+                                          className="w-12 h-8 bg-background border border-border rounded-lg text-center text-sm font-semibold focus:outline-none focus:border-[var(--accent)]"
+                                        />
+                                        <button
+                                          type="button"
+                                          onClick={() => updateQuantity(item.id, 1)}
+                                          className="w-8 h-8 rounded-lg bg-background hover:bg-surface-raised border border-border flex items-center justify-center text-[var(--text-primary)] transition-all cursor-pointer"
+                                        >
+                                          <Plus size={14} />
+                                        </button>
+                                      </>
+                                    ) : (
+                                      <span className="text-xs text-[var(--text-muted)] font-semibold italic">Unavailable</span>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div className="inline-flex items-center gap-2 float-right">
+                                    {devRole === 'admin' && (
+                                      <Link href={`/menu/${item.id}`} className="btn bg-background border-border hover:bg-surface text-xs px-3 py-1.5 h-8 rounded-lg font-bold inline-flex items-center gap-1.5 cursor-pointer">
+                                        <Edit2 size={13} /><span>Edit</span>
+                                      </Link>
+                                    )}
+                                    {!item.is_archived && (
+                                      <button onClick={() => handleToggleAvailability(item.id)} title="Toggle Availability" className="btn bg-background border-border hover:bg-surface text-xs px-3 py-1.5 h-8 rounded-lg font-bold inline-flex items-center cursor-pointer">
+                                        {item.is_available ? <ToggleRight size={15} className="text-green-500" /> : <ToggleLeft size={15} className="text-gray-500" />}
+                                      </button>
+                                    )}
+                                    {devRole === 'admin' && (
+                                      <>
+                                        {!item.is_archived ? (
+                                          <button onClick={() => handleArchive(item.id, item.name)} className="btn border border-destructive-border bg-destructive-bg text-destructive hover:bg-red-900 text-xs px-3 py-1.5 h-8 rounded-lg font-bold inline-flex items-center gap-1.5 cursor-pointer">
+                                            <Archive size={13} /><span>Archive</span>
+                                          </button>
+                                        ) : (
+                                          <button onClick={() => handleRestore(item.id, item.name)} className="btn border border-green-950 bg-success-bg text-success hover:bg-green-900 text-xs px-3 py-1.5 h-8 rounded-lg font-bold inline-flex items-center gap-1.5 cursor-pointer">
+                                            <RotateCcw size={13} /><span>Restore</span>
+                                          </button>
+                                        )}
+                                      </>
+                                    )}
+                                  </div>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )
                 )}
               </div>
             );
@@ -522,7 +730,7 @@ export default function MenuPage() {
           )}
           {/* Success banner */}
           {addedToCart && (
-            <div className="px-6 pt-3 pb-1 flex items-center gap-2 text-success text-xs font-semibold bg-success-bg border-b border-[#205a30]/50">
+            <div className="px-6 pt-3 pb-1 flex items-center gap-2 text-success text-xs font-semibold bg-success-bg border-b border-success-border/50">
               <CheckCircle2 size={14} className="shrink-0" />
               <span>Added to cart! <Link href={`/table/${localStorage.getItem('tableNumber') || ''}/order`} className="underline font-bold">View cart →</Link></span>
             </div>

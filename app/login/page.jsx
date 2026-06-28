@@ -12,8 +12,27 @@ export default function LoginPage() {
   const [error, setError] = useState(null);
   const router = useRouter();
   const supabase = createClient();
+  const [theme, setTheme] = useState('light');
 
-  // The theme is loaded dynamically in RootLayout, so we do not force dark theme here.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const activeTheme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+    setTheme(activeTheme);
+
+    const observer = new MutationObserver(() => {
+      const isDark = document.documentElement.classList.contains('dark');
+      setTheme(isDark ? 'dark' : 'light');
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
+  const logoSrc = theme === 'dark' ? '/images/logo-text-darkmode.png' : '/images/logo-text-lightmode.png';
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -81,13 +100,14 @@ export default function LoginPage() {
       <div className="relative z-10 w-full max-w-[420px] animate-fade-in">
         {/* Logo / Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-surface border border-border text-[var(--accent)] mb-4 shadow-xl">
-            <Utensils size={26} strokeWidth={2} aria-hidden="true" />
+          <div className="flex justify-center mb-4">
+            <img 
+              src={logoSrc} 
+              alt="Sauté" 
+              className="h-32 w-auto object-contain" 
+            />
           </div>
-          <h1 className="text-display text-2xl font-bold tracking-tight text-[var(--text-primary)] mb-1">
-            Zenith RMS
-          </h1>
-          <p className="text-body text-sm text-[var(--text-secondary)]">Staff & Admin Operations Portal</p>
+          <p className="text-body text-sm text-[var(--text-secondary)] mt-2">Staff & Admin Operations Portal</p>
         </div>
 
         {/* Login Form Card */}

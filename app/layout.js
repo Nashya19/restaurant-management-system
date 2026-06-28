@@ -14,8 +14,35 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata = {
-  title: "Restaurant Management System | Zenith",
+  metadataBase: new URL('http://localhost:3000'),
+  title: "Restaurant Management System | Sauté",
   description: "Modern restaurant management platform",
+  icons: {
+    icon: "/images/logo.png",
+    shortcut: "/images/logo.png",
+    apple: "/images/logo.png",
+  },
+  openGraph: {
+    title: "Restaurant Management System | Sauté",
+    description: "Modern restaurant management platform",
+    siteName: "Sauté",
+    images: [
+      {
+        url: "/images/logo-text-tagline-darkmode.png",
+        width: 1200,
+        height: 630,
+        alt: "Sauté Logo and Tagline",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Restaurant Management System | Sauté",
+    description: "Modern restaurant management platform",
+    images: ["/images/logo-text-tagline-darkmode.png"],
+  },
 };
 
 export default function RootLayout({ children }) {
@@ -26,6 +53,9 @@ export default function RootLayout({ children }) {
       suppressHydrationWarning
     >
       <head>
+        <link rel="icon" href="/images/logo.png" type="image/png" />
+        <link rel="shortcut icon" href="/images/logo.png" type="image/png" />
+        <link rel="apple-touch-icon" href="/images/logo.png" type="image/png" />
         <script
           dangerouslySetInnerHTML={{
             __html: `

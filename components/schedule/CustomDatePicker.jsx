@@ -226,7 +226,7 @@ export default function CustomDatePicker({ value, onChange, label, selectionMode
                     selected
                       ? 'bg-[var(--accent)] border-[var(--accent)] text-black font-bold shadow-md shadow-[var(--accent)]/15'
                       : today
-                      ? 'bg-[#27272a]/40 border-[var(--accent)]/40 text-[var(--accent)]'
+                      ? 'bg-accent/10 border-accent/40 text-accent'
                       : 'bg-transparent border-transparent text-[var(--text-primary)] hover:bg-surface-raised/50 hover:border-border'
                   }`}
                 >

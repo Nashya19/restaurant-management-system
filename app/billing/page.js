@@ -12,7 +12,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useAlertConfirm } from '@/lib/hooks/useAlertConfirm';
 import CustomSelect from '@/components/ui/CustomSelect';
 import {
-  DollarSign,
+  IndianRupee,
   RefreshCw,
   Loader2,
   X,
@@ -25,7 +25,6 @@ import {
   ChevronLeft,
   ChevronRight,
   ReceiptText,
-  CircleDollarSign,
   Banknote,
   ShoppingBag,
   ArrowUpRight,
@@ -233,7 +232,7 @@ function BillModal({ session, onClose, onConfirmPayment, isProcessing }) {
               {fmtMoney(session.running_total)}
             </p>
           </div>
-          <CircleDollarSign size={36} className="text-[var(--accent)] opacity-60" />
+          <IndianRupee size={36} className="text-[var(--accent)] opacity-60" />
         </div>
 
         {/* Action row */}
@@ -494,11 +493,19 @@ export default function BillingPage() {
     <div className="w-full max-w-7xl mx-auto space-y-8 animate-fade-in pb-12">
       {/* ── Page Header ── */}
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between pb-6 border-b border-border">
-        <div>
-          <h1 className="text-display text-[var(--text-primary)]">Billing & Payments</h1>
-          <p className="text-sm text-[var(--text-secondary)] mt-1">
-            Process pending bills, confirm payments, and review revenue history.
-          </p>
+        <div className="flex items-center gap-4">
+          <img 
+            src="/images/logo.png" 
+            alt="Sauté Logo" 
+            className="w-12 h-12 object-contain filter drop-shadow-[0_0_8px_rgba(245,158,11,0.25)] shrink-0" 
+          />
+          <div>
+            <span className="text-[10px] font-black tracking-[0.25em] uppercase text-[var(--accent)] font-sans block leading-none mb-1">Sauté</span>
+            <h1 className="text-display text-[var(--text-primary)] text-2xl font-bold leading-tight">Billing & Payments</h1>
+            <p className="text-sm text-[var(--text-secondary)] mt-0.5">
+              Process pending bills, confirm payments, and review revenue history.
+            </p>
+          </div>
         </div>
         <button
           type="button"

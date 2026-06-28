@@ -5,7 +5,7 @@ import { getAllSessions, getSessionDetails } from '@/lib/api/table-sessions';
 import { formatDate } from '@/lib/utils/formatters';
 import {
   Calendar,
-  DollarSign,
+  IndianRupee,
   Clock,
   Users,
   Eye,
@@ -118,9 +118,9 @@ export default function SessionHistoryPage() {
   // Price range options
   const priceOptions = [
     { value: 'all', label: 'All Prices' },
-    { value: 'below1000', label: 'Below $1,000' },
-    { value: '1000to5000', label: '$1,000 - $5,000' },
-    { value: 'above5000', label: 'Above $5,000' },
+    { value: 'below1000', label: 'Below ₹1,000' },
+    { value: '1000to5000', label: '₹1,000 - ₹5,000' },
+    { value: 'above5000', label: 'Above ₹5,000' },
     { value: 'custom', label: 'Custom Range' }
   ];
 
@@ -350,7 +350,7 @@ export default function SessionHistoryPage() {
         {priceFilter === 'custom' && (
           <div className="grid gap-4 sm:grid-cols-2 p-4 bg-background rounded-xl border border-border animate-fade-in">
             <div className="space-y-1.5">
-              <label className="text-xs uppercase text-[var(--text-secondary)] font-bold tracking-wider">Min Price ($)</label>
+              <label className="text-xs uppercase text-[var(--text-secondary)] font-bold tracking-wider">Min Price (₹)</label>
               <input
                 type="number"
                 placeholder="e.g. 100"
@@ -360,7 +360,7 @@ export default function SessionHistoryPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs uppercase text-[var(--text-secondary)] font-bold tracking-wider">Max Price ($)</label>
+              <label className="text-xs uppercase text-[var(--text-secondary)] font-bold tracking-wider">Max Price (₹)</label>
               <input
                 type="number"
                 placeholder="e.g. 1000"
@@ -451,7 +451,7 @@ export default function SessionHistoryPage() {
                                 navigator.clipboard.writeText(session.id);
                                 await showAlert('Session ID copied!');
                               }}
-                              className="ml-2 text-[10px] bg-[#27272a]/80 px-1 py-0.5 rounded border border-[#3f3f46] hover:bg-[#3f3f46] hover:text-[var(--accent)] transition-all cursor-pointer"
+                              className="ml-2 text-[10px] bg-surface-raised/80 px-1 py-0.5 rounded border border-border hover:bg-border hover:text-[var(--accent)] transition-all cursor-pointer"
                             >
                               Copy
                             </button>
@@ -474,7 +474,7 @@ export default function SessionHistoryPage() {
                           <td className="p-4 text-right font-semibold font-mono text-xs">{devicesCount}</td>
                           <td className="p-4 text-right font-semibold font-mono text-xs">{ordersCount}</td>
                           <td className="p-4 text-right font-mono font-bold text-[var(--text-primary)]">
-                            ${(session.total_amount || 0).toFixed(2)}
+                            ₹{(session.total_amount || 0).toFixed(2)}
                           </td>
                           <td className="p-4 pr-6 text-center">
                             <button
@@ -626,7 +626,7 @@ export default function SessionHistoryPage() {
                         <p className="text-body font-semibold">{order.item_name}</p>
                         <p className="text-xs text-[var(--text-secondary)] mt-0.5">Qty: {order.quantity} | Status: <span className="font-bold text-[var(--accent)]">{order.status}</span></p>
                       </div>
-                      <p className="font-bold text-[var(--accent)] font-mono">${order.total_price?.toFixed(2) || '0.00'}</p>
+                      <p className="font-bold text-[var(--accent)] font-mono">₹{order.total_price?.toFixed(2) || '0.00'}</p>
                     </div>
                   ))}
                 </div>
@@ -636,12 +636,12 @@ export default function SessionHistoryPage() {
             </div>
 
             {/* Total */}
-            <div className="bg-success-bg border border-[#2a5c3a]/50 text-success p-4 rounded-xl mb-6 flex items-center justify-between">
+            <div className="bg-success-bg border border-success-border/50 text-success p-4 rounded-xl mb-6 flex items-center justify-between">
               <div>
                 <p className="text-xs uppercase font-bold tracking-wider text-success/80">Running / Total Amount</p>
-                <p className="text-2xl font-mono font-bold mt-1">${(selectedSession.running_total || 0).toFixed(2)}</p>
+                <p className="text-2xl font-mono font-bold mt-1">₹{(selectedSession.running_total || 0).toFixed(2)}</p>
               </div>
-              <DollarSign size={28} />
+              <IndianRupee size={28} />
             </div>
 
             {/* Connected Devices Details */}

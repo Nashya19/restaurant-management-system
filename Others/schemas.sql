@@ -35,6 +35,7 @@ CREATE TABLE menu_items (
     is_available boolean NOT NULL DEFAULT true,
     is_archived boolean NOT NULL DEFAULT false,
     prep_time_minutes integer NOT NULL DEFAULT 15,
+    image_url text,
     created_at timestamptz NOT NULL DEFAULT now()
 );
 
@@ -70,10 +71,11 @@ CREATE TABLE session_devices (
 
 CREATE TABLE orders (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    session_id uuid NOT NULL REFERENCES table_sessions(id),
+    session_id uuid NOT NULL REFERENCES table_sessions(id) ON DELETE CASCADE,
     status text NOT NULL DEFAULT 'placed' CHECK (status IN ('placed', 'preparing', 'ready', 'delivered', 'cancelled')),
     estimated_wait_minutes integer,
     rating integer CHECK (rating BETWEEN 1 AND 5),
+    feedback_comment text,
     created_at timestamptz NOT NULL DEFAULT now()
 );
 

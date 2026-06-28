@@ -12,7 +12,7 @@
   } from '@/lib/api/table-sessions';
   import { formatDate } from '@/lib/utils/formatters';
   import { temporarilyUnlockSessionAction } from '@/lib/actions/orders';
-  import { Plus, Lock, Check, Trash2, AlertCircle, X, Eye, Loader2, Clock, Users, DollarSign, Zap, RefreshCw } from 'lucide-react';
+  import { Plus, Lock, Check, Trash2, AlertCircle, X, Eye, Loader2, Clock, Users, IndianRupee, Zap, RefreshCw, QrCode, Download } from 'lucide-react';
   import { createClient } from '@/lib/supabase/client';
   import CustomSelect from '@/components/ui/CustomSelect';
   import Link from 'next/link';
@@ -56,6 +56,7 @@ const [confirmAction, setConfirmAction] = useState(null);
 const [sessionRunningTotal, setSessionRunningTotal] = useState(0);
 const [unlockCountdown, setUnlockCountdown] = useState(0);
 const [isUnlocking, setIsUnlocking] = useState(false);
+const [selectedQrTable, setSelectedQrTable] = useState(null);
 
 // Select session from query parameter on mount/URL change
 useEffect(() => {
@@ -569,7 +570,7 @@ useEffect(() => {
                         navigator.clipboard.writeText(table.session_id);
                         await showAlert('Session ID copied to clipboard!');
                       }}
-                      className="text-[10px] hover:text-[var(--accent)] cursor-pointer select-none bg-[#27272a]/60 px-1 py-0.5 rounded border border-[#3f3f46] hover:bg-[#3f3f46]/60 transition-all"
+                      className="text-[10px] hover:text-[var(--accent)] cursor-pointer select-none bg-surface-raised/60 px-1 py-0.5 rounded border border-border hover:bg-border/60 transition-all"
                       title="Copy Full Session ID"
                     >
                       Copy
@@ -593,7 +594,7 @@ useEffect(() => {
   📦 {table.orders_count} order{table.orders_count !== 1 ? 's' : ''}
 </div>
                   <div className="flex items-center gap-2">
-                    <DollarSign size={14} /> Running total: ${table.running_total?.toFixed(2) || '0.00'}
+                    <IndianRupee size={14} /> Running total: ₹{table.running_total?.toFixed(2) || '0.00'}
                   </div>
                   <div className="flex items-center gap-2">
                     <Clock size={14} /> Started: {table.session_started_at ? new Date(table.session_started_at).toLocaleTimeString() : 'N/A'}
@@ -604,18 +605,31 @@ useEffect(() => {
               {/* Action Buttons */}
               <div className="flex flex-col gap-2">
                 {table.current_status === 'inactive' && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleStartSession(table.id);
-                    }}
-                    disabled={operatingTableId === table.id}
-                    className="btn btn-primary text-small w-full flex items-center justify-center gap-2"
-                  >
-                    {operatingTableId === table.id ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}
-                    {operatingTableId === table.id ? 'Starting...' : 'Start Session'}
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleStartSession(table.id);
+                      }}
+                      disabled={operatingTableId === table.id}
+                      className="btn btn-primary text-small flex-1 flex items-center justify-center gap-1.5"
+                    >
+                      {operatingTableId === table.id ? <Loader2 size={12} className="animate-spin" /> : <Zap size={12} />}
+                      <span>Start Session</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedQrTable(table);
+                      }}
+                      className="btn btn-ghost border border-border text-small flex items-center justify-center p-2 rounded-xl"
+                      title="Show QR Code"
+                    >
+                      <QrCode size={14} />
+                    </button>
+                  </div>
                 )}
 
                 {(table.current_status === 'open' || table.current_status === 'locked') && (
@@ -627,23 +641,36 @@ useEffect(() => {
                           e.stopPropagation();
                           setConfirmAction({ action: 'complete', sessionId: table.session_id });
                         }}
-                        className="btn btn-primary text-small w-full flex items-center justify-center gap-2"
+                        className="btn btn-primary text-small w-full flex items-center justify-center gap-2 mb-1"
                       >
                         <Check size={14} />
                         End Ordering & Bill
                       </button>
                     )}
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleViewSession(table.session_id);
-                      }}
-                      className="btn btn-ghost text-small w-full flex items-center justify-center gap-2"
-                    >
-                      <Eye size={14} />
-                      View Details
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleViewSession(table.session_id);
+                        }}
+                        className="btn btn-ghost text-small flex-1 flex items-center justify-center gap-2"
+                      >
+                        <Eye size={14} />
+                        View Details
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedQrTable(table);
+                        }}
+                        className="btn btn-ghost border border-border text-small flex items-center justify-center p-2 rounded-xl"
+                        title="Show QR Code"
+                      >
+                        <QrCode size={14} />
+                      </button>
+                    </div>
                   </>
                 )}
 
@@ -655,38 +682,62 @@ useEffect(() => {
                         e.stopPropagation();
                         setConfirmAction({ action: 'clear', sessionId: table.session_id });
                       }}
-                      className="btn btn-primary text-small w-full flex items-center justify-center gap-2"
+                      className="btn btn-primary text-small w-full flex items-center justify-center gap-2 mb-1"
                     >
                       <Check size={14} />
                       Confirm Payment & Clear
+                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleViewSession(table.session_id);
+                        }}
+                        className="btn btn-ghost text-small flex-1 flex items-center justify-center gap-2"
+                      >
+                        <Eye size={14} />
+                        View Details
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedQrTable(table);
+                        }}
+                        className="btn btn-ghost border border-border text-small flex items-center justify-center p-2 rounded-xl"
+                        title="Show QR Code"
+                      >
+                        <QrCode size={14} />
+                      </button>
+                    </div>
+                  </>
+                )}
+                {table.current_status === 'cleared' && (
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleStartSession(table.id);
+                      }}
+                      className="btn btn-primary text-small flex-1"
+                    >
+                      Start Session
                     </button>
                     <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleViewSession(table.session_id);
+                        setSelectedQrTable(table);
                       }}
-                      className="btn btn-ghost text-small w-full flex items-center justify-center gap-2"
+                      className="btn btn-ghost border border-border text-small flex items-center justify-center p-2 rounded-xl"
+                      title="Show QR Code"
                     >
-                      <Eye size={14} />
-                      View Details
+                      <QrCode size={14} />
                     </button>
-                  </>
+                  </div>
                 )}
-                {table.current_status === 'cleared' && (
-  <>
-    <button
-      type="button"
-      onClick={(e) => {
-        e.stopPropagation();
-        handleStartSession(table.id);
-      }}
-      className="btn btn-primary text-small w-full"
-    >
-      Start Session
-    </button>
-  </>
-)}
               </div>
             </div>
           ))}
@@ -757,7 +808,7 @@ useEffect(() => {
                         <p className="text-body">{order.item_name}</p>
                         <p className="text-small text-[var(--text-secondary)]">Qty: {order.quantity}</p>
                       </div>
-                      <p className="font-bold text-[var(--accent)]">${order.total_price?.toFixed(2) || '0.00'}</p>
+                      <p className="font-bold text-[var(--accent)]">₹{order.total_price?.toFixed(2) || '0.00'}</p>
                     </div>
                   ))}
                 </div>
@@ -769,7 +820,7 @@ useEffect(() => {
             {/* Running Total */}
             <div className="bg-[var(--accent)] text-[var(--background)] p-4 rounded mb-6">
               <p className="text-small mb-1">Running Total</p>
-              <p className="text-display font-bold">${sessionRunningTotal.toFixed(2)}</p>
+              <p className="text-display font-bold">₹{sessionRunningTotal.toFixed(2)}</p>
             </div>
 
             {/* Connected Devices */}
@@ -1099,7 +1150,86 @@ useEffect(() => {
           </div>
         </div>
       )}
+      {selectedQrTable && (
+        <QrModal
+          table={selectedQrTable}
+          onClose={() => setSelectedQrTable(null)}
+        />
+      )}
       {AlertConfirmComponent}
+    </div>
+  );
+}
+
+function QrModal({ table, onClose }) {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    let active = true;
+    if (canvasRef.current && table?.qr_code_url) {
+      import('qrcode').then((QRCode) => {
+        if (active && canvasRef.current) {
+          QRCode.default.toCanvas(canvasRef.current, table.qr_code_url, {
+            width: 256,
+            margin: 2,
+            color: {
+              dark: '#1F2937',  // dark gray
+              light: '#FFFFFF', // white
+            },
+          });
+        }
+      });
+    }
+    return () => {
+      active = false;
+    };
+  }, [table]);
+
+  const handleDownload = () => {
+    if (!canvasRef.current) return;
+    const url = canvasRef.current.toDataURL('image/png');
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Table_${table.table_number}_QR.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-fade-in">
+      <div className="card bg-[var(--surface)] border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl relative text-center space-y-6">
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute top-4 right-4 text-[var(--text-secondary)] hover:text-[var(--text-primary)] p-1 transition-colors cursor-pointer"
+        >
+          <X size={20} />
+        </button>
+
+        <div className="flex flex-col items-center justify-center space-y-1">
+          <QrCode size={32} className="text-[var(--accent)]" />
+          <h2 className="text-xl font-bold text-[var(--text-primary)]">Table {table.table_number} QR Code</h2>
+          <p className="text-xs text-[var(--text-secondary)]">Scan to join table session</p>
+        </div>
+
+        <div className="flex justify-center p-3 bg-white rounded-2xl border border-border mx-auto shadow-inner">
+          <canvas ref={canvasRef} />
+        </div>
+
+        <div className="text-xs font-mono bg-background border border-border py-2 px-3 rounded-xl break-all">
+          {table.qr_code_url}
+        </div>
+
+        <button
+          type="button"
+          onClick={handleDownload}
+          className="w-full btn btn-primary btn-premium flex items-center justify-center gap-2 rounded-xl h-11 font-bold cursor-pointer text-sm"
+        >
+          <Download size={16} />
+          Download QR Image
+        </button>
+      </div>
     </div>
   );
 }

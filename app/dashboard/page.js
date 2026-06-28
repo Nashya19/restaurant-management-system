@@ -27,23 +27,135 @@
 
 'use client';
 
+import { useState, useMemo, useEffect } from 'react';
 import { useDashboard } from '@/lib/hooks/useDashboard';
 import { formatCurrency, formatWaitTime, getWaitTimeClass, formatCount } from '@/lib/utils/formatters';
-import { TrendingUp, Clock, DollarSign, TableProperties, ShoppingCart, Users, Loader2, RefreshCw } from 'lucide-react';
+import { TrendingUp, Clock, IndianRupee, TableProperties, ShoppingCart, Users, Loader2, RefreshCw, Star, Search, X } from 'lucide-react';
+import { getRatingsList } from '@/lib/api/dashboard';
 import Link from 'next/link';
+import { LogoIcon } from '@/lib/components/AdminNavBar';
 
 export default function DashboardPage() {
   const { metrics, isLoading, error, refresh } = useDashboard();
+
+  // Ratings Popup Modal States
+  const [showRatingsModal, setShowRatingsModal] = useState(false);
+  const [ratings, setRatings] = useState([]);
+  const [ratingsLoading, setRatingsLoading] = useState(false);
+  const [selectedStars, setSelectedStars] = useState('all');
+  const [selectedTable, setSelectedTable] = useState('all');
+  const [selectedDateRange, setSelectedDateRange] = useState('all');
+  const [selectedPriceRange, setSelectedPriceRange] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeComment, setActiveComment] = useState(null);
+
+  // Fetch ratings list on modal open
+  useEffect(() => {
+    if (!showRatingsModal) return;
+
+    const fetchRatings = async () => {
+      setRatingsLoading(true);
+      try {
+        const list = await getRatingsList();
+        setRatings(list || []);
+      } catch (err) {
+        console.error('Failed to load ratings list:', err);
+      } finally {
+        setRatingsLoading(false);
+      }
+    };
+
+    fetchRatings();
+  }, [showRatingsModal]);
+
+  // Compute unique tables list for filtering
+  const uniqueTables = useMemo(() => {
+    const tablesSet = new Set();
+    ratings.forEach(rating => {
+      const num = rating.table_sessions?.tables?.table_number;
+      if (num !== undefined && num !== null) {
+        tablesSet.add(num);
+      }
+    });
+    return Array.from(tablesSet).sort((a, b) => Number(a) - Number(b));
+  }, [ratings]);
+
+  // Compute filtered ratings
+  const filteredRatings = useMemo(() => {
+    return ratings.filter((rating) => {
+      // 1. Star Rating filter
+      if (selectedStars !== 'all' && rating.rating !== parseInt(selectedStars)) {
+        return false;
+      }
+      
+      // 2. Search query filter
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        const tableStr = `table ${rating.table_sessions?.tables?.table_number || ''}`.toLowerCase();
+        const commentStr = (rating.feedback_comment || '').toLowerCase();
+        if (!tableStr.includes(query) && !commentStr.includes(query)) {
+          return false;
+        }
+      }
+
+      // 3. Table filter
+      if (selectedTable !== 'all') {
+        const tableNum = rating.table_sessions?.tables?.table_number;
+        if (String(tableNum) !== String(selectedTable)) {
+          return false;
+        }
+      }
+
+      // 4. Date range filter
+      if (selectedDateRange !== 'all') {
+        const createdDate = new Date(rating.created_at);
+        const now = new Date();
+        
+        if (selectedDateRange === 'today') {
+          if (createdDate.toDateString() !== now.toDateString()) return false;
+        } else if (selectedDateRange === 'yesterday') {
+          const yesterday = new Date();
+          yesterday.setDate(now.getDate() - 1);
+          if (createdDate.toDateString() !== yesterday.toDateString()) return false;
+        } else if (selectedDateRange === 'week') {
+          const sevenDaysAgo = new Date();
+          sevenDaysAgo.setDate(now.getDate() - 7);
+          if (createdDate < sevenDaysAgo) return false;
+        } else if (selectedDateRange === 'month') {
+          const thirtyDaysAgo = new Date();
+          thirtyDaysAgo.setDate(now.getDate() - 30);
+          if (createdDate < thirtyDaysAgo) return false;
+        }
+      }
+
+      // 5. Price range filter
+      if (selectedPriceRange !== 'all') {
+        const amount = parseFloat(rating.table_sessions?.total_amount || 0);
+        if (selectedPriceRange === 'under500') {
+          if (amount >= 500) return false;
+        } else if (selectedPriceRange === '500to1500') {
+          if (amount < 500 || amount > 1500) return false;
+        } else if (selectedPriceRange === 'over1500') {
+          if (amount <= 1500) return false;
+        }
+      }
+
+      return true;
+    });
+  }, [ratings, selectedStars, searchQuery, selectedTable, selectedDateRange, selectedPriceRange]);
 
   return (
     <div className="w-full max-w-7xl mx-auto space-y-8 animate-fade-in">
       {/* Page Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pb-4 border-b border-border">
-        <div>
-          <h1 className="text-display text-2xl font-bold tracking-tight text-[var(--text-primary)]">Dashboard</h1>
-          <p className="text-sm text-[var(--text-secondary)] mt-1">
-            Real-time metrics for restaurant operations. Metrics update automatically.
-          </p>
+        <div className="flex items-center gap-3.5">
+          <LogoIcon size={44} className="shrink-0" />
+          <div>
+            <h1 className="text-display text-2xl font-bold tracking-tight text-[var(--text-primary)]">Dashboard</h1>
+            <p className="text-sm text-[var(--text-secondary)] mt-1">
+              Real-time metrics for restaurant operations. Metrics update automatically.
+            </p>
+          </div>
         </div>
         <button
           onClick={refresh}
@@ -114,7 +226,7 @@ export default function DashboardPage() {
                     {formatCurrency(metrics.revenueToday)}
                   </p>
                 </div>
-                <DollarSign size={24} className="text-success opacity-50 group-hover:scale-110 transition-transform duration-300" />
+                <IndianRupee size={24} className="text-success opacity-50 group-hover:scale-110 transition-transform duration-300" />
               </div>
               <p className="text-xs text-[var(--text-secondary)] font-semibold mt-6">
                 Total from completed billing sessions
@@ -134,28 +246,25 @@ export default function DashboardPage() {
                 {metrics.occupiedTables} currently occupied dining tables
               </p>
             </Link>
-{/* Card 5: Average Rating */}
-<Link href="/ratings" className="block">
-  <div className="stat-card bg-surface border border-border p-6 rounded-2xl shadow-lg hover:border-[var(--accent)] transition-all duration-300 relative overflow-hidden group cursor-pointer">
-
-    <div>
-      <p className="text-xs uppercase text-[var(--text-secondary)] font-bold tracking-wider">
-        Average Rating
-      </p>
-
-      <p className="text-4xl font-extrabold font-mono text-[var(--text-primary)] mt-2">
-        ⭐ {Number(metrics.averageRating || 0).toFixed(1)} / 5
-      </p>
-    </div>
-
-    
-
-   <p className="text-xs text-[var(--text-secondary)] font-semibold mt-6">
-  Based on {metrics.ratingsCount || 0} customer ratings
-</p>
-
-  </div>
-</Link>
+            {/* Card 5: Average Rating */}
+            <button
+              onClick={() => setShowRatingsModal(true)}
+              className="w-full text-left block border-0 bg-transparent p-0 outline-none cursor-pointer focus:outline-none"
+            >
+              <div className="stat-card bg-surface border border-border p-6 rounded-2xl shadow-lg hover:border-[var(--accent)] transition-all duration-300 relative overflow-hidden group">
+                <div>
+                  <p className="text-xs uppercase text-[var(--text-secondary)] font-bold tracking-wider">
+                    Average Rating
+                  </p>
+                  <p className="text-4xl font-extrabold font-mono text-[var(--text-primary)] mt-2">
+                    ⭐ {Number(metrics.averageRating || 0).toFixed(1)} / 5
+                  </p>
+                </div>
+                <p className="text-xs text-[var(--text-secondary)] font-semibold mt-6">
+                  Based on {metrics.ratingsCount || 0} customer ratings (Click to view reviews)
+                </p>
+              </div>
+            </button>
 
             {/* Card 6: Staff Online */}
             <Link href="/users" className="stat-card bg-surface border border-border p-6 rounded-2xl shadow-lg hover:border-[var(--accent)] transition-all duration-300 relative overflow-hidden group block hover:no-underline cursor-pointer">
@@ -178,6 +287,230 @@ export default function DashboardPage() {
             <span>Last sync: just now</span>
           </div>
         </>
+      )}
+
+      {/* Ratings Dashboard Modal Overlay */}
+      {showRatingsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md animate-fade-in p-4 bg-zinc-950/20">
+          <div className="w-full max-w-4xl bg-surface border border-border rounded-2xl shadow-2xl p-6 relative flex flex-col max-h-[85vh]">
+            {/* Close Modal Button */}
+            <button
+              onClick={() => setShowRatingsModal(false)}
+              className="absolute top-4 right-4 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer border-0 bg-transparent"
+            >
+              <X size={20} />
+            </button>
+
+            {/* Modal Title */}
+            <div className="border-b border-border/60 pb-3 pr-8">
+              <h3 className="font-extrabold text-xl text-[var(--text-primary)] flex items-center gap-2">
+                <span>💬 Customer Feedback & Ratings</span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-background text-[var(--accent)] border border-border">
+                  ⭐ {Number(metrics.averageRating || 0).toFixed(1)} Avg
+                </span>
+              </h3>
+              <p className="text-xs text-[var(--text-secondary)] mt-1 font-semibold">
+                Showing reviews and star ratings left by dining table sessions.
+              </p>
+            </div>
+
+            {/* Modal Filters Toolbar */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 bg-background/50 border border-border/60 p-3 rounded-xl mt-4">
+              {/* Search Bar */}
+              <div className="relative col-span-2 md:col-span-1">
+                <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-[var(--text-muted)]">
+                  <Search size={14} />
+                </span>
+                <input
+                  type="text"
+                  placeholder="Search comments..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-8 pr-4 py-1.5 bg-background border border-border focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-lg text-xs transition-all text-[var(--text-primary)]"
+                />
+              </div>
+
+              {/* Table Filter */}
+              <div>
+                <select
+                  value={selectedTable}
+                  onChange={(e) => setSelectedTable(e.target.value)}
+                  className="w-full bg-background border border-border focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-lg text-xs h-8 px-2 outline-none transition-all text-[var(--text-primary)] font-bold cursor-pointer"
+                >
+                  <option value="all">All Tables</option>
+                  {uniqueTables.map(t => (
+                    <option key={t} value={t}>Table {t}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Rating Dropdown Filter */}
+              <div>
+                <select
+                  value={selectedStars}
+                  onChange={(e) => setSelectedStars(e.target.value)}
+                  className="w-full bg-background border border-border focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-lg text-xs h-8 px-2 outline-none transition-all text-[var(--text-primary)] font-bold cursor-pointer"
+                >
+                  <option value="all">All Ratings</option>
+                  <option value="5">5 Stars</option>
+                  <option value="4">4 Stars</option>
+                  <option value="3">3 Stars</option>
+                  <option value="2">2 Stars</option>
+                  <option value="1">1 Star</option>
+                </select>
+              </div>
+
+              {/* Date Filter */}
+              <div>
+                <select
+                  value={selectedDateRange}
+                  onChange={(e) => setSelectedDateRange(e.target.value)}
+                  className="w-full bg-background border border-border focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-lg text-xs h-8 px-2 outline-none transition-all text-[var(--text-primary)] font-bold cursor-pointer"
+                >
+                  <option value="all">All Dates</option>
+                  <option value="today">Today</option>
+                  <option value="yesterday">Yesterday</option>
+                  <option value="week">Last 7 Days</option>
+                  <option value="month">Last 30 Days</option>
+                </select>
+              </div>
+
+              {/* Price Range Filter */}
+              <div>
+                <select
+                  value={selectedPriceRange}
+                  onChange={(e) => setSelectedPriceRange(e.target.value)}
+                  className="w-full bg-background border border-border focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-lg text-xs h-8 px-2 outline-none transition-all text-[var(--text-primary)] font-bold cursor-pointer"
+                >
+                  <option value="all">All Bills</option>
+                  <option value="under500">Under ₹500</option>
+                  <option value="500to1500">₹500 - ₹1500</option>
+                  <option value="over1500">Over ₹1500</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Ratings Scrollable Table Area */}
+            <div className="flex-1 overflow-y-auto mt-4 border border-border/80 rounded-xl bg-background/10">
+              {ratingsLoading ? (
+                <div className="p-12 text-center">
+                  <Loader2 size={24} className="animate-spin text-[var(--accent)] inline-block" />
+                  <p className="mt-2 text-xs text-[var(--text-secondary)] font-semibold">Loading reviews…</p>
+                </div>
+              ) : filteredRatings.length > 0 ? (
+                <table className="w-full border-collapse">
+                  <thead className="sticky top-0 bg-surface border-b border-border/80 text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] z-10">
+                    <tr>
+                      <th className="text-left p-3.5">Table</th>
+                      <th className="text-left p-3.5">Rating</th>
+                      <th className="text-left p-3.5">Bill Amount</th>
+                      <th className="text-left p-3.5">Feedback Comment</th>
+                      <th className="text-left p-3.5">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/60 text-xs">
+                    {filteredRatings.map((rating) => (
+                      <tr key={rating.id} className="hover:bg-background/20 transition-colors">
+                        <td className="p-3.5 font-bold text-[var(--text-primary)]">
+                          Table {rating.table_sessions?.tables?.table_number || 'N/A'}
+                        </td>
+                        <td className="p-3.5 text-amber-500 whitespace-nowrap">
+                          {'★'.repeat(rating.rating)}{'☆'.repeat(5 - rating.rating)}
+                        </td>
+                        <td className="p-3.5 font-mono text-[var(--text-primary)]">
+                          {rating.table_sessions?.total_amount ? `₹${Number(rating.table_sessions.total_amount).toFixed(2)}` : '—'}
+                        </td>
+                        <td className="p-3.5 max-w-xs">
+                          {rating.feedback_comment ? (
+                            <button
+                              type="button"
+                              onClick={() => setActiveComment({
+                                table: rating.table_sessions?.tables?.table_number || 'N/A',
+                                rating: rating.rating,
+                                comment: rating.feedback_comment,
+                                date: new Date(rating.created_at).toLocaleDateString()
+                              })}
+                              className="text-left text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--accent)] underline cursor-pointer truncate block w-full transition-colors border-0 bg-transparent p-0 outline-none"
+                            >
+                              {rating.feedback_comment}
+                            </button>
+                          ) : (
+                            <span className="text-[var(--text-muted)]">—</span>
+                          )}
+                        </td>
+                        <td className="p-3.5 font-mono text-[var(--text-secondary)] whitespace-nowrap">
+                          {new Date(rating.created_at).toLocaleDateString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="p-8 text-center text-xs text-[var(--text-muted)] font-semibold italic">
+                  No customer reviews match your filters.
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex justify-between items-center pt-4 border-t border-border/60 mt-4">
+              <span className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-wider">
+                Total Shown: {filteredRatings.length} entries
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowRatingsModal(false)}
+                className="btn bg-background border-border hover:bg-surface text-xs font-bold px-4 py-2 rounded-xl cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Nested View Comment Modal Popup */}
+      {activeComment && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-xs animate-fade-in p-4">
+          <div className="w-full max-w-md bg-surface border border-border rounded-2xl shadow-2xl p-6 relative space-y-4">
+            <button
+              onClick={() => setActiveComment(null)}
+              className="absolute top-4 right-4 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer border-0 bg-transparent"
+            >
+              <X size={18} />
+            </button>
+
+            <div className="border-b border-border/60 pb-3">
+              <h4 className="font-extrabold text-md text-[var(--text-primary)]">
+                Feedback Details: Table {activeComment.table}
+              </h4>
+              <div className="flex items-center gap-1.5 mt-1">
+                <span className="text-amber-500 text-xs">
+                  {'★'.repeat(activeComment.rating)}{'☆'.repeat(5 - activeComment.rating)}
+                </span>
+                <span className="text-[9px] text-[var(--text-secondary)] font-mono">
+                  • {activeComment.date}
+                </span>
+              </div>
+            </div>
+
+            <div className="bg-background border border-border/80 rounded-xl p-4 max-h-60 overflow-y-auto">
+              <p className="text-xs text-[var(--text-primary)] leading-relaxed whitespace-pre-wrap font-medium">
+                "{activeComment.comment}"
+              </p>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                type="button"
+                onClick={() => setActiveComment(null)}
+                className="btn bg-background border-border hover:bg-surface text-xs font-bold px-4 py-2 rounded-xl cursor-pointer"
+              >
+                Back to List
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

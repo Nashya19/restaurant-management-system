@@ -47,7 +47,7 @@ export default function CustomAlertConfirm({
             className={`btn px-4 h-9 text-xs font-bold rounded-xl cursor-pointer transition-all ${
               type === 'confirm'
                 ? 'btn-primary btn-premium bg-[var(--accent)] text-black shadow-md shadow-[var(--accent)]/10 hover:brightness-110'
-                : 'bg-[#27272a] text-[var(--text-primary)] border border-[#3f3f46] hover:bg-[#3f3f46]'
+                : 'bg-surface-raised text-[var(--text-primary)] border border-border hover:bg-border'
             }`}
           >
             {confirmText}
