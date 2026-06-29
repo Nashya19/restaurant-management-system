@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { LogOut, LayoutDashboard, Users, ListChecks, Grid3x3, ClipboardList, Menu, X, ChevronLeft, ChevronRight, Calendar, Sun, Moon, ReceiptText, Utensils, Heart } from 'lucide-react';
+import { useKeyboardShortcuts } from '@/lib/hooks/useKeyboardShortcuts';
 
 export const LogoIcon = ({ size = 24, className = '' }) => (
   <img
@@ -29,6 +30,7 @@ export function AdminNavBar({ title, subtitle }) {
   const [toast, setToast] = useState(null);
   const [isLocalhost, setIsLocalhost] = useState(false);
   const [theme, setTheme] = useState('light');
+  const [userProfile, setUserProfile] = useState(null);
 
   useEffect(() => {
     const stored = localStorage.getItem('sidebar-collapsed');
@@ -58,6 +60,30 @@ export function AdminNavBar({ title, subtitle }) {
       return () => observer.disconnect();
     }
   }, []);
+
+
+  useKeyboardShortcuts(devRole !== 'customer');
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name, role')
+            .eq('id', session.user.id)
+            .single();
+          if (profile) {
+            setUserProfile(profile);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching profile for navbar:', err);
+      }
+    };
+    fetchProfile();
+  }, [supabase, devRole]);
 
   useEffect(() => {
     if (devRole === 'customer') return;
@@ -161,6 +187,105 @@ export function AdminNavBar({ title, subtitle }) {
   const displayTitle = devRole === 'customer' ? 'Order' : (devRole === 'staff' ? 'Order Management' : title);
   const displaySubtitle = devRole === 'customer' ? 'View your table session and order details.' : subtitle;
 
+  if (devRole === 'customer') {
+    return (
+      <>
+        {/* Mobile Top Header (No Hamburger Menu Button) */}
+        <div className="md:hidden flex items-center justify-between p-4 bg-surface border-b border-border w-full z-40">
+          <div className="flex items-center text-[var(--accent)]">
+            <img 
+              src={theme === 'dark' ? '/images/logo-text-darkmode.png' : '/images/logo-text-lightmode.png'} 
+              alt="Sauté" 
+              className="h-8 w-auto object-contain" 
+            />
+          </div>
+          <span className="px-3 py-1 rounded-full bg-background border border-border text-xs font-black text-[var(--text-secondary)]">
+            Table {typeof window !== 'undefined' ? localStorage.getItem('tableNumber') : ''}
+          </span>
+        </div>
+
+        {/* Mobile Bottom Tab Bar */}
+        <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-surface/90 backdrop-blur-md border-t border-border flex items-center justify-around px-6 z-40">
+          <Link
+            href="/menu"
+            className={`flex flex-col items-center justify-center gap-1.5 flex-1 h-full border-t-2 transition-all cursor-pointer no-underline ${
+              pathname === '/menu'
+                ? 'border-[var(--accent)] text-[var(--accent)] font-bold'
+                : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+            }`}
+          >
+            <Utensils size={18} />
+            <span className="text-[10px] uppercase font-bold tracking-wider">Menu</span>
+          </Link>
+          <Link
+            href={`/table/${typeof window !== 'undefined' ? localStorage.getItem('tableNumber') || '' : ''}/order`}
+            className={`flex flex-col items-center justify-center gap-1.5 flex-1 h-full border-t-2 transition-all cursor-pointer no-underline ${
+              pathname.includes('/order')
+                ? 'border-[var(--accent)] text-[var(--accent)] font-bold'
+                : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+            }`}
+          >
+            <ClipboardList size={18} />
+            <span className="text-[10px] uppercase font-bold tracking-wider">Orders</span>
+          </Link>
+        </div>
+
+        {/* Desktop Sidebar (cleaned up for customer) */}
+        <aside className="hidden md:flex flex-col w-64 bg-surface border-r border-border p-6 shrink-0 z-40 transition-all duration-300">
+          <div className="flex flex-col h-full justify-between">
+            <div className="space-y-8">
+              {/* Logo */}
+              <div className="flex justify-center border-b border-border pb-6">
+                <img 
+                  src={theme === 'dark' ? '/images/logo-text-darkmode.png' : '/images/logo-text-lightmode.png'}
+                  alt="Sauté" 
+                  className="h-16 w-auto object-contain" 
+                />
+              </div>
+
+              {/* Navigation links */}
+              <nav className="flex flex-col gap-2">
+                <Link
+                  href="/menu"
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all no-underline ${
+                    pathname === '/menu'
+                      ? 'bg-[var(--accent)] text-white shadow-md'
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-background/50'
+                  }`}
+                >
+                  <Utensils size={18} />
+                  <span>Menu</span>
+                </Link>
+                <Link
+                  href={`/table/${typeof window !== 'undefined' ? localStorage.getItem('tableNumber') || '' : ''}/order`}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all no-underline ${
+                    pathname.includes('/order')
+                      ? 'bg-[var(--accent)] text-white shadow-md'
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-background/50'
+                  }`}
+                >
+                  <ClipboardList size={18} />
+                  <span>Orders</span>
+                </Link>
+              </nav>
+            </div>
+
+            {/* Bottom Actions: Theme Toggle */}
+            <div className="space-y-4">
+              <button
+                onClick={toggleTheme}
+                className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-border bg-background/50 text-xs font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all cursor-pointer"
+              >
+                <span>Theme Mode</span>
+                <span>{theme === 'dark' ? 'Dark' : 'Light'}</span>
+              </button>
+            </div>
+          </div>
+        </aside>
+      </>
+    );
+  }
+
   return (
     <>
       {/* Top Banner Notification for ended ordering */}
@@ -258,7 +383,7 @@ export function AdminNavBar({ title, subtitle }) {
                 </div>
                 <button
                   onClick={toggleCollapse}
-                  className="p-1.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-background rounded-lg cursor-pointer border border-border transition-all shrink-0 mt-0.5"
+                  className="hidden md:block p-1.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-background rounded-lg cursor-pointer border border-border transition-all shrink-0 mt-0.5"
                   title="Collapse Sidebar"
                 >
                   <ChevronLeft size={16} />
@@ -270,13 +395,23 @@ export function AdminNavBar({ title, subtitle }) {
             <nav className="flex flex-col gap-2">
               {navLinks.map(({ href, label, icon: Icon }) => {
                 const isActive = pathname === href || pathname.startsWith(href + '/');
+                
+                // Get hotkey string based on path
+                let hotkeyHint = null;
+                if (href === '/dashboard') hotkeyHint = 'Ctrl+D';
+                else if (href === '/kitchen') hotkeyHint = 'Ctrl+K';
+                else if (href === '/tables') hotkeyHint = 'Ctrl+T';
+                else if (href === '/orders') hotkeyHint = 'Ctrl+O';
+                else if (href === '/menu') hotkeyHint = 'Ctrl+M';
+                else if (href === '/schedule') hotkeyHint = 'Ctrl+S';
+
                 return (
                   <Link
                     key={href}
                     href={href}
                     onClick={() => setIsOpen(false)}
-                    className={`flex items-center ${
-                      isCollapsed ? 'justify-center px-0 py-3' : 'gap-3 px-4 py-3'
+                    className={`flex items-center gap-3 ${
+                      isCollapsed ? 'justify-center px-0 py-3' : 'px-4 py-3'
                     } text-sm font-semibold rounded-xl border transition-all duration-200 ${
                       isActive
                         ? 'border-[var(--accent)] bg-[var(--surface-raised)] text-[var(--accent)] shadow-md shadow-[var(--accent)]/5'
@@ -285,7 +420,7 @@ export function AdminNavBar({ title, subtitle }) {
                     title={isCollapsed ? label : undefined}
                   >
                     <Icon size={16} className="shrink-0" />
-                    {!isCollapsed && <span>{label}</span>}
+                    {!isCollapsed && <span className="truncate">{label}</span>}
                   </Link>
                 );
               })}
@@ -294,6 +429,35 @@ export function AdminNavBar({ title, subtitle }) {
 
           {/* Bottom Actions */}
           <div className="pt-6 border-t border-border mt-auto space-y-4">
+            {/* User Profile Section */}
+            {userProfile && devRole !== 'customer' && (
+              <div className={`flex items-center gap-3 border border-border/80 bg-background/30 rounded-xl transition-all ${
+                isCollapsed ? 'justify-center p-2' : 'p-3'
+              }`}
+              title={isCollapsed ? `${userProfile.full_name} (${userProfile.role.toUpperCase()})` : undefined}>
+                <div className={`relative flex items-center justify-center shrink-0 w-8.5 h-8.5 rounded-full font-bold text-xs select-none ${
+                  userProfile.role === 'admin' 
+                    ? 'bg-amber-500/20 text-amber-500 border border-amber-500/40' 
+                    : 'bg-indigo-500/20 text-indigo-500 border border-indigo-500/30'
+                }`}>
+                  {userProfile.full_name ? userProfile.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'U'}
+                  <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-surface ${
+                    userProfile.role === 'admin' ? 'bg-amber-500' : 'bg-indigo-500'
+                  }`} />
+                </div>
+                {!isCollapsed && (
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-[var(--text-primary)] truncate">{userProfile.full_name}</p>
+                    <span className={`inline-block px-1.5 py-0.5 rounded text-[8px] font-black tracking-wider uppercase mt-1 ${
+                      userProfile.role === 'admin' ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30' : 'bg-indigo-500/20 text-indigo-500 border border-indigo-500/20'
+                    }`}>
+                      {userProfile.role}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Theme Toggle Button */}
             <button
               type="button"

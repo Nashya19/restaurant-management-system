@@ -128,7 +128,7 @@ export default function UsersPage() {
       {/* Error Alert */}
       {error && (
         <div className="flex items-start gap-2 bg-destructive-bg border border-destructive-border text-destructive text-sm p-4 rounded-xl animate-fade-in">
-          <span className="shrink-0 mt-0.5">⚠️</span>
+          <span className="shrink-0 mt-0.5">️</span>
           <span>{error}</span>
         </div>
       )}
@@ -203,8 +203,15 @@ export default function UsersPage() {
                     key={user.id}
                     className="hover:bg-background/40 transition-colors"
                   >
-                    <td className="px-6 py-4 text-sm font-semibold text-[var(--text-primary)]">
-                      {user.full_name}
+                    <td className="px-6 py-4 text-sm font-semibold text-[var(--text-primary)] flex items-center gap-3">
+                      <div className={`relative flex items-center justify-center shrink-0 w-8 h-8 rounded-full font-bold text-xs select-none ${
+                        user.role === 'admin' 
+                          ? 'bg-amber-500/20 text-amber-500 border border-amber-500/40' 
+                          : 'bg-indigo-500/20 text-indigo-500 border border-indigo-500/30'
+                      }`}>
+                        {user.full_name ? user.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'U'}
+                      </div>
+                      <span>{user.full_name}</span>
                     </td>
                     <td className="px-6 py-4">
                       <span className={`px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase ${user.role === 'admin' ? 'bg-warning-bg text-warning' : 'bg-surface-raised text-text-secondary'}`}>

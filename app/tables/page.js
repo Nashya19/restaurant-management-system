@@ -499,7 +499,7 @@ useEffect(() => {
       {/* Error Alert */}
       {pageError && (
         <div className="flex items-start gap-2 bg-destructive-bg border border-destructive-border text-destructive text-sm p-4 rounded-xl animate-fade-in mb-6">
-          <span className="shrink-0 mt-0.5">⚠️</span>
+          <span className="shrink-0 mt-0.5">️</span>
           <span>{pageError}</span>
         </div>
       )}
@@ -555,11 +555,23 @@ useEffect(() => {
               {/* Session Info (if active) */}
               {table.current_status !== 'inactive' && table.session_id && (
                 <div className="space-y-2 mb-4 text-small text-[var(--text-secondary)]">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 group/pin">
                     <Zap size={14} /> PIN: <span className="font-sans font-bold text-[var(--accent)]">{table.current_pin}</span>
+                    <button
+                      type="button"
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        navigator.clipboard.writeText(table.current_pin);
+                        await showAlert('PIN copied to clipboard!');
+                      }}
+                      className="text-[10px] hover:text-[var(--accent)] cursor-pointer select-none bg-surface-raised/60 px-1.5 py-0.5 rounded border border-border hover:bg-border/60 transition-all opacity-0 group-hover/pin:opacity-100"
+                      title="Copy PIN"
+                    >
+                      Copy
+                    </button>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span>🆔 ID:</span>
+                    <span> ID:</span>
                     <span className="font-mono text-xs text-[var(--text-primary)] truncate max-w-[110px]" title={table.session_id}>
                       {table.session_id.substring(0, 8)}...
                     </span>
@@ -577,7 +589,7 @@ useEffect(() => {
                     </button>
                   </div>
                   <div className="flex items-center gap-2">
-  🔗
+  
   <a
     href={table.qr_code_url}
     target="_blank"
@@ -591,7 +603,7 @@ useEffect(() => {
                     <Users size={14} /> {table.connected_devices_count} device{table.connected_devices_count !== 1 ? 's' : ''}
                   </div>
                   <div className="flex items-center gap-2">
-  📦 {table.orders_count} order{table.orders_count !== 1 ? 's' : ''}
+   {table.orders_count} order{table.orders_count !== 1 ? 's' : ''}
 </div>
                   <div className="flex items-center gap-2">
                     <IndianRupee size={14} /> Running total: ₹{table.running_total?.toFixed(2) || '0.00'}

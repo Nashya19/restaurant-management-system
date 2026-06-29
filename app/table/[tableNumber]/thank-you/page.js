@@ -25,7 +25,7 @@ export default function ThankYouPage() {
       <div className="bg-white rounded-3xl shadow-xl p-10 text-center max-w-md w-full">
 
         <div className="text-6xl mb-4">
-          {feedbackGiven ? '🎉' : '🙏'}
+          {feedbackGiven ? '' : ''}
         </div>
 
         <h1 className="text-3xl font-bold mb-3">

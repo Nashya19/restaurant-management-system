@@ -211,6 +211,30 @@ export default function SchedulePage() {
     fetchData();
   }, [fetchData]);
 
+  // Realtime subscription for shift switch requests
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const channel = supabase.channel('shift-notifications')
+      .on(
+        'broadcast',
+        { event: 'switch_request' },
+        (payload) => {
+          const { requesterId, targetId } = payload.payload;
+          // Notify if the current user is the target or if the current user is an admin
+          if (currentUser.id === targetId || currentUser.id === requesterId || isAdmin) {
+            fetchData();
+            showSuccess('New shift switch request activity!');
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase, currentUser, isAdmin, fetchData]);
+
   // Navigation helpers
   const handlePrevWeek = () => {
     setCurrentWeekStart(prev => {
@@ -231,6 +255,21 @@ export default function SchedulePage() {
   const handleCurrentWeek = () => {
     const startOfWeek = getWeekStart(new Date(), weekStartDay);
     setCurrentWeekStart(startOfWeek);
+  };
+
+  const openAddModal = () => {
+    const todayStr = new Date().toLocaleDateString('sv-SE');
+    setShiftForm({
+      staffId: users[0]?.id || '',
+      station: '0',
+      startDateStr: todayStr,
+      startHour: '09',
+      startMin: '00',
+      endDateStr: todayStr,
+      endHour: '17',
+      endMin: '00'
+    });
+    setIsAddModalOpen(true);
   };
 
   // Shift Mutators
@@ -274,7 +313,7 @@ export default function SchedulePage() {
 
       await createShift({
         staffId: shiftForm.staffId,
-        station: 'Shift',
+        station: shiftForm.station || '0',
         startTime,
         endTime,
       });
@@ -657,101 +696,118 @@ export default function SchedulePage() {
       )}
 
       {/* Timetable Header Controls */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between pb-4 border-b border-border">
-        {/* Left: Date Range & Nav buttons */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handlePrevWeek}
-            className="p-2 border border-border hover:border-border bg-background rounded-xl hover:text-[var(--accent)] transition-all cursor-pointer"
-          >
-            <ChevronLeft size={16} />
-          </button>
-          <div className="w-56 font-mono">
-            <CustomDatePicker
-              label="W/C:"
-              selectionMode="week"
-              weekStartDay={weekStartDay}
-              value={currentWeekStart.toLocaleDateString('sv-SE')}
-              onChange={(newDateStr) => {
-                const pickedDate = new Date(newDateStr + 'T00:00:00');
-                const startOfWeek = getWeekStart(pickedDate, weekStartDay);
-                setCurrentWeekStart(startOfWeek);
-              }}
-            />
-          </div>
-          <button
-            onClick={handleNextWeek}
-            className="p-2 border border-border hover:border-border bg-background rounded-xl hover:text-[var(--accent)] transition-all cursor-pointer"
-          >
-            <ChevronRight size={16} />
-          </button>
-          <button
-            onClick={handleCurrentWeek}
-            className="btn btn-ghost text-xs bg-background border-border hover:bg-surface px-3.5 h-9 rounded-xl font-bold cursor-pointer"
-          >
-            Today
-          </button>
-        </div>
-
-        {/* Right: Settings and Admin Actions */}
-        <div className="flex flex-wrap items-center gap-3">
-          {isAdmin && (
-            <div className="flex items-center gap-2 bg-background/40 border border-border/60 px-3 py-1.5 rounded-xl">
-              <label className="text-[10px] uppercase text-[var(--text-secondary)] font-bold tracking-wider">
-                Start Week:
-              </label>
-              <select
-                value={weekStartDay}
-                onChange={handleWeekStartDayChange}
-                className="bg-transparent border-none text-xs text-[var(--text-primary)] font-bold outline-none cursor-pointer p-0"
+      <div className="space-y-4 pb-6 border-b border-border">
+        {/* Row 1: Navigation & Settings */}
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          {/* Left: Date Range & Nav buttons */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center bg-background/50 border border-border p-1 rounded-xl">
+              <button
+                onClick={handlePrevWeek}
+                className="p-2 hover:bg-surface-raised rounded-lg hover:text-[var(--accent)] transition-all cursor-pointer"
+                title="Previous Week"
               >
-                <option value="1">Monday</option>
-                <option value="0">Sunday</option>
-                <option value="6">Saturday</option>
-              </select>
+                <ChevronLeft size={16} />
+              </button>
+              <button
+                onClick={handleNextWeek}
+                className="p-2 hover:bg-surface-raised rounded-lg hover:text-[var(--accent)] transition-all cursor-pointer"
+                title="Next Week"
+              >
+                <ChevronRight size={16} />
+              </button>
             </div>
-          )}
-
-          <button
-            onClick={fetchData}
-            className="btn btn-ghost bg-background border-border hover:bg-surface hover:text-[var(--accent)] flex items-center justify-center gap-2 rounded-xl font-bold cursor-pointer text-xs h-9"
-          >
-            <RefreshCw size={13} className={isLoading ? 'animate-spin' : ''} />
-            <span>Refresh</span>
-          </button>
-
-          {isAdmin && (
-            <>
-              <button
-                onClick={handleCarryover}
-                className="btn btn-ghost bg-surface border-border hover:border-[var(--accent)] text-[var(--text-primary)] flex items-center justify-center gap-2 rounded-xl font-bold cursor-pointer text-xs h-9"
-              >
-                <Copy size={13} />
-                <span>Carryover Week</span>
-              </button>
-
-              <button
-                onClick={() => setIsReplaceModalOpen(true)}
-                className="btn btn-ghost bg-surface border-border hover:border-[var(--accent)] text-[var(--text-primary)] flex items-center justify-center gap-2 rounded-xl font-bold cursor-pointer text-xs h-9"
-              >
-                <UserMinus size={13} />
-                <span>Swap Employee</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  setTagForm({ date: '', tagType: 'holiday', description: '' });
-                  setIsTagModalOpen(true);
+            
+            <div className="w-56 font-mono">
+              <CustomDatePicker
+                label="W/C:"
+                selectionMode="week"
+                weekStartDay={weekStartDay}
+                value={currentWeekStart.toLocaleDateString('sv-SE')}
+                onChange={(newDateStr) => {
+                  const pickedDate = new Date(newDateStr + 'T00:00:00');
+                  const startOfWeek = getWeekStart(pickedDate, weekStartDay);
+                  setCurrentWeekStart(startOfWeek);
                 }}
-                className="btn btn-ghost bg-surface border-border hover:border-[var(--accent)] text-[var(--text-primary)] flex items-center justify-center gap-2 rounded-xl font-bold cursor-pointer text-xs h-9"
-              >
-                <Tag size={13} />
-                <span>Tag Day</span>
-              </button>
+              />
+            </div>
 
-            </>
-          )}
+            <button
+              onClick={handleCurrentWeek}
+              className="btn bg-background/60 border border-border hover:bg-surface-raised px-4 h-9 rounded-xl text-xs font-bold transition-all cursor-pointer"
+            >
+              Today
+            </button>
+          </div>
+
+          {/* Right: View Settings */}
+          <div className="flex items-center gap-2">
+            {isAdmin && (
+              <div className="flex items-center gap-2 bg-background/40 border border-border px-3.5 h-9 rounded-xl">
+                <label className="text-[10px] uppercase text-[var(--text-secondary)] font-black tracking-wider">
+                  Start Week
+                </label>
+                <select
+                  value={weekStartDay}
+                  onChange={handleWeekStartDayChange}
+                  className="bg-transparent border-none text-xs text-[var(--text-primary)] font-bold outline-none cursor-pointer p-0"
+                >
+                  <option value="1">Monday</option>
+                  <option value="0">Sunday</option>
+                  <option value="6">Saturday</option>
+                </select>
+              </div>
+            )}
+
+            <button
+              onClick={fetchData}
+              className="btn bg-background/60 border border-border hover:bg-surface-raised hover:text-[var(--accent)] flex items-center justify-center gap-2 rounded-xl font-bold cursor-pointer text-xs h-9 px-4 transition-all"
+            >
+              <RefreshCw size={13} className={isLoading ? 'animate-spin' : ''} />
+              <span>Refresh</span>
+            </button>
+          </div>
         </div>
+
+        {/* Row 2: Admin Operations Bar (Only shown if admin) */}
+        {isAdmin && (
+          <div className="flex flex-wrap items-center gap-2 bg-background/30 border border-border/80 p-2 rounded-2xl">
+            <button
+              onClick={openAddModal}
+              className="btn bg-[var(--accent)] text-white hover:bg-[var(--accent)]/90 flex items-center justify-center gap-2 rounded-xl font-bold cursor-pointer text-xs h-9 px-4 transition-all shadow-md shadow-[var(--accent)]/10"
+            >
+              <Plus size={13} />
+              <span>Add Shift</span>
+            </button>
+
+            <button
+              onClick={handleCarryover}
+              className="btn bg-surface-raised/60 border border-border hover:border-[var(--accent)] hover:bg-[var(--accent)]/5 text-[var(--text-primary)] flex items-center justify-center gap-2 rounded-xl font-bold cursor-pointer text-xs h-9 px-4 transition-all"
+            >
+              <Copy size={13} className="text-[var(--accent)]" />
+              <span>Carryover Week</span>
+            </button>
+
+            <button
+              onClick={() => setIsReplaceModalOpen(true)}
+              className="btn bg-surface-raised/60 border border-border hover:border-[var(--accent)] hover:bg-[var(--accent)]/5 text-[var(--text-primary)] flex items-center justify-center gap-2 rounded-xl font-bold cursor-pointer text-xs h-9 px-4 transition-all"
+            >
+              <UserMinus size={13} className="text-[var(--accent)]" />
+              <span>Swap Employee</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setTagForm({ date: '', tagType: 'holiday', description: '' });
+                setIsTagModalOpen(true);
+              }}
+              className="btn bg-surface-raised/60 border border-border hover:border-[var(--accent)] hover:bg-[var(--accent)]/5 text-[var(--text-primary)] flex items-center justify-center gap-2 rounded-xl font-bold cursor-pointer text-xs h-9 px-4 transition-all"
+            >
+              <Tag size={13} className="text-[var(--accent)]" />
+              <span>Tag Day</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Filter and Search Toolbar */}
@@ -946,17 +1002,35 @@ export default function SchedulePage() {
           >
             <h3 className="text-heading text-lg font-bold text-[var(--text-primary)]">Create Shift</h3>
             <div className="space-y-3.5">
-              <div className="space-y-1.5">
-                <label className="text-[10px] uppercase text-[var(--text-secondary)] font-bold tracking-wider block">
-                  Staff Member
-                </label>
-                <SearchableSelect
-                  options={users}
-                  value={shiftForm.staffId}
-                  onChange={(newVal) => setShiftForm({ ...shiftForm, staffId: newVal })}
-                  placeholder="Select staff member..."
-                  isMulti={false}
-                />
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-1.5 col-span-2">
+                  <label className="text-[10px] uppercase text-[var(--text-secondary)] font-bold tracking-wider block">
+                    Staff Member
+                  </label>
+                  <SearchableSelect
+                    options={users}
+                    value={shiftForm.staffId}
+                    onChange={(newVal) => setShiftForm({ ...shiftForm, staffId: newVal })}
+                    placeholder="Select staff member..."
+                    isMulti={false}
+                  />
+                </div>
+                <div className="space-y-1.5 col-span-1">
+                  <label className="text-[10px] uppercase text-[var(--text-secondary)] font-bold tracking-wider block">
+                    Layer (Lane)
+                  </label>
+                  <select
+                    value={shiftForm.station}
+                    onChange={(e) => setShiftForm({ ...shiftForm, station: e.target.value })}
+                    className="w-full bg-background border border-border focus:border-[var(--accent)] rounded-xl text-sm h-10 text-[var(--text-primary)] outline-none px-3"
+                  >
+                    {Array.from({ length: 6 }, (_, i) => (
+                      <option key={i} value={String(i)}>
+                        Layer {i + 1}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               {/* Single date — shifts don't span multiple days */}

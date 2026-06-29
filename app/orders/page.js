@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import useSWR from 'swr';
 import {
   getTableStatus,
   getSessionDetails,
@@ -19,6 +20,7 @@ import {
   addOrderItemAction,
   saveOrderEditsAction
 } from '@/lib/actions/orders';
+import { useAlertConfirm } from '@/lib/hooks/useAlertConfirm';
 import { formatDate } from '@/lib/utils/formatters';
 import { createClient } from '@/lib/supabase/client';
 import {
@@ -56,12 +58,30 @@ const STATUS_LABELS = {
   completed: 'Completed',
 };
 
+function getItemStatusMeta(status) {
+  switch (status) {
+    case 'preparing':
+      return { label: 'Preparing', cls: 'bg-orange-950/40 border border-orange-900/60 text-orange-400' };
+    case 'ready':
+      return { label: 'Ready', cls: 'bg-blue-950/40 border border-blue-900/60 text-blue-400' };
+    case 'delivered':
+      return { label: 'Served', cls: 'bg-green-950/40 border border-green-900/60 text-green-400' };
+    case 'cancelled':
+      return { label: 'Cancelled', cls: 'bg-red-950/40 border border-red-900/60 text-red-400' };
+    case 'placed':
+    default:
+      return { label: 'Pending', cls: 'bg-zinc-800/40 border border-zinc-700/60 text-zinc-400' };
+  }
+}
+
 export default function OrdersPage() {
   const supabaseRef = useRef(null);
   if (!supabaseRef.current) {
     supabaseRef.current = createClient();
   }
   const supabase = supabaseRef.current;
+
+  const { showConfirm, AlertConfirmComponent } = useAlertConfirm();
 
   const [activeTables, setActiveTables] = useState([]);
   const [selectedSessionId, setSelectedSessionId] = useState(null);
@@ -101,6 +121,50 @@ export default function OrdersPage() {
   useEffect(() => {
     selectedSessionIdRef.current = selectedSessionId;
   }, [selectedSessionId]);
+
+  const { data: activeTablesData, error: tablesError, mutate: mutateTables } = useSWR('active-tables', getTableStatus, { refreshInterval: 10000 });
+  const { data: sessionDetailsData, error: detailsError, mutate: mutateDetails } = useSWR(
+    selectedSessionId ? ['session-details', selectedSessionId] : null,
+    ([, sid]) => getSessionDetails(sid),
+    { refreshInterval: 10000 }
+  );
+
+  useEffect(() => {
+    if (activeTablesData) {
+      const online = activeTablesData.filter(
+        (t) => t.session_id && ['open', 'locked', 'completed'].includes(t.current_status)
+      );
+      setActiveTables(online);
+
+      if (online.length > 0) {
+        const savedSession = typeof window !== 'undefined' ? localStorage.getItem('order-management-selected-session') : null;
+        const currentSelected = selectedSessionId || savedSession;
+
+        if (currentSelected && online.some((t) => t.session_id === currentSelected)) {
+          setSelectedSessionId(currentSelected);
+        } else {
+          setSelectedSessionId(online[0].session_id);
+        }
+      } else {
+        setSelectedSessionId(null);
+        setSessionDetails(null);
+      }
+    }
+  }, [activeTablesData]);
+
+  useEffect(() => {
+    if (sessionDetailsData) {
+      setSessionDetails(sessionDetailsData);
+    }
+  }, [sessionDetailsData]);
+
+  useEffect(() => {
+    setIsLoadingTables(!activeTablesData && !tablesError);
+  }, [activeTablesData, tablesError]);
+
+  useEffect(() => {
+    setIsLoadingDetails(!sessionDetailsData && !detailsError && !!selectedSessionId);
+  }, [sessionDetailsData, detailsError, selectedSessionId]);
 
   // Select session from query parameter on mount/URL change
   useEffect(() => {
@@ -143,16 +207,50 @@ export default function OrdersPage() {
     const item = menuItems.find(m => m.id === selectedMenuItemId);
     if (!item) return;
 
-    const newItem = {
-      id: `temp-${Date.now()}-${Math.random()}`,
-      menu_item_id: item.id,
-      name: item.name,
-      quantity: addItemQty,
-      price_at_order: item.price,
-      subtotal: addItemQty * item.price
-    };
+    setEditedItems(prev => {
+      const existingIdx = prev.findIndex(i => i.menu_item_id === item.id);
+      let targetId;
+      let nextItems;
 
-    setEditedItems(prev => [...prev, newItem]);
+      if (existingIdx !== -1) {
+        nextItems = prev.map((i, idx) => {
+          if (idx === existingIdx) {
+            targetId = i.id;
+            const newQty = i.quantity + addItemQty;
+            return {
+              ...i,
+              quantity: newQty,
+              subtotal: newQty * i.price_at_order,
+              highlighted: true
+            };
+          }
+          return { ...i, highlighted: false };
+        });
+      } else {
+        const generatedId = `temp-${Date.now()}-${Math.random()}`;
+        targetId = generatedId;
+        const newItem = {
+          id: generatedId,
+          menu_item_id: item.id,
+          name: item.name,
+          quantity: addItemQty,
+          price_at_order: item.price,
+          subtotal: addItemQty * item.price,
+          highlighted: true
+        };
+        nextItems = [...prev.map(i => ({ ...i, highlighted: false })), newItem];
+      }
+
+      // Automatically clear highlight after 2.5 seconds
+      setTimeout(() => {
+        setEditedItems(current =>
+          current.map(i => i.id === targetId ? { ...i, highlighted: false } : i)
+        );
+      }, 2500);
+
+      return nextItems;
+    });
+
     setSelectedMenuItemId('');
     setAddItemQty(1);
   };
@@ -183,7 +281,8 @@ export default function OrdersPage() {
   };
 
   const handleDeleteOrder = async (orderId) => {
-    if (!confirm('Are you sure you want to delete this entire order?')) return;
+    const confirmed = await showConfirm('Are you sure you want to cancel this entire order?');
+    if (!confirmed) return;
     try {
       await deleteOrderAction(orderId);
       if (selectedSessionId) {
@@ -192,47 +291,14 @@ export default function OrdersPage() {
         await fetchActiveTables();
       }
     } catch (err) {
-      setError(err.message || 'Failed to delete order.');
+      setError(err.message || 'Failed to cancel order.');
     }
   };
 
   // Fetch active tables
   const fetchActiveTables = useCallback(async (initialLoad = false) => {
-    if (initialLoad) {
-      setIsLoadingTables(true);
-    }
-    setError(null);
-    try {
-      const data = await getTableStatus();
-      // Filter tables that have an active session (open, locked, completed)
-      const online = data.filter(
-        (t) => t.session_id && ['open', 'locked', 'completed'].includes(t.current_status)
-      );
-      setActiveTables(online);
-
-      // If we don't have a selected session, or if the selected session is no longer active, select the first one
-      if (online.length > 0) {
-        const savedSession = typeof window !== 'undefined' ? localStorage.getItem('order-management-selected-session') : null;
-        const currentSelected = selectedSessionId || savedSession;
-
-        if (currentSelected && online.some((t) => t.session_id === currentSelected)) {
-          setSelectedSessionId(currentSelected);
-        } else {
-          setSelectedSessionId(online[0].session_id);
-        }
-      } else {
-        setSelectedSessionId(null);
-        setSessionDetails(null);
-      }
-    } catch (err) {
-      console.error('Failed to load active tables:', err);
-      setError('Unable to load active tables.');
-    } finally {
-      if (initialLoad) {
-        setIsLoadingTables(false);
-      }
-    }
-  }, [selectedSessionId]);
+    await mutateTables();
+  }, [mutateTables]);
 
   // Persist selected session to localStorage
   useEffect(() => {
@@ -243,17 +309,8 @@ export default function OrdersPage() {
 
   // Fetch details of selected session
   const fetchSessionDetails = useCallback(async (sessionId) => {
-    if (!sessionId) return;
-    setIsLoadingDetails(true);
-    try {
-      const details = await getSessionDetails(sessionId);
-      setSessionDetails(details);
-    } catch (err) {
-      console.error('Failed to load session details:', err);
-    } finally {
-      setIsLoadingDetails(false);
-    }
-  }, []);
+    await mutateDetails();
+  }, [mutateDetails]);
 
   // Fetch tables on mount and establish real-time subscriptions
   useEffect(() => {
@@ -418,6 +475,7 @@ export default function OrdersPage() {
 
   return (
     <div className="w-full max-w-7xl mx-auto space-y-6 animate-fade-in">
+      {AlertConfirmComponent}
       {/* Header controls */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-4 border-b border-border gap-4">
         <div>
@@ -439,7 +497,7 @@ export default function OrdersPage() {
 
       {error && (
         <div className="flex items-start gap-2 bg-destructive-bg border border-destructive-border text-destructive text-sm p-4 rounded-xl animate-fade-in">
-          <span className="shrink-0 mt-0.5">⚠️</span>
+          <span className="shrink-0 mt-0.5">️</span>
           <span>{error}</span>
         </div>
       )}
@@ -555,7 +613,7 @@ export default function OrdersPage() {
                         <div key={order.id} className="card bg-surface border border-border p-5 rounded-2xl shadow-md">
                           <div className="flex items-center justify-between pb-3 border-b border-border/60 mb-3">
                             <div className="flex items-center gap-2">
-                              <span className="text-xs font-bold text-[var(--text-primary)]">Order #{idx + 1}</span>
+                              <span className="text-xs font-bold text-[var(--text-primary)]">Order #{sessionDetails.orders.length - idx}</span>
                               {devRole === 'admin' && (
                                 <div className="flex items-center gap-1 bg-[var(--surface-raised)] border border-border px-1.5 py-0.5 rounded-lg">
                                   <button
@@ -585,7 +643,7 @@ export default function OrdersPage() {
                                   <button
                                     onClick={() => handleDeleteOrder(order.id)}
                                     className="p-1 text-red-500 hover:text-red-400 hover:bg-red-950/20 rounded transition-all cursor-pointer"
-                                    title="Delete Order"
+                                    title="Cancel Order"
                                   >
                                     <Trash2 size={11} />
                                   </button>
@@ -611,11 +669,30 @@ export default function OrdersPage() {
                             {/* Items List */}
                             <div className="space-y-2.5">
                               {(() => {
-                                const isEditing = editingOrderId === order.id;
-                                const itemsToRender = isEditing ? editedItems : (order.items || []);
-                                return itemsToRender.map((item, itemIdx) => {
+                                 const isEditing = editingOrderId === order.id;
+                                 const itemsToRender = (() => {
+                                   if (isEditing) return editedItems;
+                                   const grouped = [];
+                                   (order.items || []).forEach(item => {
+                                     const existing = grouped.find(g => g.name === item.name && g.status === item.status);
+                                     if (existing) {
+                                       existing.quantity += item.quantity;
+                                     } else {
+                                       grouped.push({ ...item });
+                                     }
+                                   });
+                                   return grouped;
+                                 })();
+                                 return itemsToRender.map((item, itemIdx) => {
                                   return (
-                                    <div key={item.id || itemIdx} className="flex justify-between items-center text-sm font-semibold">
+                                    <div
+                                      key={item.id || itemIdx}
+                                      className={`flex justify-between items-center text-sm font-semibold p-1.5 rounded-xl transition-all duration-300 ${
+                                        item.highlighted
+                                          ? 'bg-[var(--accent)]/15 border border-[var(--accent)]/30 shadow-sm animate-pulse'
+                                          : ''
+                                      }`}
+                                    >
                                       <div className="flex items-center gap-2 min-w-0">
                                         {isEditing && (
                                           <button
@@ -626,9 +703,16 @@ export default function OrdersPage() {
                                             <X size={12} />
                                           </button>
                                         )}
-                                        <span className="text-[var(--text-primary)] truncate">
-                                          {item.name}
-                                        </span>
+                                        <div className="flex flex-col">
+                                          <span className="text-[var(--text-primary)] truncate">
+                                            {item.name}
+                                          </span>
+                                          {item.status && (
+                                            <span className={`w-fit mt-1 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider ${getItemStatusMeta(item.status).cls}`}>
+                                              {getItemStatusMeta(item.status).label}
+                                            </span>
+                                          )}
+                                        </div>
                                       </div>
                                       <div className="flex items-center gap-3 shrink-0">
                                         {isEditing ? (

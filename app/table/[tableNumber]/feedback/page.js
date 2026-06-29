@@ -106,7 +106,7 @@ export default function FeedbackPage() {
               className="text-4xl transition-transform hover:scale-110 focus:outline-none cursor-pointer"
             >
               <span className={star <= rating ? "inline-block" : "inline-block opacity-60 grayscale"}>
-                ⭐
+                
               </span>
             </button>
           ))}

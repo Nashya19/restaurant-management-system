@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
+import useSWR from 'swr';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -58,12 +59,40 @@ export default function MenuPage() {
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [addedToCart, setAddedToCart] = useState(false);
   const [bottomError, setBottomError] = useState(null);
+  const [dbCart, setDbCart] = useState([]);
 
   const [collapsedCategories, setCollapsedCategories] = useState({});
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', message: '', onConfirm: () => { }, confirmStyle: 'btn-danger', confirmText: 'Confirm' });
   const router = useRouter();
-
   const closeConfirm = () => setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+
+  const sessionId = typeof window !== 'undefined' ? localStorage.getItem('sessionId') : null;
+
+  const { data: menuItemsData, error: itemsError, mutate: mutateItems } = useSWR('menu-items', listAllMenuItems, { refreshInterval: 10000 });
+  const { data: categoriesData, error: categoriesError, mutate: mutateCategories } = useSWR('menu-categories', listCategories, { refreshInterval: 10000 });
+  const { data: cartData, mutate: mutateCart } = useSWR(
+    sessionId ? ['cart-items', sessionId] : null,
+    ([, sid]) => getCartItemsAction(sid)
+  );
+
+  useEffect(() => {
+    if (menuItemsData) setItems(menuItemsData);
+  }, [menuItemsData]);
+
+  useEffect(() => {
+    if (categoriesData) setCategories(categoriesData);
+  }, [categoriesData]);
+
+  useEffect(() => {
+    if (cartData) setDbCart(cartData);
+  }, [cartData]);
+
+  useEffect(() => {
+    const isSWRLoading = !menuItemsData || !categoriesData;
+    setIsLoading(isSWRLoading);
+    const swrError = itemsError || categoriesError;
+    if (swrError) setError(swrError.message || 'Failed to load menu.');
+  }, [menuItemsData, categoriesData, itemsError, categoriesError]);
 
   const getISTDateString = () => {
     const utcDate = new Date();
@@ -104,6 +133,9 @@ export default function MenuPage() {
               window.location.href = `/table/${tableNumber}/order`;
               return;
             }
+            // Fetch DB cart items
+            const cart = await getCartItemsAction(sessionId);
+            setDbCart(cart);
           }
         }
 
@@ -126,6 +158,17 @@ export default function MenuPage() {
       }
     };
     fetchData();
+  }, []);
+
+  const loadDbCart = useCallback(async () => {
+    const sessionId = localStorage.getItem('sessionId');
+    if (!sessionId) return;
+    try {
+      const cart = await getCartItemsAction(sessionId);
+      setDbCart(cart);
+    } catch (err) {
+      console.error('Failed to reload db cart:', err);
+    }
   }, []);
 
   // Listen for session status changes (kicked out when locked/completed/cleared)
@@ -221,6 +264,7 @@ export default function MenuPage() {
     try {
       const updated = await toggleMenuItemAvailability(itemId);
       setItems(items.map(item => item.id === itemId ? updated : item));
+      mutateItems();
     } catch (err) { setError(err.message); }
   };
 
@@ -233,6 +277,7 @@ export default function MenuPage() {
         try {
           const updated = await archiveMenuItem(itemId);
           setItems(items.map(item => item.id === itemId ? updated : item));
+          mutateItems();
         } catch (err) { setError(err.message); }
       }
     });
@@ -247,6 +292,7 @@ export default function MenuPage() {
         try {
           const updated = await restoreMenuItem(itemId);
           setItems(items.map(item => item.id === itemId ? updated : item));
+          mutateItems();
         } catch (err) { setError(err.message); }
       }
     });
@@ -294,6 +340,12 @@ export default function MenuPage() {
     return { totalItems, totalPrice, selectedList };
   }, [orderQuantities, items]);
 
+  const dbCartSummary = useMemo(() => {
+    const totalItems = dbCart.reduce((sum, ci) => sum + ci.quantity, 0);
+    const totalPrice = dbCart.reduce((sum, ci) => sum + (ci.menu_items?.price || 0) * ci.quantity, 0);
+    return { totalItems, totalPrice };
+  }, [dbCart]);
+
   /**
    * "Add to Cart" — merges local selection into the shared DB cart.
    * Existing cart items for the same menu_item_id get their quantity incremented.
@@ -327,6 +379,7 @@ export default function MenuPage() {
 
       setAddedToCart(true);
       setOrderQuantities({});
+      await mutateCart();
       setTimeout(() => setAddedToCart(false), 4000);
     } catch (err) {
       console.error('[CART] Failed to add to cart:', err);
@@ -337,7 +390,7 @@ export default function MenuPage() {
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-8 animate-fade-in pb-24">
+    <div className="w-full max-w-7xl mx-auto space-y-8 animate-fade-in pb-40">
       {/* Page Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pb-4 border-b border-border">
         <div>
@@ -361,7 +414,7 @@ export default function MenuPage() {
       {/* Error Alert */}
       {error && (
         <div className="flex items-start gap-2 bg-destructive-bg border border-destructive-border text-destructive text-sm p-4 rounded-xl animate-fade-in">
-          <span className="shrink-0 mt-0.5">⚠️</span>
+          <span className="shrink-0 mt-0.5">️</span>
           <span>{error}</span>
         </div>
       )}
@@ -446,9 +499,34 @@ export default function MenuPage() {
       {/* Menu Groups */}
       <div className="max-h-[calc(100vh-320px)] overflow-y-auto pr-2 scrollbar-thin space-y-6 pb-8">
         {isLoading ? (
-          <div className="card bg-surface border border-border p-16 text-center rounded-2xl shadow-lg">
-            <Loader2 size={36} className="animate-spin text-[var(--accent)] inline-block" />
-            <p className="mt-4 text-sm text-[var(--text-secondary)] font-medium">Loading menu items…</p>
+          <div className="space-y-8 animate-pulse">
+            {[1, 2].map((i) => (
+              <div key={i} className="space-y-4">
+                {/* Category Header Skeleton */}
+                <div className="h-6 w-32 bg-border/60 rounded-lg"></div>
+                {/* Items Grid Skeleton */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {[1, 2, 3].map((j) => (
+                    <div key={j} className="card bg-surface border border-border/60 rounded-2xl overflow-hidden p-0 flex flex-col h-full">
+                      {/* Image placeholder */}
+                      <div className="h-44 w-full bg-border/60"></div>
+                      {/* Content placeholder */}
+                      <div className="p-4 flex-1 flex flex-col justify-between space-y-4">
+                        <div className="space-y-2">
+                          <div className="h-5 w-2/3 bg-border/60 rounded-lg"></div>
+                          <div className="h-3 w-full bg-border/40 rounded-lg"></div>
+                          <div className="h-3 w-4/5 bg-border/40 rounded-lg"></div>
+                        </div>
+                        <div className="flex justify-between items-center pt-2">
+                          <div className="h-6 w-16 bg-border/60 rounded-lg"></div>
+                          <div className="h-9 w-24 bg-border/60 rounded-xl"></div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         ) : groupedItems.length === 0 ? (
           <div className="card bg-surface border border-border p-16 text-center rounded-2xl shadow-lg">
@@ -742,13 +820,13 @@ export default function MenuPage() {
         <span>Showing {filteredItems.length} of {totalItemsCount} menu items</span>
       </div>
 
-      {/* Sticky Bottom: "Add to Cart" bar — only for customers with items selected */}
-      {devRole === 'customer' && orderSummary.totalItems > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 md:left-64 bg-surface border-t border-border shadow-2xl z-50 animate-slide-up">
+      {/* Sticky Bottom: Cart bar — only for customers with items selected OR in DB cart */}
+      {devRole === 'customer' && (orderSummary.totalItems > 0 || dbCartSummary.totalItems > 0) && (
+        <div className="fixed bottom-16 md:bottom-0 left-0 right-0 md:left-64 bg-[var(--surface)] border-t border-border shadow-2xl z-50 animate-slide-up">
           {/* Inline error */}
           {bottomError && (
             <div className="px-6 pt-3 pb-1 flex items-center gap-2 text-destructive text-xs font-semibold bg-destructive-bg border-b border-destructive-border/50">
-              <span className="shrink-0">⚠️</span>
+              <span className="shrink-0">️</span>
               <span>{bottomError}</span>
             </div>
           )}
@@ -766,27 +844,43 @@ export default function MenuPage() {
               </div>
               <div>
                 <p className="text-sm font-bold text-[var(--text-primary)]">
-                  {orderSummary.totalItems} item{orderSummary.totalItems !== 1 ? 's' : ''} selected
+                  {orderSummary.totalItems > 0 
+                    ? `${orderSummary.totalItems} item${orderSummary.totalItems !== 1 ? 's' : ''} selected`
+                    : `${dbCartSummary.totalItems} item${dbCartSummary.totalItems !== 1 ? 's' : ''} in cart`
+                  }
                 </p>
                 <p className="text-xs text-[var(--text-secondary)] font-semibold">
-                  Subtotal: <span className="text-[var(--accent)] font-mono font-bold">{formatCurrency(orderSummary.totalPrice)}</span>
+                  Subtotal: <span className="text-[var(--accent)] font-mono font-bold">
+                    {formatCurrency(orderSummary.totalItems > 0 ? orderSummary.totalPrice : dbCartSummary.totalPrice)}
+                  </span>
                 </p>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={handleAddToCart}
-              disabled={isAddingToCart || addedToCart}
-              className="btn btn-primary btn-premium px-6 py-2.5 h-10 rounded-xl font-bold inline-flex items-center gap-2 cursor-pointer shadow-md shadow-[var(--accent)]/10 disabled:opacity-60 shrink-0"
-            >
-              {isAddingToCart ? (
-                <><Loader2 size={16} className="animate-spin" /><span>Adding…</span></>
-              ) : addedToCart ? (
-                <><CheckCircle2 size={16} /><span>Added!</span></>
-              ) : (
-                <><ShoppingCart size={16} /><span>Add to Cart</span></>
-              )}
-            </button>
+            
+            {orderSummary.totalItems > 0 ? (
+              <button
+                type="button"
+                onClick={handleAddToCart}
+                disabled={isAddingToCart || addedToCart}
+                className="btn btn-primary btn-premium px-6 py-2.5 h-10 rounded-xl font-bold inline-flex items-center gap-2 cursor-pointer shadow-md shadow-[var(--accent)]/10 disabled:opacity-60 shrink-0"
+              >
+                {isAddingToCart ? (
+                  <><Loader2 size={16} className="animate-spin" /><span>Adding…</span></>
+                ) : addedToCart ? (
+                  <><CheckCircle2 size={16} /><span>Added!</span></>
+                ) : (
+                  <><ShoppingCart size={16} /><span>Add to Cart</span></>
+                )}
+              </button>
+            ) : (
+              <Link
+                href={`/table/${localStorage.getItem('tableNumber') || ''}/order`}
+                className="btn btn-primary btn-premium px-6 py-2.5 h-10 rounded-xl font-bold inline-flex items-center gap-2 cursor-pointer shadow-md shadow-[var(--accent)]/10 text-xs shrink-0 no-underline text-white"
+              >
+                <ShoppingCart size={16} />
+                <span>View Cart & Checkout</span>
+              </Link>
+            )}
           </div>
         </div>
       )}

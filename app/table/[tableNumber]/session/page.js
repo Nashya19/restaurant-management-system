@@ -1,65 +1,22 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
-import { getSessionDetailsAction } from '@/lib/actions/orders';
+import { useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 
 export default function CustomerSessionPage() {
   const params = useParams();
-
-  const [session, setSession] = useState(null);
+  const router = useRouter();
+  const tableNumber = params.tableNumber;
 
   useEffect(() => {
-    loadSession();
-  }, []);
-
-  async function loadSession() {
-    const sessionId =
-      localStorage.getItem('sessionId');
-
-    if (!sessionId) return;
-
-    const data =
-      await getSessionDetailsAction(sessionId);
-
-    setSession(data);
-  }
-
-  if (!session) {
-    return (
-      <div className="p-6">
-        Loading...
-      </div>
-    );
-  }
+    router.replace(`/table/${tableNumber}`);
+  }, [router, tableNumber]);
 
   return (
-    <div className="min-h-screen p-6">
-      <div className="card p-6">
-
-        <h1 className="text-3xl font-bold mb-6">
-          Table {session.tables.table_number}
-        </h1>
-
-        <p>PIN: {session.pin}</p>
-
-        <p>Status: {session.status}</p>
-
-        <p>
-          Total Amount: ₹
-          {session.running_total}
-        </p>
-
-        <p>
-          Connected Devices:
-          {session.connected_devices_count}
-        </p>
-
-        <p>
-          Orders:
-          {session.orders_count}
-        </p>
-
+    <div className="flex items-center justify-center min-h-screen bg-[var(--background)]">
+      <div className="text-center">
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--accent)]"></div>
+        <p className="mt-4 text-[var(--text-secondary)]">Redirecting to table page…</p>
       </div>
     </div>
   );

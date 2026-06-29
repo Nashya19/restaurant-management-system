@@ -200,7 +200,7 @@ export default function UserDetailPage() {
         {/* Submit Error */}
         {errors.submit && (
           <div className="flex items-start gap-2 bg-destructive-bg border border-destructive-border text-destructive text-sm p-4 rounded-xl">
-            <span className="shrink-0 mt-0.5">⚠️</span>
+            <span className="shrink-0 mt-0.5">️</span>
             <span>{errors.submit}</span>
           </div>
         )}
@@ -351,7 +351,7 @@ export default function UserDetailPage() {
             <form onSubmit={handlePasswordReset} className="space-y-4 pt-6 mt-6 border-t border-border animate-fade-in">
               {resetError && (
                 <div className="flex items-start gap-2 bg-destructive-bg border border-destructive-border text-destructive text-sm p-4 rounded-xl">
-                  <span className="shrink-0 mt-0.5">⚠️</span>
+                  <span className="shrink-0 mt-0.5">️</span>
                   <span>{resetError}</span>
                 </div>
               )}
