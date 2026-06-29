@@ -716,19 +716,19 @@ export default function OrdersPage() {
                                       </div>
                                       <div className="flex items-center gap-3 shrink-0">
                                         {isEditing ? (
-                                          <div className="flex items-center gap-1.5 bg-[var(--surface-raised)] border border-border px-1.5 py-0.5 rounded-lg">
+                                          <div className="flex items-center gap-0 bg-[var(--background)] border border-border rounded-xl overflow-hidden shadow-inner">
                                             <button
                                               onClick={() => handleUpdateQty(item.id, -1)}
-                                              className="w-5 h-5 rounded bg-background hover:bg-surface border border-border flex items-center justify-center text-[var(--text-primary)] cursor-pointer text-xs"
+                                              className="w-7 h-7 flex items-center justify-center text-[var(--text-secondary)] hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer active:scale-90"
                                             >
-                                              <Minus size={8} />
+                                              <Minus size={9} />
                                             </button>
-                                            <span className="w-4 text-center text-xs font-bold text-[var(--text-primary)]">{item.quantity}</span>
+                                            <span className="w-6 text-center text-xs font-bold text-[var(--text-primary)] tabular-nums">{item.quantity}</span>
                                             <button
                                               onClick={() => handleUpdateQty(item.id, 1)}
-                                              className="w-5 h-5 rounded bg-background hover:bg-surface border border-border flex items-center justify-center text-[var(--text-primary)] cursor-pointer text-xs"
+                                              className="w-7 h-7 flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--accent)] hover:bg-[var(--accent)]/10 transition-all cursor-pointer active:scale-90"
                                             >
-                                              <Plus size={8} />
+                                              <Plus size={9} />
                                             </button>
                                           </div>
                                         ) : (
@@ -824,10 +824,13 @@ export default function OrdersPage() {
                               </div>
                             )}
 
-                            {order.estimated_wait_minutes && (
+                            {order.estimated_wait_minutes && !['delivered', 'cancelled'].includes(order.status) && (
                               <div className="flex justify-between items-center text-sm font-semibold pt-1 border-t border-border/20">
-                                <span className="text-[var(--text-secondary)]">Est. Wait Time:</span>
-                                <span className="text-[var(--accent)] font-mono">{order.estimated_wait_minutes} mins</span>
+                                <span className="text-[var(--text-secondary)] flex items-center gap-1.5">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-warning animate-pulse" />
+                                  Est. Wait Remaining:
+                                </span>
+                                <span className="text-warning font-mono">~{order.estimated_wait_minutes} min</span>
                               </div>
                             )}
 

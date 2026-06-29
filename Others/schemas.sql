@@ -44,6 +44,7 @@ CREATE TABLE tables (
     table_number integer NOT NULL UNIQUE,
     capacity integer NOT NULL,
     qr_code_url text NOT NULL,
+    is_active boolean NOT NULL DEFAULT true,
     created_at timestamptz NOT NULL DEFAULT now()
 );
 
@@ -129,4 +130,18 @@ CREATE TABLE public.cart_items (
     created_at timestamptz NOT NULL DEFAULT now(),
     
     CONSTRAINT cart_items_session_menu_item_unique UNIQUE (session_id, menu_item_id)
+);
+
+CREATE TABLE schedule_settings (
+    key text PRIMARY KEY,
+    value text NOT NULL,
+    updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE schedule_day_tags (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    date date NOT NULL UNIQUE,
+    tag_type text NOT NULL CHECK (tag_type IN ('holiday', 'end_early', 'open_late')),
+    description text,
+    created_at timestamptz NOT NULL DEFAULT now()
 );

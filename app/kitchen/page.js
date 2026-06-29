@@ -2,8 +2,9 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Clock, CheckCircle2, Loader2, RefreshCw, UtensilsCrossed, Eye, EyeOff, LayoutGrid, List, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Clock, CheckCircle2, Loader2, RefreshCw, UtensilsCrossed, Eye, EyeOff, LayoutGrid, List, Trash2, ChevronDown, ChevronUp, Settings2, X } from 'lucide-react';
 import { updateOrderItemStatusAction, updateOrderStatusAction, adjustOrderItemStartedAtAction, deleteOrderAction, completeOneOrderItemAction } from '@/lib/actions/kitchen';
+import { getKitchenSettingsAction, setKitchenSlotsAction } from '@/lib/actions/kitchen-settings';
 import { useAlertConfirm } from '@/lib/hooks/useAlertConfirm';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -659,6 +660,10 @@ export default function KitchenPage() {
   const [deliveredTimeframe, setDeliveredTimeframe] = useState('today');
   const [userRole, setUserRole] = useState('staff');
   const [sortBy, setSortBy] = useState('newest');
+  const [kitchenSlots, setKitchenSlots] = useState(4);
+  const [showSettings, setShowSettings] = useState(false);
+  const [settingsSaving, setSettingsSaving] = useState(false);
+  const [slotsInput, setSlotsInput] = useState('4');
 
   const { showAlert, showConfirm, AlertConfirmComponent } = useAlertConfirm();
 
@@ -685,6 +690,12 @@ export default function KitchenPage() {
         };
         getRole();
       }
+
+      // Load kitchen settings
+      getKitchenSettingsAction().then(s => {
+        setKitchenSlots(s.kitchenSlots);
+        setSlotsInput(String(s.kitchenSlots));
+      });
     }
   }, [supabase]);
 
@@ -879,6 +890,91 @@ export default function KitchenPage() {
             <option value="oldest">Old to New</option>
             <option value="overdue">Overdue First</option>
           </select>
+
+          {/* Kitchen Settings — admin only */}
+          {userRole === 'admin' && (
+            <div className="relative">
+              <button
+                onClick={() => setShowSettings(v => !v)}
+                className="btn btn-ghost bg-background border-border hover:bg-surface flex items-center gap-2 rounded-xl text-xs font-bold cursor-pointer h-10 px-4"
+                title="Kitchen Settings"
+              >
+                <Settings2 size={14} />
+                <span className="hidden sm:inline">Settings</span>
+              </button>
+
+              {showSettings && (
+                <div className="absolute right-0 top-12 z-50 w-72 bg-[var(--surface)] border border-border rounded-2xl shadow-2xl p-5 animate-fade-in">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-bold text-[var(--text-primary)]">Kitchen Settings</h3>
+                    <button onClick={() => setShowSettings(false)} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer"><X size={16} /></button>
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-2">
+                        Parallel Kitchen Slots
+                      </label>
+                      <p className="text-[10px] text-[var(--text-secondary)] mb-3 leading-relaxed">
+                        How many items your kitchen can prepare simultaneously. Used to calculate customer wait times.
+                      </p>
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="number"
+                          min="1"
+                          max="20"
+                          value={slotsInput}
+                          onChange={e => setSlotsInput(e.target.value)}
+                          className="w-20 h-9 rounded-xl border border-border bg-background text-center text-sm font-mono font-bold text-[var(--text-primary)] outline-none focus:border-[var(--accent)] transition-all"
+                        />
+                        <span className="text-xs text-[var(--text-secondary)]">items at once</span>
+                      </div>
+                      <div className="flex gap-2 mt-3">
+                        {[2, 4, 6, 8].map(n => (
+                          <button
+                            key={n}
+                            onClick={() => setSlotsInput(String(n))}
+                            className={`flex-1 h-8 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
+                              slotsInput === String(n)
+                                ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
+                                : 'bg-background border-border text-[var(--text-secondary)] hover:border-[var(--accent)]/50'
+                            }`}
+                          >
+                            {n}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <button
+                      disabled={settingsSaving}
+                      onClick={async () => {
+                        setSettingsSaving(true);
+                        try {
+                          const result = await setKitchenSlotsAction(slotsInput);
+                          setKitchenSlots(result.kitchenSlots);
+                          setSlotsInput(String(result.kitchenSlots));
+                          setShowSettings(false);
+                        } catch (e) {
+                          console.error('Failed to save kitchen slots', e);
+                        } finally {
+                          setSettingsSaving(false);
+                        }
+                      }}
+                      className="btn btn-primary btn-premium w-full h-9 rounded-xl text-xs font-bold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                    >
+                      {settingsSaving ? <Loader2 size={13} className="animate-spin" /> : null}
+                      {settingsSaving ? 'Saving…' : 'Save Settings'}
+                    </button>
+                  </div>
+                  {/* Current display */}
+                  <div className="mt-3 pt-3 border-t border-border flex items-center justify-between">
+                    <span className="text-[10px] text-[var(--text-secondary)]">Current slots</span>
+                    <span className="text-xs font-bold font-mono text-[var(--accent)]">{kitchenSlots}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           <button
             onClick={handleToggleViewMode}
             className="btn btn-ghost bg-background border-border hover:bg-surface flex items-center gap-2 rounded-xl text-xs font-bold cursor-pointer h-10 px-4"

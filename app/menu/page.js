@@ -621,23 +621,26 @@ export default function MenuPage() {
                                   <div className="flex items-center gap-2">
                                     {item.is_available ? (
                                       <>
-                                        <button
-                                          type="button"
-                                          onClick={() => updateQuantity(item.id, -1)}
-                                          className="w-8 h-8 rounded-lg bg-background hover:bg-surface-raised border border-border flex items-center justify-center text-[var(--text-primary)] transition-all cursor-pointer shadow-sm active:scale-95"
-                                        >
-                                          <Minus size={12} />
-                                        </button>
-                                        <span className="w-8 text-center text-xs font-bold text-[var(--text-primary)]">
-                                          {quantity}
-                                        </span>
-                                        <button
-                                          type="button"
-                                          onClick={() => updateQuantity(item.id, 1)}
-                                          className="w-8 h-8 rounded-lg bg-background hover:bg-surface-raised border border-border flex items-center justify-center text-[var(--text-primary)] transition-all cursor-pointer shadow-sm active:scale-95"
-                                        >
-                                          <Plus size={12} />
-                                        </button>
+                                        {/* Stepper */}
+                                        <div className="flex items-center gap-0 bg-[var(--background)] border border-border rounded-xl overflow-hidden shadow-inner">
+                                          <button
+                                            type="button"
+                                            onClick={() => updateQuantity(item.id, -1)}
+                                            className="w-8 h-8 flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--accent)] hover:bg-[var(--accent)]/10 transition-all cursor-pointer active:scale-90"
+                                          >
+                                            {quantity === 1 ? <Trash2 size={11} className="text-red-400" /> : <Minus size={11} />}
+                                          </button>
+                                          <span className="w-8 text-center text-xs font-bold text-[var(--text-primary)] tabular-nums">
+                                            {quantity}
+                                          </span>
+                                          <button
+                                            type="button"
+                                            onClick={() => updateQuantity(item.id, 1)}
+                                            className="w-8 h-8 flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--accent)] hover:bg-[var(--accent)]/10 transition-all cursor-pointer active:scale-90"
+                                          >
+                                            <Plus size={11} />
+                                          </button>
+                                        </div>
                                       </>
                                     ) : (
                                       <span className="text-xs text-[var(--text-muted)] font-semibold italic">Sold Out</span>
@@ -750,26 +753,29 @@ export default function MenuPage() {
                                   <div className="flex items-center justify-center gap-2">
                                     {item.is_available ? (
                                       <>
-                                        <button
-                                          type="button"
-                                          onClick={() => updateQuantity(item.id, -1)}
-                                          className="w-8 h-8 rounded-lg bg-background hover:bg-surface-raised border border-border flex items-center justify-center text-[var(--text-primary)] transition-all cursor-pointer"
-                                        >
-                                          <Minus size={14} />
-                                        </button>
-                                        <input
-                                          type="text"
-                                          value={orderQuantities[item.id] || 0}
-                                          onChange={e => handleQuantityInputChange(item.id, e.target.value)}
-                                          className="w-12 h-8 bg-background border border-border rounded-lg text-center text-sm font-semibold focus:outline-none focus:border-[var(--accent)]"
-                                        />
-                                        <button
-                                          type="button"
-                                          onClick={() => updateQuantity(item.id, 1)}
-                                          className="w-8 h-8 rounded-lg bg-background hover:bg-surface-raised border border-border flex items-center justify-center text-[var(--text-primary)] transition-all cursor-pointer"
-                                        >
-                                          <Plus size={14} />
-                                        </button>
+                                        {/* Stepper */}
+                                        <div className="flex items-center gap-0 bg-[var(--background)] border border-border rounded-xl overflow-hidden shadow-inner">
+                                          <button
+                                            type="button"
+                                            onClick={() => updateQuantity(item.id, -1)}
+                                            className="w-9 h-9 flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--accent)] hover:bg-[var(--accent)]/10 transition-all cursor-pointer active:scale-90"
+                                          >
+                                            <Minus size={13} />
+                                          </button>
+                                          <input
+                                            type="text"
+                                            value={orderQuantities[item.id] || 0}
+                                            onChange={e => handleQuantityInputChange(item.id, e.target.value)}
+                                            className="w-12 h-9 bg-transparent border-x border-border text-center text-sm font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)] tabular-nums"
+                                          />
+                                          <button
+                                            type="button"
+                                            onClick={() => updateQuantity(item.id, 1)}
+                                            className="w-9 h-9 flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--accent)] hover:bg-[var(--accent)]/10 transition-all cursor-pointer active:scale-90"
+                                          >
+                                            <Plus size={13} />
+                                          </button>
+                                        </div>
                                       </>
                                     ) : (
                                       <span className="text-xs text-[var(--text-muted)] font-semibold italic">Unavailable</span>

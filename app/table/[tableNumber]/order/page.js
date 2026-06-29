@@ -13,6 +13,7 @@ import { Clock, RefreshCw, ChefHat, CheckCircle2, ArrowLeft, ShieldAlert, Loader
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { useHeartbeat } from '@/lib/hooks/useHeartbeat';
 import PaymentScreen from '@/components/ui/PaymentScreen';
+import { computeLiveSecondsLeft, formatWaitLabel, formatStaticWaitLabel } from '@/lib/utils/wait-time';
 
 // ─── Status helpers ───────────────────────────────────────────────────────────
 
@@ -174,6 +175,31 @@ function useItemTimers(session) {
   return map;
 }
 
+// ─── Live per-order wait countdown (ticks every second) ───────────────────────
+// Returns { [orderId]: secondsLeft | null }
+function useOrderWaitTimers(session) {
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setTick(n => n + 1), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  const map = {};
+  (session?.orders || []).forEach(order => {
+    if (order.status === 'delivered' || order.status === 'cancelled') {
+      map[order.id] = null;
+      return;
+    }
+    const itemsForCalc = (order.items || []).map(i => ({
+      item_status: i.status,
+      item_started_at: i.item_started_at,
+      prep_time_minutes: i.prep_time_minutes
+    }));
+    map[order.id] = computeLiveSecondsLeft(itemsForCalc, new Date());
+  });
+  return map;
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function CustomerOrderPage() {
   useHeartbeat();
@@ -266,6 +292,8 @@ export default function CustomerOrderPage() {
 
   // Per-item countdown timers
   const itemTimers = useItemTimers(session);
+  // Per-order live wait countdown
+  const orderWaitTimers = useOrderWaitTimers(session);
 
   const loadCart = async (sessionId) => {
     if (!sessionId) return;
@@ -760,14 +788,18 @@ export default function CustomerOrderPage() {
                         <p className="text-sm font-semibold text-[var(--text-primary)] break-words whitespace-normal">{ci.menu_items?.name || 'Item'}</p>
                         <p className="text-xs text-[var(--text-muted)] font-mono">{formatCurrency(ci.menu_items?.price || 0)} each</p>
                       </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <button onClick={() => updateCartItemQty(ci.menu_item_id, ci.quantity - 1)}
-                          className="w-7 h-7 rounded-lg bg-background hover:bg-surface-raised border border-border flex items-center justify-center text-[var(--text-primary)] transition-all cursor-pointer">
+                      <div className="flex items-center gap-0 bg-[var(--background)] border border-border rounded-xl overflow-hidden shadow-inner shrink-0">
+                        <button
+                          onClick={() => updateCartItemQty(ci.menu_item_id, ci.quantity - 1)}
+                          className="w-8 h-8 flex items-center justify-center text-[var(--text-secondary)] hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer active:scale-90"
+                        >
                           {ci.quantity === 1 ? <Trash2 size={11} className="text-red-400" /> : <Minus size={11} />}
                         </button>
-                        <span className="w-8 text-center text-sm font-bold text-[var(--text-primary)]">{ci.quantity}</span>
-                        <button onClick={() => updateCartItemQty(ci.menu_item_id, ci.quantity + 1)}
-                          className="w-7 h-7 rounded-lg bg-background hover:bg-surface-raised border border-border flex items-center justify-center text-[var(--text-primary)] transition-all cursor-pointer">
+                        <span className="w-8 text-center text-sm font-bold text-[var(--text-primary)] tabular-nums">{ci.quantity}</span>
+                        <button
+                          onClick={() => updateCartItemQty(ci.menu_item_id, ci.quantity + 1)}
+                          className="w-8 h-8 flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--accent)] hover:bg-[var(--accent)]/10 transition-all cursor-pointer active:scale-90"
+                        >
                           <Plus size={11} />
                         </button>
                       </div>
@@ -929,12 +961,52 @@ export default function CustomerOrderPage() {
 
                     {/* Order footer */}
                     <div className="px-5 py-4 space-y-1">
-                      {order.status === 'preparing' && order.estimated_wait_minutes && (
-                        <div className="flex justify-between items-center text-xs font-semibold">
-                          <span className="text-[var(--text-secondary)]">Est. prep time</span>
-                          <span className="text-[var(--accent)] font-mono">{order.estimated_wait_minutes} mins</span>
-                        </div>
-                      )}
+                      {/* Live wait countdown */}
+                      {(() => {
+                        const isActive = order.status === 'placed' || order.status === 'preparing';
+                        if (!isActive) return null;
+
+                        const secsLeft = orderWaitTimers[order.id];
+                        const isPreparing = order.status === 'preparing';
+
+                        // Live label from real-time item data (when any item has started)
+                        const liveLabel = isPreparing
+                          ? formatWaitLabel(secsLeft, order.status)
+                          : null;
+
+                        // Fallback to stored initial estimate (when order is still 'placed')
+                        const staticLabel = !isPreparing
+                          ? formatStaticWaitLabel(order.estimated_wait_minutes)
+                          : null;
+
+                        const label = liveLabel || staticLabel;
+                        if (!label) return null;
+
+                        const isOverdue = isPreparing && secsLeft !== null && secsLeft <= 0;
+                        const isPulsing = isPreparing && secsLeft !== null && secsLeft > 0;
+
+                        return (
+                          <div className={`flex justify-between items-center text-xs font-semibold rounded-xl px-3 py-2 ${
+                            isOverdue
+                              ? 'bg-success/10 border border-success/30'
+                              : isPulsing
+                              ? 'bg-warning/8 border border-warning/20'
+                              : 'bg-surface border border-border'
+                          }`}>
+                            <span className={`flex items-center gap-1.5 ${
+                              isOverdue ? 'text-success' : isPulsing ? 'text-warning' : 'text-[var(--text-secondary)]'
+                            }`}>
+                              <Clock size={11} className={isPulsing ? 'animate-pulse' : ''} />
+                              {isPreparing ? 'Estimated time left' : 'Estimated wait'}
+                            </span>
+                            <span className={`font-mono font-bold ${
+                              isOverdue ? 'text-success' : isPulsing ? 'text-warning' : 'text-[var(--accent)]'
+                            }`}>
+                              {label}
+                            </span>
+                          </div>
+                        );
+                      })()}
                       <div className="flex justify-between items-center text-sm font-bold pt-1 border-t border-border/40">
                         <span className="text-[var(--text-secondary)]">Order Subtotal</span>
                         <span className="text-[var(--accent)] font-mono">{formatCurrency(order.total_price)}</span>

@@ -97,17 +97,29 @@ export default function FeedbackPage() {
           Your feedback helps us improve.
         </p>
 
-        <div className="flex justify-center gap-2">
+        <div className="flex justify-center gap-3 my-2">
           {[1, 2, 3, 4, 5].map((star) => (
             <button
               key={star}
               type="button"
               onClick={() => setRating(star)}
-              className="text-4xl transition-transform hover:scale-110 focus:outline-none cursor-pointer"
+              className="transition-transform hover:scale-125 active:scale-95 focus:outline-none cursor-pointer"
+              aria-label={`Rate ${star} star${star !== 1 ? 's' : ''}`}
             >
-              <span className={star <= rating ? "inline-block" : "inline-block opacity-60 grayscale"}>
-                
-              </span>
+              <svg
+                width="40"
+                height="40"
+                viewBox="0 0 24 24"
+                fill={star <= rating ? '#F59E0B' : 'none'}
+                stroke={star <= rating ? '#F59E0B' : '#6B7280'}
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="transition-all duration-150"
+                style={{ filter: star <= rating ? 'drop-shadow(0 0 6px rgba(245,158,11,0.5))' : 'none' }}
+              >
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
             </button>
           ))}
         </div>
@@ -119,11 +131,11 @@ export default function FeedbackPage() {
           </label>
           <textarea
             id="comments"
-            rows={4}
+            rows={8}
             value={comments}
             onChange={(e) => setComments(e.target.value)}
             placeholder={getPlaceholder()}
-            className="w-full h-24 border border-border bg-background focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] focus:outline-none rounded-xl p-3 text-sm text-[var(--text-primary)] resize-none py-2.5"
+            className="w-full min-h-[160px] border border-border bg-background focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] focus:outline-none rounded-xl p-3 text-sm text-[var(--text-primary)] resize-y py-2.5 leading-relaxed"
           />
         </div>
 
