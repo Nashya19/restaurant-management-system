@@ -30,12 +30,12 @@ function getItemImage(itemName = '', categoryName = '') {
   if (name.includes('drink') || name.includes('beverage') || name.includes('soda') || name.includes('juice') || name.includes('coffee') || name.includes('tea') || name.includes('mocktail')) return 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=400&h=300&q=80';
   if (name.includes('chicken') || name.includes('tikka') || name.includes('kabab') || name.includes('tandoori') || name.includes('meat') || name.includes('fish')) return 'https://images.unsplash.com/photo-1532550907401-a500c9a57435?auto=format&fit=crop&w=400&h=300&q=80';
   if (name.includes('paneer') || name.includes('curry') || name.includes('masala') || name.includes('rice') || name.includes('biryani') || name.includes('naan') || name.includes('roti')) return 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=400&h=300&q=80';
-  
+
   if (cat.includes('dessert')) return 'https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=400&h=300&q=80';
   if (cat.includes('beverage') || cat.includes('drink')) return 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=400&h=300&q=80';
   if (cat.includes('starter') || cat.includes('appetizer')) return 'https://images.unsplash.com/photo-1541532713592-79a0317b6b77?auto=format&fit=crop&w=400&h=300&q=80';
   if (cat.includes('main')) return 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&h=300&q=80';
-  
+
   return 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&h=300&q=80';
 }
 
@@ -60,7 +60,7 @@ export default function MenuPage() {
   const [bottomError, setBottomError] = useState(null);
 
   const [collapsedCategories, setCollapsedCategories] = useState({});
-  const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', message: '', onConfirm: () => {}, confirmStyle: 'btn-danger', confirmText: 'Confirm' });
+  const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', message: '', onConfirm: () => { }, confirmStyle: 'btn-danger', confirmText: 'Confirm' });
   const router = useRouter();
 
   const closeConfirm = () => setConfirmDialog(prev => ({ ...prev, isOpen: false }));
@@ -92,7 +92,7 @@ export default function MenuPage() {
       try {
         const role = localStorage.getItem('dev-role') || 'admin';
         setDevRole(role);
-        setLayoutMode(role === 'customer' ? 'card' : 'list');
+        setLayoutMode('card');
 
         if (role === 'customer') {
           const sessionId = localStorage.getItem('sessionId');
@@ -189,9 +189,33 @@ export default function MenuPage() {
       groups[catId].items.push(item);
     });
 
+    // Sort items within each category group:
+    // 1. Unarchived before Archived
+    // 2. Available before Unavailable
+    // 3. Alphabetical by name
+    Object.keys(groups).forEach(catId => {
+      groups[catId].items.sort((a, b) => {
+        if (a.is_archived !== b.is_archived) {
+          return a.is_archived ? 1 : -1;
+        }
+        if (a.is_available !== b.is_available) {
+          return a.is_available ? -1 : 1;
+        }
+        return a.name.localeCompare(b.name);
+      });
+    });
+
     if (groups['uncategorized'].items.length === 0) delete groups['uncategorized'];
     return Object.values(groups).sort((a, b) => a.category.name.localeCompare(b.category.name));
   }, [filteredItems, categories]);
+
+  const totalItemsCount = useMemo(() => {
+    return items.filter(item => {
+      if (devRole !== 'admin') return !item.is_archived;
+      if (hideArchived) return !item.is_archived;
+      return true;
+    }).length;
+  }, [items, devRole, hideArchived]);
 
   const handleToggleAvailability = async (itemId) => {
     try {
@@ -420,7 +444,7 @@ export default function MenuPage() {
       </div>
 
       {/* Menu Groups */}
-      <div className="space-y-6">
+      <div className="max-h-[calc(100vh-320px)] overflow-y-auto pr-2 scrollbar-thin space-y-6 pb-8">
         {isLoading ? (
           <div className="card bg-surface border border-border p-16 text-center rounded-2xl shadow-lg">
             <Loader2 size={36} className="animate-spin text-[var(--accent)] inline-block" />
@@ -715,7 +739,7 @@ export default function MenuPage() {
       </div>
 
       <div className="flex justify-between items-center text-xs text-[var(--text-muted)] font-semibold px-2">
-        <span>Showing {filteredItems.length} of {items.length} menu items</span>
+        <span>Showing {filteredItems.length} of {totalItemsCount} menu items</span>
       </div>
 
       {/* Sticky Bottom: "Add to Cart" bar — only for customers with items selected */}
