@@ -410,17 +410,22 @@ export function AdminNavBar({ title, subtitle }) {
                     key={href}
                     href={href}
                     onClick={() => setIsOpen(false)}
-                    className={`flex items-center gap-3 ${
+                    className={`group flex items-center gap-3 ${
                       isCollapsed ? 'justify-center px-0 py-3' : 'px-4 py-3'
                     } text-sm font-semibold rounded-xl border transition-all duration-200 ${
                       isActive
                         ? 'border-[var(--accent)] bg-[var(--surface-raised)] text-[var(--accent)] shadow-md shadow-[var(--accent)]/5'
                         : 'border-transparent bg-transparent text-[var(--text-secondary)] hover:border-border hover:bg-background hover:text-[var(--text-primary)]'
                     }`}
-                    title={isCollapsed ? label : undefined}
+                    title={isCollapsed ? (hotkeyHint ? `${label} (${hotkeyHint})` : label) : undefined}
                   >
                     <Icon size={16} className="shrink-0" />
-                    {!isCollapsed && <span className="truncate">{label}</span>}
+                    {!isCollapsed && <span className="truncate flex-1">{label}</span>}
+                    {!isCollapsed && hotkeyHint && (
+                      <span className="hidden xl:inline-flex items-center justify-center text-[9px] font-mono font-bold tracking-tighter px-1.5 py-0.5 rounded border border-border/60 bg-background/50 text-[var(--text-muted)] shrink-0 group-hover:border-border group-hover:text-[var(--text-secondary)] transition-colors">
+                        {hotkeyHint}
+                      </span>
+                    )}
                   </Link>
                 );
               })}

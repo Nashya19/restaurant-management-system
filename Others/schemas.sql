@@ -88,6 +88,7 @@ CREATE TABLE order_items (
     price_at_order numeric(10,2) NOT NULL CHECK (price_at_order >= 0),
     item_status text NOT NULL DEFAULT 'pending' CHECK (item_status IN ('pending', 'preparing', 'ready')),
     item_started_at timestamptz,
+    notes text,
     created_at timestamptz NOT NULL DEFAULT now()
 );
 
@@ -127,6 +128,7 @@ CREATE TABLE public.cart_items (
     session_id uuid NOT NULL REFERENCES public.table_sessions(id) ON DELETE CASCADE,
     menu_item_id uuid NOT NULL REFERENCES public.menu_items(id) ON DELETE CASCADE,
     quantity integer NOT NULL DEFAULT 1 CHECK (quantity > 0),
+    notes text,
     created_at timestamptz NOT NULL DEFAULT now(),
     
     CONSTRAINT cart_items_session_menu_item_unique UNIQUE (session_id, menu_item_id)
@@ -145,3 +147,4 @@ CREATE TABLE schedule_day_tags (
     description text,
     created_at timestamptz NOT NULL DEFAULT now()
 );
+

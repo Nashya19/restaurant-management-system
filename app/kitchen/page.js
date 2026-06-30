@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Clock, CheckCircle2, Loader2, RefreshCw, UtensilsCrossed, Eye, EyeOff, LayoutGrid, List, Trash2, ChevronDown, ChevronUp, Settings2, X } from 'lucide-react';
+import { Clock, CheckCircle2, Loader2, RefreshCw, UtensilsCrossed, Eye, EyeOff, LayoutGrid, List, Trash2, ChevronDown, ChevronUp, Settings2, X, Maximize, Minimize } from 'lucide-react';
 import { updateOrderItemStatusAction, updateOrderStatusAction, adjustOrderItemStartedAtAction, deleteOrderAction, completeOneOrderItemAction } from '@/lib/actions/kitchen';
 import { getKitchenSettingsAction, setKitchenSlotsAction } from '@/lib/actions/kitchen-settings';
 import { useAlertConfirm } from '@/lib/hooks/useAlertConfirm';
@@ -326,28 +326,35 @@ function KitchenOrderCard({ order, countdowns, onItemStatusChange, onOrderDelive
               const isLoading = loadingItemId === item.id;
 
               return (
-                <div 
-                  key={item.id} 
-                  className={`flex shrink-0 items-center justify-between gap-3 border px-4 rounded-xl w-full max-w-full overflow-hidden transition-all ${
-                    isReady 
-                      ? 'bg-background/30 border-border/40 opacity-60' 
-                      : isPreparing 
-                        ? isOverdue 
-                          ? 'bg-destructive/10 border-destructive/40 border-l-[6px] border-l-destructive' 
-                          : 'bg-warning/10 border-warning/30 border-l-[6px] border-l-warning' 
-                        : 'bg-background/80 border-border/70'
-                  }`}
-                  style={{ height: '56px' }}
-                >
+                  <div 
+                    key={item.id} 
+                    className={`flex shrink-0 items-center justify-between gap-3 border px-4 py-3 rounded-xl w-full max-w-full overflow-hidden transition-all ${
+                      isReady 
+                        ? 'bg-background/30 border-border/40 opacity-60' 
+                        : isPreparing 
+                          ? isOverdue 
+                            ? 'bg-destructive/10 border-destructive/40 border-l-[6px] border-l-destructive' 
+                            : 'bg-warning/10 border-warning/30 border-l-[6px] border-l-warning' 
+                          : 'bg-background/80 border-border/70'
+                    }`}
+                    style={{ minHeight: '56px' }}
+                  >
                   
                   {/* Status Indicator & Name */}
                   <div className="flex items-center gap-2 min-w-0 flex-1">
                     <span className={`w-2 h-2 rounded-full shrink-0 ${
                       isReady ? 'bg-success' : isPreparing ? (isOverdue ? 'bg-destructive animate-pulse' : 'bg-warning animate-pulse') : 'bg-[var(--text-secondary)]'
                     }`} />
-                    <span className={`text-xs font-bold truncate flex-1 min-w-0 ${isReady ? 'line-through text-[var(--text-secondary)]' : 'text-[var(--text-primary)]'}`}>
-                      {item.menu_items?.name ?? 'Item'}
-                    </span>
+                    <div className="flex flex-col min-w-0 flex-1 justify-center">
+                      <span className={`text-xs font-bold truncate ${isReady ? 'line-through text-[var(--text-secondary)]' : 'text-[var(--text-primary)]'}`}>
+                        {item.menu_items?.name ?? 'Item'}
+                      </span>
+                      {item.notes && (
+                        <span className="text-[10px] font-bold text-amber-500 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded w-fit truncate mt-0.5">
+                          Note: {item.notes}
+                        </span>
+                      )}
+                    </div>
                     <span className="px-1.5 py-0.5 rounded bg-surface-raised border border-border text-[10px] text-[var(--text-secondary)] font-bold shrink-0">
                       x{item.quantity}
                     </span>
@@ -501,12 +508,12 @@ function KitchenOrderCard({ order, countdowns, onItemStatusChange, onOrderDelive
           )}
         </div>
         <div className="max-h-56 overflow-y-auto space-y-2 pr-1 scrollbar-thin">
-          {activeItems.length === 0 ? (
+          {order.status !== 'delivered' && activeItems.length === 0 ? (
             <p className="text-xs text-[var(--text-secondary)] py-3 text-center italic">
               All items ready
             </p>
           ) : (
-             activeItems.map(item => {
+             (order.status === 'delivered' ? items : activeItems).map(item => {
               const badge = getItemBadge(item.item_status);
               const isLoading = loadingItemId === item.id;
               const isPreparing = item.item_status === 'preparing';
@@ -514,23 +521,31 @@ function KitchenOrderCard({ order, countdowns, onItemStatusChange, onOrderDelive
               const countdown = formatCountdown(secsLeft);
               const isOverdue = secsLeft !== null && secsLeft <= 0;
 
+              const isDone = item.item_status === 'ready' || item.item_status === 'delivered' || order.status === 'delivered';
+
               return (
                 <div
                   key={item.id}
-                  className={`flex flex-col gap-2.5 p-3 rounded-xl border transition-all ${isPreparing
-                      ? isOverdue
-                        ? 'bg-destructive-bg/20 border-destructive-border/40'
-                        : 'bg-warning/10 border-warning/20'
-                      : 'bg-background/60 border-border/60'
-                    }`}
+                  className={`flex flex-col gap-2.5 p-3 rounded-xl border transition-all ${
+                    isDone 
+                      ? 'bg-background/40 border-border/30 opacity-80'
+                      : isPreparing
+                        ? isOverdue
+                          ? 'bg-destructive-bg/20 border-destructive-border/40'
+                          : 'bg-warning/10 border-warning/20'
+                        : 'bg-background/60 border-border/60'
+                  }`}
                 >
                   {/* Header Row: Dot + Name + Qty */}
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className={`inline-block w-2 h-2 rounded-full shrink-0 ${isPreparing
-                        ? isOverdue ? 'bg-destructive animate-pulse' : 'bg-warning animate-pulse'
-                        : 'bg-[var(--text-secondary)]'
-                      }`} />
-                    <p className="text-sm font-bold text-[var(--text-primary)] truncate flex-1">
+                    <span className={`inline-block w-2 h-2 rounded-full shrink-0 ${
+                      isDone
+                        ? 'bg-success'
+                        : isPreparing
+                          ? isOverdue ? 'bg-destructive animate-pulse' : 'bg-warning animate-pulse'
+                          : 'bg-[var(--text-secondary)]'
+                    }`} />
+                    <p className={`text-sm font-bold truncate flex-1 transition-all ${isDone ? 'text-[var(--text-secondary)] line-through decoration-border/50' : 'text-[var(--text-primary)]'}`}>
                       {item.menu_items?.name ?? 'Item'}
                     </p>
                     <span className="px-1.5 py-0.5 rounded bg-surface-raised border border-border text-[10px] text-[var(--text-secondary)] font-black shrink-0">
@@ -538,14 +553,23 @@ function KitchenOrderCard({ order, countdowns, onItemStatusChange, onOrderDelive
                     </span>
                   </div>
 
+                  {item.notes && (
+                    <div className={`flex items-start gap-1.5 -mt-1 ml-4 pr-2 ${isDone ? 'opacity-60' : ''}`}>
+                      <div className="w-1.5 h-2.5 border-l-2 border-b-2 border-[var(--text-secondary)] opacity-40 rounded-bl-sm mt-1 shrink-0" />
+                      <p className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${isDone ? 'text-success/80 bg-success/10 border-success/20' : 'text-warning/90 bg-warning/10 border-warning/20'}`}>
+                        {item.notes}
+                      </p>
+                    </div>
+                  )}
+
                   {/* Info & Action Row */}
                   <div className="flex items-center justify-between gap-2 flex-wrap pt-2 border-t border-border/10">
                     {/* Status & Countdown */}
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold border ${badge.cls}`}>
-                        {badge.label}
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold border ${isDone ? 'bg-success/10 text-success border-success/20' : badge.cls}`}>
+                        {isDone ? 'Ready' : badge.label}
                       </span>
-                      {!isPreparing && item.menu_items?.prep_time_minutes && (
+                      {!isPreparing && !isDone && item.menu_items?.prep_time_minutes && (
                         <span className="text-[10px] text-[var(--text-secondary)] font-medium flex items-center gap-0.5">
                           <Clock size={9} /> {item.menu_items.prep_time_minutes}m
                         </span>
@@ -558,57 +582,59 @@ function KitchenOrderCard({ order, countdowns, onItemStatusChange, onOrderDelive
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center gap-1.5 ml-auto">
-                      {isPreparing && (
-                        <button
-                          onClick={async () => {
-                            if (secsLeft !== null) {
-                              const newSecsLeft = Math.max(0, secsLeft - 120);
-                              if (newSecsLeft <= 0) {
-                                await handleItemAction(item);
-                              } else {
-                                const prepSecs = (item.menu_items?.prep_time_minutes ?? 0) * 60;
-                                const newElapsed = prepSecs - newSecsLeft;
-                                const newStartedAt = new Date(Date.now() - newElapsed * 1000).toISOString();
-                                setLoadingItemId(item.id);
-                                await onAdjustPrepTime(item.id, newStartedAt);
-                                setLoadingItemId(null);
+                    {!isDone && (
+                      <div className="flex items-center gap-1.5 ml-auto">
+                        {isPreparing && (
+                          <button
+                            onClick={async () => {
+                              if (secsLeft !== null) {
+                                const newSecsLeft = Math.max(0, secsLeft - 120);
+                                if (newSecsLeft <= 0) {
+                                  await handleItemAction(item);
+                                } else {
+                                  const prepSecs = (item.menu_items?.prep_time_minutes ?? 0) * 60;
+                                  const newElapsed = prepSecs - newSecsLeft;
+                                  const newStartedAt = new Date(Date.now() - newElapsed * 1000).toISOString();
+                                  setLoadingItemId(item.id);
+                                  await onAdjustPrepTime(item.id, newStartedAt);
+                                  setLoadingItemId(null);
+                                }
                               }
-                            }
-                          }}
-                          disabled={isLoading}
-                          title="Reduce wait time by 2 minutes"
-                          className="px-2 py-1 rounded-lg text-[10px] font-black bg-warning/15 hover:bg-warning/25 border border-warning/30 text-warning transition-all cursor-pointer whitespace-nowrap flex items-center gap-0.5"
-                          style={{ height: '30px' }}
-                        >
-                          ⏱ -2m
-                        </button>
-                      )}
-                      {isPreparing && item.quantity > 1 && (
+                            }}
+                            disabled={isLoading}
+                            title="Reduce wait time by 2 minutes"
+                            className="px-2 py-1 rounded-lg text-[10px] font-black bg-warning/15 hover:bg-warning/25 border border-warning/30 text-warning transition-all cursor-pointer whitespace-nowrap flex items-center gap-0.5"
+                            style={{ height: '30px' }}
+                          >
+                            ⏱ -2m
+                          </button>
+                        )}
+                        {isPreparing && item.quantity > 1 && (
+                          <button
+                            onClick={() => handleCompleteOneItem(item.id)}
+                            disabled={isLoading}
+                            className="px-2.5 py-1 rounded-lg text-[10px] font-black bg-success/20 hover:bg-success/30 border border-success/35 text-success transition-all disabled:opacity-50 cursor-pointer whitespace-nowrap"
+                            style={{ height: '30px' }}
+                          >
+                            {isLoading ? <Loader2 size={10} className="animate-spin" /> : 'Ready 1'}
+                          </button>
+                        )}
                         <button
-                          onClick={() => handleCompleteOneItem(item.id)}
+                          onClick={() => handleItemAction(item)}
                           disabled={isLoading}
-                          className="px-2.5 py-1 rounded-lg text-[10px] font-black bg-success/20 hover:bg-success/30 border border-success/35 text-success transition-all disabled:opacity-50 cursor-pointer whitespace-nowrap"
+                          className={`px-3 py-1 rounded-lg text-[10px] font-bold transition-all disabled:opacity-50 cursor-pointer whitespace-nowrap ${isPreparing
+                              ? 'bg-success text-white hover:bg-success/90'
+                              : 'bg-surface-raised border border-border text-[var(--text-primary)] hover:bg-surface'
+                            }`}
                           style={{ height: '30px' }}
                         >
-                          {isLoading ? <Loader2 size={10} className="animate-spin" /> : 'Ready 1'}
+                          {isLoading
+                            ? <Loader2 size={10} className="animate-spin" />
+                            : isPreparing ? 'Ready' : 'Start'
+                          }
                         </button>
-                      )}
-                      <button
-                        onClick={() => handleItemAction(item)}
-                        disabled={isLoading}
-                        className={`px-3 py-1 rounded-lg text-[10px] font-bold transition-all disabled:opacity-50 cursor-pointer whitespace-nowrap ${isPreparing
-                            ? 'bg-success text-white hover:bg-success/90'
-                            : 'bg-surface-raised border border-border text-[var(--text-primary)] hover:bg-surface'
-                          }`}
-                        style={{ height: '30px' }}
-                      >
-                        {isLoading
-                          ? <Loader2 size={10} className="animate-spin" />
-                          : isPreparing ? 'Ready' : 'Start'
-                        }
-                      </button>
-                    </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -664,6 +690,27 @@ export default function KitchenPage() {
   const [showSettings, setShowSettings] = useState(false);
   const [settingsSaving, setSettingsSaving] = useState(false);
   const [slotsInput, setSlotsInput] = useState('4');
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  const toggleFullscreen = async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      } else if (document.exitFullscreen) {
+        await document.exitFullscreen();
+      }
+    } catch (err) {
+      console.error('Error toggling fullscreen:', err);
+    }
+  };
 
   const { showAlert, showConfirm, AlertConfirmComponent } = useAlertConfirm();
 
@@ -718,7 +765,7 @@ export default function KitchenPage() {
           tables:table_id ( table_number )
         ),
         order_items (
-          id, quantity, item_status, item_started_at,
+          id, quantity, item_status, item_started_at, notes,
           menu_items ( id, name, prep_time_minutes )
         )
       `)
@@ -987,7 +1034,15 @@ export default function KitchenPage() {
             onClick={fetchOrders}
             className="btn btn-ghost bg-background border-border hover:bg-surface flex items-center gap-2 rounded-xl text-xs font-bold cursor-pointer h-10 px-4"
           >
-            <RefreshCw size={14} /> Refresh
+            <RefreshCw size={14} /> <span className="hidden sm:inline">Refresh</span>
+          </button>
+          <button
+            onClick={toggleFullscreen}
+            className="btn btn-ghost bg-background border-border hover:bg-surface flex items-center gap-2 rounded-xl text-xs font-bold cursor-pointer h-10 px-4"
+            title={isFullscreen ? 'Exit Full Screen' : 'Full Screen'}
+          >
+            {isFullscreen ? <Minimize size={14} /> : <Maximize size={14} />}
+            <span className="hidden sm:inline">{isFullscreen ? 'Exit Full Screen' : 'Full Screen'}</span>
           </button>
         </div>
       </div>

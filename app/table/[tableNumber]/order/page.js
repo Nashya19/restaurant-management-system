@@ -234,6 +234,7 @@ export default function CustomerOrderPage() {
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [orderPlacedMsg, setOrderPlacedMsg] = useState(null);
   const [cartError, setCartError]           = useState(null);
+  const [editingNoteFor, setEditingNoteFor] = useState(null);
   const cartPendingUpdates = useRef({});
 
   // Track previous item statuses to detect → ready
@@ -307,17 +308,19 @@ export default function CustomerOrderPage() {
     }
   };
 
-  const updateCartItemQty = async (menuItemId, newQty) => {
+  const updateCartItemQty = async (menuItemId, newQty, notes = undefined) => {
     const sessionId = localStorage.getItem('sessionId');
     if (!sessionId) return;
     setCartError(null);
     setCartItems(prev => {
       if (newQty <= 0) return prev.filter(ci => ci.menu_item_id !== menuItemId);
-      return prev.map(ci => ci.menu_item_id === menuItemId ? { ...ci, quantity: newQty } : ci);
+      return prev.map(ci => ci.menu_item_id === menuItemId ? { ...ci, quantity: newQty, notes: notes !== undefined ? notes : ci.notes } : ci);
     });
     cartPendingUpdates.current[menuItemId] = true;
     try {
-      await updateCartItemAction(sessionId, menuItemId, newQty);
+      const existingCartItem = cartItems.find(ci => ci.menu_item_id === menuItemId);
+      const finalNotes = notes !== undefined ? notes : existingCartItem?.notes;
+      await updateCartItemAction(sessionId, menuItemId, newQty, finalNotes);
       await mutateCart();
     } catch (err) {
       setCartError(err.message || 'Failed to update cart item.');
@@ -787,6 +790,38 @@ export default function CustomerOrderPage() {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-[var(--text-primary)] break-words whitespace-normal">{ci.menu_items?.name || 'Item'}</p>
                         <p className="text-xs text-[var(--text-muted)] font-mono">{formatCurrency(ci.menu_items?.price || 0)} each</p>
+                        {editingNoteFor === ci.menu_item_id ? (
+                          <div className="mt-1 flex items-center gap-2">
+                            <input
+                              type="text"
+                              autoFocus
+                              placeholder="Add a note..."
+                              defaultValue={ci.notes || ''}
+                              onBlur={(e) => {
+                                setEditingNoteFor(null);
+                                if (e.target.value !== (ci.notes || '')) {
+                                  updateCartItemQty(ci.menu_item_id, ci.quantity, e.target.value.substring(0, 100));
+                                }
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') e.target.blur();
+                              }}
+                              className="flex-1 bg-background border border-border rounded-lg px-2 py-1 text-[10px] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
+                            />
+                          </div>
+                        ) : (
+                          <div className="mt-0.5">
+                            {ci.notes ? (
+                              <button onClick={() => setEditingNoteFor(ci.menu_item_id)} className="text-[10px] text-[var(--accent)] text-left hover:underline break-words whitespace-normal inline-block cursor-pointer border-0 bg-transparent p-0">
+                                Note: {ci.notes}
+                              </button>
+                            ) : (
+                              <button onClick={() => setEditingNoteFor(ci.menu_item_id)} className="text-[10px] text-[var(--text-muted)] hover:text-[var(--text-primary)] underline decoration-dotted underline-offset-2 cursor-pointer border-0 bg-transparent p-0">
+                                + Add note
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </div>
                       <div className="flex items-center gap-0 bg-[var(--background)] border border-border rounded-xl overflow-hidden shadow-inner shrink-0">
                         <button
@@ -887,7 +922,7 @@ export default function CustomerOrderPage() {
                         {(() => {
                           const grouped = [];
                           (order.items || []).forEach(item => {
-                            const existing = grouped.find(g => g.name === item.name && g.status === item.status);
+                            const existing = grouped.find(g => g.name === item.name && g.status === item.status && g.notes === item.notes);
                             if (existing) {
                               existing.quantity += item.quantity;
                               existing.subtotal += item.subtotal;
@@ -926,7 +961,12 @@ export default function CustomerOrderPage() {
                                         {item.name}
                                         <span className="text-[var(--text-secondary)] font-normal ml-1.5">×{item.quantity}</span>
                                       </p>
-                                      <p className="text-[10px] text-[var(--text-secondary)]">
+                                      {item.notes && (
+                                        <p className="text-[10px] italic text-[var(--text-secondary)] mt-0.5 break-words whitespace-normal">
+                                          Note: {item.notes}
+                                        </p>
+                                      )}
+                                      <p className="text-[10px] text-[var(--text-secondary)] mt-0.5">
                                         {formatCurrency(item.price_at_order)} each
                                       </p>
                                     </div>

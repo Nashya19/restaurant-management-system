@@ -14,7 +14,7 @@ import {
 import { resetDailyMenuItemsAvailability } from '@/lib/actions/menu';
 import { formatCurrency } from '@/lib/utils/formatters';
 import { getCartItemsAction, updateCartItemAction } from '@/lib/actions/cart';
-import { Edit2, Archive, RotateCcw, ToggleLeft, ToggleRight, Plus, Search, Loader2, ChevronDown, ChevronRight, ShoppingCart, Minus, CheckCircle2 } from 'lucide-react';
+import { Edit2, Archive, RotateCcw, ToggleLeft, ToggleRight, Plus, Search, Loader2, ChevronDown, ChevronRight, ShoppingCart, Minus, CheckCircle2, Trash2 } from 'lucide-react';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import CustomSelect from '@/components/ui/CustomSelect';
 import { createClient } from '@/lib/supabase/client';
@@ -56,6 +56,7 @@ export default function MenuPage() {
 
   // Local selection state — user picks quantities, then clicks "Add to Cart"
   const [orderQuantities, setOrderQuantities] = useState({});
+  const [orderNotes, setOrderNotes] = useState({});
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [addedToCart, setAddedToCart] = useState(false);
   const [bottomError, setBottomError] = useState(null);
@@ -373,12 +374,14 @@ export default function MenuPage() {
       await Promise.all(
         itemsToAdd.map(([itemId, qty]) => {
           const mergedQty = (existingQtyMap[itemId] || 0) + qty;
-          return updateCartItemAction(sessionId, itemId, mergedQty);
+          const note = orderNotes[itemId] || null;
+          return updateCartItemAction(sessionId, itemId, mergedQty, note);
         })
       );
 
       setAddedToCart(true);
       setOrderQuantities({});
+      setOrderNotes({});
       await mutateCart();
       setTimeout(() => setAddedToCart(false), 4000);
     } catch (err) {
@@ -613,39 +616,50 @@ export default function MenuPage() {
 
                               {/* Customer Controls vs Admin/Staff Action Buttons */}
                               {devRole === 'customer' ? (
-                                <div className="mt-4 pt-3 border-t border-border/40 flex items-center justify-between">
-                                  <span className="text-[10px] uppercase font-bold text-[var(--text-secondary)] tracking-wider">
-                                    {quantity > 0 ? `Selected: ${quantity}` : 'Add to order'}
-                                  </span>
+                                <div className="mt-4 pt-3 border-t border-border/40 flex flex-col gap-2">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[10px] uppercase font-bold text-[var(--text-secondary)] tracking-wider">
+                                      {quantity > 0 ? `Selected: ${quantity}` : 'Add to order'}
+                                    </span>
 
-                                  <div className="flex items-center gap-2">
-                                    {item.is_available ? (
-                                      <>
-                                        {/* Stepper */}
-                                        <div className="flex items-center gap-0 bg-[var(--background)] border border-border rounded-xl overflow-hidden shadow-inner">
-                                          <button
-                                            type="button"
-                                            onClick={() => updateQuantity(item.id, -1)}
-                                            className="w-8 h-8 flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--accent)] hover:bg-[var(--accent)]/10 transition-all cursor-pointer active:scale-90"
-                                          >
-                                            {quantity === 1 ? <Trash2 size={11} className="text-red-400" /> : <Minus size={11} />}
-                                          </button>
-                                          <span className="w-8 text-center text-xs font-bold text-[var(--text-primary)] tabular-nums">
-                                            {quantity}
-                                          </span>
-                                          <button
-                                            type="button"
-                                            onClick={() => updateQuantity(item.id, 1)}
-                                            className="w-8 h-8 flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--accent)] hover:bg-[var(--accent)]/10 transition-all cursor-pointer active:scale-90"
-                                          >
-                                            <Plus size={11} />
-                                          </button>
-                                        </div>
-                                      </>
-                                    ) : (
-                                      <span className="text-xs text-[var(--text-muted)] font-semibold italic">Sold Out</span>
-                                    )}
+                                    <div className="flex items-center gap-2">
+                                      {item.is_available ? (
+                                        <>
+                                          {/* Stepper */}
+                                          <div className="flex items-center gap-0 bg-[var(--background)] border border-border rounded-xl overflow-hidden shadow-inner">
+                                            <button
+                                              type="button"
+                                              onClick={() => updateQuantity(item.id, -1)}
+                                              className="w-8 h-8 flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--accent)] hover:bg-[var(--accent)]/10 transition-all cursor-pointer active:scale-90"
+                                            >
+                                              {quantity === 1 ? <Trash2 size={11} className="text-red-400" /> : <Minus size={11} />}
+                                            </button>
+                                            <span className="w-8 text-center text-xs font-bold text-[var(--text-primary)] tabular-nums">
+                                              {quantity}
+                                            </span>
+                                            <button
+                                              type="button"
+                                              onClick={() => updateQuantity(item.id, 1)}
+                                              className="w-8 h-8 flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--accent)] hover:bg-[var(--accent)]/10 transition-all cursor-pointer active:scale-90"
+                                            >
+                                              <Plus size={11} />
+                                            </button>
+                                          </div>
+                                        </>
+                                      ) : (
+                                        <span className="text-xs text-[var(--text-muted)] font-semibold italic">Sold Out</span>
+                                      )}
+                                    </div>
                                   </div>
+                                  {quantity > 0 && (
+                                    <input
+                                      type="text"
+                                      placeholder="Add a note (e.g. no onions)..."
+                                      value={orderNotes[item.id] || ''}
+                                      onChange={(e) => setOrderNotes(prev => ({ ...prev, [item.id]: e.target.value.substring(0, 100) }))}
+                                      className="w-full bg-background border border-border rounded-lg px-2.5 py-1.5 text-[11px] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors mt-1"
+                                    />
+                                  )}
                                 </div>
                               ) : (
                                 <div className="mt-4 pt-3 border-t border-border/40 flex items-center justify-between gap-2">
@@ -776,6 +790,15 @@ export default function MenuPage() {
                                             <Plus size={13} />
                                           </button>
                                         </div>
+                                        {(orderQuantities[item.id] || 0) > 0 && (
+                                          <input
+                                            type="text"
+                                            placeholder="Add note..."
+                                            value={orderNotes[item.id] || ''}
+                                            onChange={(e) => setOrderNotes(prev => ({ ...prev, [item.id]: e.target.value.substring(0, 100) }))}
+                                            className="w-full max-w-[120px] bg-background border border-border rounded-lg px-2 py-1 text-[10px] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] text-center transition-colors mt-0.5"
+                                          />
+                                        )}
                                       </>
                                     ) : (
                                       <span className="text-xs text-[var(--text-muted)] font-semibold italic">Unavailable</span>
