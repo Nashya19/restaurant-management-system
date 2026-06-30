@@ -233,22 +233,28 @@ export default function PaymentScreen({ session, tableNumber, onConfirm, isConfi
             Scan to Pay via UPI
           </p>
 
-          <div className="relative flex items-center justify-center w-[240px] h-[240px] bg-background rounded-xl border border-[var(--border)] overflow-hidden">
-            {!qrReady && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-[var(--text-secondary)]">
-                <Loader2 size={24} className="animate-spin" />
-                <p className="text-xs font-medium">Generating QR…</p>
-              </div>
-            )}
-            <canvas
-              ref={canvasRef}
-              className={`transition-opacity duration-300 ${qrReady ? 'opacity-100' : 'opacity-0'}`}
-            />
-          </div>
+          <a 
+            href={upiLink} 
+            className="block group cursor-pointer"
+            title="Click to open UPI app"
+          >
+            <div className="relative flex items-center justify-center w-[240px] h-[240px] bg-background rounded-xl border border-[var(--border)] overflow-hidden group-hover:border-[var(--accent)] group-hover:shadow-[0_0_15px_rgba(var(--accent-rgb),0.15)] transition-all">
+              {!qrReady && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-[var(--text-secondary)]">
+                  <Loader2 size={24} className="animate-spin" />
+                  <p className="text-xs font-medium">Generating QR…</p>
+                </div>
+              )}
+              <canvas
+                ref={canvasRef}
+                className={`transition-opacity duration-300 ${qrReady ? 'opacity-100' : 'opacity-0'}`}
+              />
+            </div>
+          </a>
 
           <div className="text-center space-y-0.5">
             <p className="text-xs font-mono font-semibold text-[var(--text-primary)]">{upiId}</p>
-            <p className="text-[10px] text-[var(--text-muted)]">Scan with any UPI app to pay</p>
+            <p className="text-[10px] text-[var(--text-muted)]">Scan or click to pay with any UPI app</p>
           </div>
         </div>
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useAlertConfirm } from '@/lib/hooks/useAlertConfirm';
 import { 
   Edit2, Trash2, CheckCircle2, Calendar, Filter, Search, 
   Plus, Heart, Info, Clock, Utensils, TrendingUp, History, 
@@ -23,7 +24,9 @@ export default function SurplusPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [startDateFilter, setStartDateFilter] = useState("");
   const [endDateFilter, setEndDateFilter] = useState("");
-  const [sortBy, setSortBy] = useState("newest");
+  const [sortBy, setSortBy] = useState("newest"); // newest, oldest, price_high, price_low
+
+  const { showAlert, showConfirm, AlertConfirmComponent } = useAlertConfirm();
 
   // Edit Modal State
   const [editingItem, setEditingItem] = useState(null);
@@ -177,16 +180,17 @@ export default function SurplusPage() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
 
-      alert("Food claimed successfully!");
+      await showAlert("Food claimed successfully!");
       fetchSurplusItems();
     } catch (error) {
-      alert(error.message);
+      await showAlert(error.message);
     }
   }
 
   // Mark Listing as Done (Admin & Staff action)
   async function markAsDone(itemId) {
-    if (!confirm("Are you sure you want to mark this listing as completed/done?")) return;
+    const confirmed = await showConfirm("Are you sure you want to mark this listing as completed/done?");
+    if (!confirmed) return;
 
     try {
       const response = await fetch(`/api/surplus/${itemId}`, {
@@ -199,13 +203,14 @@ export default function SurplusPage() {
 
       fetchSurplusItems();
     } catch (error) {
-      alert(error.message);
+      await showAlert(error.message);
     }
   }
 
   // Delete Listing (Admin action only)
   async function deleteListing(itemId) {
-    if (!confirm("Are you sure you want to permanently delete this listing?")) return;
+    const confirmed = await showConfirm("Are you sure you want to permanently delete this listing?");
+    if (!confirmed) return;
 
     try {
       const response = await fetch(`/api/surplus/${itemId}`, {
@@ -216,7 +221,7 @@ export default function SurplusPage() {
 
       fetchSurplusItems();
     } catch (error) {
-      alert(error.message);
+      await showAlert(error.message);
     }
   }
 
@@ -303,6 +308,7 @@ export default function SurplusPage() {
 
     return (
       <div className="space-y-8 animate-fade-in max-w-5xl mx-auto">
+        {AlertConfirmComponent}
         {/* Header */}
         <div className="text-center space-y-4 max-w-2xl mx-auto">
           <div className="flex flex-col items-center justify-center space-y-2 mb-2">
@@ -360,12 +366,12 @@ export default function SurplusPage() {
         {/* List Layout Table */}
         <div className="space-y-6">
           <h2 className="text-xl font-bold flex items-center gap-2 text-[var(--text-primary)]">
-            <span>📋</span> Available Surplus Items
+            <span></span> Available Surplus Items
           </h2>
 
           {publicFilteredItems.length === 0 ? (
             <div className="bg-surface border border-border rounded-2xl p-12 text-center space-y-4">
-              <span className="text-5xl block">🍽️</span>
+              <span className="text-5xl block">️</span>
               <h3 className="text-lg font-bold text-[var(--text-primary)]">No surplus food available</h3>
               <p className="text-[var(--text-secondary)] text-xs">Please check back later for newly listed meals.</p>
             </div>
@@ -398,7 +404,7 @@ export default function SurplusPage() {
                         </td>
                         <td className="py-4 px-6 text-right font-mono font-extrabold text-sm">
                           {item.discounted_price === 0 ? (
-                            <span className="text-green-600 font-bold">FREE 🎉</span>
+                            <span className="text-green-600 font-bold">FREE </span>
                           ) : (
                             <span className="text-[var(--accent)]">₹{Number(item.discounted_price).toFixed(2)}</span>
                           )}
@@ -423,6 +429,7 @@ export default function SurplusPage() {
   // ==========================================
   return (
     <div className="space-y-8 animate-fade-in w-full max-w-7xl mx-auto">
+      {AlertConfirmComponent}
       {/* Page Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pb-4 border-b border-border">
         <div>
@@ -433,12 +440,25 @@ export default function SurplusPage() {
             Redistribute leftover inventory, track food sharing logistics, and coordinate community meals.
           </p>
         </div>
-        <button 
-          onClick={fetchSurplusItems}
-          className="btn btn-ghost rounded-xl text-xs font-semibold flex items-center gap-2 h-10 w-fit cursor-pointer self-start"
-        >
-          <RefreshCw size={14} /> Refresh Board
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button 
+            onClick={fetchSurplusItems}
+            className="btn btn-ghost rounded-xl text-xs font-semibold flex items-center gap-2 h-10 w-fit cursor-pointer self-start"
+          >
+            <RefreshCw size={14} /> Refresh Board
+          </button>
+          <button
+            onClick={async () => {
+              const url = `${window.location.origin}/surplus`;
+              await navigator.clipboard.writeText(url);
+              await showAlert('Public surplus board link copied to clipboard!');
+            }}
+            className="btn border border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)] hover:bg-[var(--accent)] hover:text-black rounded-xl text-xs font-semibold flex items-center gap-2 h-10 w-fit cursor-pointer self-start transition-all"
+            title="Copy Public Link"
+          >
+             Share Public Link
+          </button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -766,7 +786,7 @@ export default function SurplusPage() {
             <form onSubmit={handleEditSubmit} className="space-y-4 text-xs">
               {editError && (
                 <div className="flex items-start gap-2 bg-destructive-bg border border-destructive-border text-destructive p-3 rounded-xl">
-                  <span className="shrink-0 mt-0.5">⚠️</span>
+                  <span className="shrink-0 mt-0.5">️</span>
                   <span>{editError}</span>
                 </div>
               )}

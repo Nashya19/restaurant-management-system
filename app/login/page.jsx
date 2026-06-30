@@ -115,7 +115,7 @@ export default function LoginPage() {
           <form onSubmit={handleLogin} className="space-y-5">
             {error && (
               <div className="flex items-start gap-2 bg-destructive-bg border border-destructive-border text-destructive text-sm p-3 rounded-lg animate-fade-in">
-                <span className="shrink-0 mt-0.5">⚠️</span>
+                <span className="shrink-0 mt-0.5">️</span>
                 <span>{error}</span>
               </div>
             )}

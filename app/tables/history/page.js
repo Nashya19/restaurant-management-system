@@ -303,7 +303,7 @@ export default function SessionHistoryPage() {
       {/* Error Alert */}
       {pageError && (
         <div className="flex items-start gap-2 bg-destructive-bg border border-destructive-border text-destructive text-sm p-4 rounded-xl animate-fade-in">
-          <span className="shrink-0 mt-0.5">⚠️</span>
+          <span className="shrink-0 mt-0.5">️</span>
           <span>{pageError}</span>
         </div>
       )}
@@ -311,7 +311,7 @@ export default function SessionHistoryPage() {
       {/* Advanced Filters Block */}
       <div className="bg-surface border border-border rounded-2xl p-6 space-y-4">
         <h3 className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-2 mb-2">
-          <span>🔍</span> Filter Records
+          <span></span> Filter Records
         </h3>
         
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

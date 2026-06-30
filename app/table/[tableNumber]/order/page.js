@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
+import useSWR from 'swr';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getSessionDetailsAction, completeTableSessionAction, getQueueStatusAction } from '@/lib/actions/orders';
@@ -12,26 +13,33 @@ import { Clock, RefreshCw, ChefHat, CheckCircle2, ArrowLeft, ShieldAlert, Loader
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { useHeartbeat } from '@/lib/hooks/useHeartbeat';
 import PaymentScreen from '@/components/ui/PaymentScreen';
+import { computeLiveSecondsLeft, formatWaitLabel, formatStaticWaitLabel } from '@/lib/utils/wait-time';
 
 // ─── Status helpers ───────────────────────────────────────────────────────────
 
 const getItemStatusMeta = (status = 'pending') => {
   switch (status) {
     case 'ready':
-      return { label: 'Ready ✓', className: 'bg-success/10 text-success border border-success/20' };
+      return { label: 'Ready for Pickup', className: 'bg-success/15 text-success border border-success/30' };
     case 'preparing':
-      return { label: 'Preparing…', className: 'bg-warning/10 text-warning border border-warning/20' };
+      return { label: 'Preparing in Kitchen', className: 'bg-warning/15 text-warning border border-warning/30' };
+    case 'pending':
+      return { label: 'Order Received', className: 'bg-surface border border-border text-[var(--text-secondary)]' };
+    case 'served':
+      return { label: 'Served & Enjoy!', className: 'bg-success/15 text-success border border-success/30' };
+    case 'cancelled':
+      return { label: 'Cancelled', className: 'bg-destructive-bg text-destructive border border-destructive-border' };
     default:
-      return { label: 'Queued', className: 'bg-surface border border-border text-[var(--text-secondary)]' };
+      return { label: 'Order Received', className: 'bg-surface border border-border text-[var(--text-secondary)]' };
   }
 };
 
 const getOrderProgressMeta = (order) => {
   const items = order?.items || [];
-  if (!items.length) return { label: 'Queued', description: 'Waiting for kitchen', className: 'bg-surface text-[var(--text-secondary)] border border-border' };
-  if (items.every(i => i.status === 'ready'))    return { label: 'Ready', description: 'Everything is ready to serve!', className: 'bg-success/10 text-success border border-success/20' };
+  if (!items.length) return { label: 'Order Received', description: 'Waiting for kitchen', className: 'bg-surface text-[var(--text-secondary)] border border-border' };
+  if (items.every(i => i.status === 'ready' || i.status === 'served'))    return { label: 'Ready to Serve', description: 'Everything is ready!', className: 'bg-success/10 text-success border border-success/20' };
   if (items.some(i => i.status === 'preparing')) return { label: 'Preparing', description: 'Kitchen is cooking your items', className: 'bg-warning/10 text-warning border border-warning/20' };
-  return { label: 'Queued', description: 'Your order is in the queue', className: 'bg-surface text-[var(--text-secondary)] border border-border' };
+  return { label: 'Order Received', description: 'Your order is in the queue', className: 'bg-surface text-[var(--text-secondary)] border border-border' };
 };
 
 // Seconds remaining for a preparing item
@@ -66,14 +74,63 @@ function timeAgo(dateString, referenceTime = new Date()) {
 // ─── Customer Item Ready Toast ────────────────────────────────────────────────
 function CustomerReadyToast({ item, onDismiss }) {
   useEffect(() => {
-    const t = setTimeout(onDismiss, 6000);
+    // 1. Procedural audio chime using AudioContext
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) {
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        
+        osc.type = 'sine';
+        const now = ctx.currentTime;
+        
+        if (item.status === 'preparing') {
+          // Double soft beep for preparing
+          osc.frequency.setValueAtTime(523.25, now);
+          gain.gain.setValueAtTime(0.05, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+          
+          osc.frequency.setValueAtTime(659.25, now + 0.15);
+          gain.gain.setValueAtTime(0.05, now + 0.15);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+        } else {
+          // Bright, clear chime for ready/pickup
+          osc.frequency.setValueAtTime(587.33, now);
+          gain.gain.setValueAtTime(0.1, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+          
+          osc.frequency.setValueAtTime(880.00, now + 0.2);
+          gain.gain.setValueAtTime(0.1, now + 0.2);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+        }
+        
+        osc.start(now);
+        osc.stop(now + 0.6);
+      }
+    } catch (e) {
+      console.warn('Audio feedback failed:', e);
+    }
+
+    // 2. Browser vibration API
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      if (item.status === 'preparing') {
+        navigator.vibrate(100);
+      } else {
+        navigator.vibrate([200, 100, 200]);
+      }
+    }
+
+    const t = setTimeout(onDismiss, 2000);
     return () => clearTimeout(t);
-  }, [onDismiss]);
+  }, [onDismiss, item]);
 
   const isPreparing = item.status === 'preparing';
 
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[90vw] max-w-sm animate-slide-up">
+    <div className="fixed bottom-20 left-1/2 -translate-x-1/2 md:bottom-6 md:left-auto md:right-6 md:translate-x-0 z-[9999] w-[90vw] max-w-sm animate-slide-up">
       <div className={`flex items-center gap-3 bg-[var(--surface)] border ${
         isPreparing ? 'border-warning/50 shadow-2xl' : 'border-success/50 shadow-2xl'
       } rounded-2xl px-5 py-4`}>
@@ -84,7 +141,7 @@ function CustomerReadyToast({ item, onDismiss }) {
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-bold text-[var(--text-primary)]">
-            {isPreparing ? `${item.name} is preparing! 👨‍🍳` : `${item.name} is Ready! 🎉`}
+            {isPreparing ? `${item.name} is preparing! ‍` : `${item.name} is Ready! `}
           </p>
           <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">
             {isPreparing ? 'The kitchen has started cooking your item' : 'Your item is ready to be served'}
@@ -114,6 +171,31 @@ function useItemTimers(session) {
         map[item.id] = calcSecondsLeft(item);
       }
     });
+  });
+  return map;
+}
+
+// ─── Live per-order wait countdown (ticks every second) ───────────────────────
+// Returns { [orderId]: secondsLeft | null }
+function useOrderWaitTimers(session) {
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setTick(n => n + 1), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  const map = {};
+  (session?.orders || []).forEach(order => {
+    if (order.status === 'delivered' || order.status === 'cancelled') {
+      map[order.id] = null;
+      return;
+    }
+    const itemsForCalc = (order.items || []).map(i => ({
+      item_status: i.status,
+      item_started_at: i.item_started_at,
+      prep_time_minutes: i.prep_time_minutes
+    }));
+    map[order.id] = computeLiveSecondsLeft(itemsForCalc, new Date());
   });
   return map;
 }
@@ -152,6 +234,7 @@ export default function CustomerOrderPage() {
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [orderPlacedMsg, setOrderPlacedMsg] = useState(null);
   const [cartError, setCartError]           = useState(null);
+  const [editingNoteFor, setEditingNoteFor] = useState(null);
   const cartPendingUpdates = useRef({});
 
   // Track previous item statuses to detect → ready
@@ -162,7 +245,45 @@ export default function CustomerOrderPage() {
     sessionRef.current = session;
   }, [session]);
 
+  const sessionId = typeof window !== 'undefined' ? localStorage.getItem('sessionId') : null;
+
+  const { data: sessionData, error: sessionErr, mutate: mutateSession } = useSWR(
+    sessionId ? ['session-details', sessionId] : null,
+    ([, sid]) => getSessionDetailsAction(sid),
+    { refreshInterval: 10000 }
+  );
+
+  const { data: qStatusData, mutate: mutateQueue } = useSWR(
+    sessionId ? ['queue-status', sessionId] : null,
+    ([, sid]) => getQueueStatusAction(sid),
+    { refreshInterval: 10000 }
+  );
+
+  const { data: cartData, mutate: mutateCart } = useSWR(
+    sessionId ? ['cart-items', sessionId] : null,
+    ([, sid]) => getCartItemsAction(sid)
+  );
+
+  useEffect(() => {
+    if (sessionData) setSession(sessionData);
+  }, [sessionData]);
+
+  useEffect(() => {
+    if (qStatusData) setQueueStatus(qStatusData);
+  }, [qStatusData]);
+
+  useEffect(() => {
+    if (cartData) setCartItems(cartData);
+  }, [cartData]);
+
+  useEffect(() => {
+    if (sessionErr) setError(sessionErr.message || 'Failed to load order details.');
+  }, [sessionErr]);
+
   const closeConfirm = () => setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+  const handleDismissToast = useCallback(() => {
+    setReadyToast(null);
+  }, []);
 
   // Clock ticker (for overall wait time display and temporary unlock checking)
   useEffect(() => {
@@ -172,13 +293,14 @@ export default function CustomerOrderPage() {
 
   // Per-item countdown timers
   const itemTimers = useItemTimers(session);
+  // Per-order live wait countdown
+  const orderWaitTimers = useOrderWaitTimers(session);
 
   const loadCart = async (sessionId) => {
     if (!sessionId) return;
     setIsCartLoading(true);
     try {
-      const items = await getCartItemsAction(sessionId);
-      setCartItems(items || []);
+      await mutateCart();
     } catch (err) {
       console.error('[CART] Failed to load cart:', err);
     } finally {
@@ -186,20 +308,23 @@ export default function CustomerOrderPage() {
     }
   };
 
-  const updateCartItemQty = async (menuItemId, newQty) => {
+  const updateCartItemQty = async (menuItemId, newQty, notes = undefined) => {
     const sessionId = localStorage.getItem('sessionId');
     if (!sessionId) return;
     setCartError(null);
     setCartItems(prev => {
       if (newQty <= 0) return prev.filter(ci => ci.menu_item_id !== menuItemId);
-      return prev.map(ci => ci.menu_item_id === menuItemId ? { ...ci, quantity: newQty } : ci);
+      return prev.map(ci => ci.menu_item_id === menuItemId ? { ...ci, quantity: newQty, notes: notes !== undefined ? notes : ci.notes } : ci);
     });
     cartPendingUpdates.current[menuItemId] = true;
     try {
-      await updateCartItemAction(sessionId, menuItemId, newQty);
+      const existingCartItem = cartItems.find(ci => ci.menu_item_id === menuItemId);
+      const finalNotes = notes !== undefined ? notes : existingCartItem?.notes;
+      await updateCartItemAction(sessionId, menuItemId, newQty, finalNotes);
+      await mutateCart();
     } catch (err) {
       setCartError(err.message || 'Failed to update cart item.');
-      await loadCart(sessionId);
+      await mutateCart();
     } finally {
       cartPendingUpdates.current[menuItemId] = false;
     }
@@ -222,8 +347,9 @@ export default function CustomerOrderPage() {
         try {
           await submitSharedOrderAction(sessionId);
           setCartItems([]);
-          setOrderPlacedMsg('Order sent to the kitchen! 🎉');
+          setOrderPlacedMsg('Order sent to the kitchen! ');
           setTimeout(() => setOrderPlacedMsg(null), 6000);
+          await Promise.all([mutateCart(), mutateSession(), mutateQueue()]);
           loadSession(devRole);
         } catch (err) {
           setCartError(err.message || 'Failed to place order. Please try again.');
@@ -245,35 +371,26 @@ export default function CustomerOrderPage() {
     const ordersChannel = supabase
       .channel(`customer_orders_realtime_${localSessionId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `session_id=eq.${localSessionId}` },
-        () => loadSession(role))
+        () => mutateSession())
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'table_sessions', filter: `id=eq.${localSessionId}` },
         (payload) => {
           if (!payload.new) return;
           const s = payload.new.status;
-          if (s === 'open' || s === 'locked' || s === 'completed') { window.location.reload(); }
+          const currentStatus = sessionRef.current?.status;
+          if (s !== currentStatus && (s === 'open' || s === 'locked' || s === 'completed')) { window.location.reload(); }
           else if (s === 'cleared') {
             localStorage.removeItem('sessionId');
             localStorage.removeItem('tableNumber');
             localStorage.removeItem('dev-role');
             window.location.href = `/table/${tableNumber}`;
-          } else { loadSession(role); }
+          } else { mutateSession(); }
         })
       .subscribe();
 
     const cartChannel = supabase
       .channel(`order_page_cart_${localSessionId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'cart_items', filter: `session_id=eq.${localSessionId}` },
-        (payload) => {
-          const itemId = payload.new?.menu_item_id || payload.old?.menu_item_id;
-          if (itemId && cartPendingUpdates.current[itemId]) return;
-          if (payload.eventType === 'UPDATE') {
-            setCartItems(prev => prev.map(ci => ci.menu_item_id === payload.new.menu_item_id ? { ...ci, quantity: payload.new.quantity } : ci));
-          } else if (payload.eventType === 'DELETE') {
-            setCartItems(prev => prev.filter(ci => ci.menu_item_id !== payload.old?.menu_item_id));
-          } else if (payload.eventType === 'INSERT') {
-            loadCart(localSessionId);
-          }
-        })
+        () => mutateCart())
       .subscribe();
 
     // order_items realtime — detect item → ready or preparing to show toast
@@ -305,7 +422,7 @@ export default function CustomerOrderPage() {
           if (payload.new?.id) {
             prevItemStatuses.current[payload.new.id] = newStatus;
           }
-          loadSession(role);
+          mutateSession();
         })
       .subscribe();
 
@@ -357,10 +474,7 @@ export default function CustomerOrderPage() {
         if (localSessionId !== activeSession.id) { setAccessDenied(true); setLoading(false); return; }
       }
 
-      const details = await getSessionDetailsAction(activeSession.id);
-      setSession(details);
-      const qStatus = await getQueueStatusAction(activeSession.id);
-      setQueueStatus(qStatus);
+      await Promise.all([mutateSession(), mutateQueue()]);
     } catch (err) {
       setError('Failed to load order details.');
     } finally {
@@ -392,11 +506,54 @@ export default function CustomerOrderPage() {
 
   // ── Loading / error states ──
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--accent)]" />
-        <p className="mt-4 text-[var(--text-secondary)] font-medium">Loading orders…</p>
-      </div>
+    <div className="min-h-screen bg-[var(--background)] text-[var(--text-primary)] flex flex-col md:flex-row relative">
+      <AdminNavBar title="Order View" subtitle={`Table ${tableNumber} active session`} />
+
+      <main className="flex-1 p-6 md:p-10 md:overflow-y-auto space-y-8 max-w-5xl mx-auto w-full animate-pulse">
+        {/* Header Skeleton */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pb-4 border-b border-border">
+          <div className="space-y-2">
+            <div className="h-8 w-64 bg-border/60 rounded-lg"></div>
+            <div className="h-4 w-40 bg-border/40 rounded-lg"></div>
+          </div>
+        </div>
+
+        {/* Two-column layout Skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column: Orders list skeleton */}
+          <div className="lg:col-span-2 space-y-6">
+            {[1, 2].map((i) => (
+              <div key={i} className="card bg-surface border border-border rounded-2xl p-6 space-y-4">
+                <div className="flex justify-between items-center pb-3 border-b border-border/40">
+                  <div className="h-5 w-24 bg-border/60 rounded-lg"></div>
+                  <div className="h-5 w-32 bg-border/60 rounded-full"></div>
+                </div>
+                <div className="space-y-3 pt-2">
+                  {[1, 2].map((j) => (
+                    <div key={j} className="h-14 bg-border/40 rounded-xl"></div>
+                  ))}
+                </div>
+                <div className="flex justify-between items-center pt-3 border-t border-border/40">
+                  <div className="h-4 w-20 bg-border/40 rounded-lg"></div>
+                  <div className="h-5 w-24 bg-border/60 rounded-lg"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Right Column: Session Summary skeleton */}
+          <div className="space-y-6">
+            <div className="card bg-surface border border-border p-6 rounded-2xl shadow-xl space-y-4">
+              <div className="h-4 w-32 bg-border/60 rounded-lg"></div>
+              <div className="flex justify-between items-center py-2">
+                <div className="h-5 w-28 bg-border/40 rounded-lg"></div>
+                <div className="h-7 w-20 bg-border/60 rounded-lg"></div>
+              </div>
+              <div className="h-11 bg-border/60 rounded-xl"></div>
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
   );
 
@@ -414,7 +571,7 @@ export default function CustomerOrderPage() {
   if (error) return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-background">
       <div className="card max-w-md w-full bg-surface border border-border p-8 rounded-2xl shadow-xl text-center space-y-4">
-        <span className="text-3xl">⚠️</span>
+        <span className="text-3xl">️</span>
         <h2 className="text-lg font-bold text-[var(--text-primary)]">Error</h2>
         <p className="text-sm text-[var(--text-secondary)] font-semibold">{error}</p>
         <Link href="/menu" className="btn btn-primary btn-premium px-4 py-2 text-xs font-bold rounded-xl">Go to Menu</Link>
@@ -432,7 +589,7 @@ export default function CustomerOrderPage() {
   const statusDisplay = isUnlocked ? 'TEMPORARILY UNLOCKED' : session?.status;
 
   return (
-    <div className="min-h-screen bg-[var(--background)] text-[var(--text-primary)] flex flex-col md:flex-row">
+    <div className="min-h-screen bg-[var(--background)] text-[var(--text-primary)] flex flex-col md:flex-row relative">
       <AdminNavBar title="Order View" subtitle={`Table ${tableNumber} active session`} />
 
       <main className="flex-1 p-6 md:p-10 md:overflow-y-auto space-y-8 max-w-5xl mx-auto w-full">
@@ -450,12 +607,14 @@ export default function CustomerOrderPage() {
               PIN: <span className="font-sans font-bold text-[var(--accent)]">{session.pin}</span> · Status: <span className={isUnlocked ? 'text-success font-bold' : ''}>{statusDisplay}</span>
             </p>
           </div>
-          <button
-            onClick={() => { loadSession(devRole); loadCart(localStorage.getItem('sessionId')); }}
-            className="btn btn-ghost bg-background border-border hover:bg-surface flex items-center gap-2 rounded-xl text-xs font-bold cursor-pointer h-10 px-4"
-          >
-            <RefreshCw size={14} /> Refresh
-          </button>
+          {devRole !== 'customer' && (
+            <button
+              onClick={() => { loadSession(devRole); loadCart(localStorage.getItem('sessionId')); }}
+              className="btn btn-ghost bg-background border-border hover:bg-surface flex items-center gap-2 rounded-xl text-xs font-bold cursor-pointer h-10 px-4"
+            >
+              <RefreshCw size={14} /> Refresh
+            </button>
+          )}
         </div>
 
 
@@ -464,21 +623,21 @@ export default function CustomerOrderPage() {
         {(() => {
           const activeOrders = session.orders?.filter(o => ['placed', 'preparing', 'ready'].includes(o.status)) || [];
           const allSessionItems = activeOrders.flatMap(o => o.items || []);
-          const totalItems = allSessionItems.length;
+          const nonCancelledItems = allSessionItems.filter(i => i.status !== 'cancelled');
+          const totalItems = nonCancelledItems.length;
           if (totalItems === 0) return null;
 
-          const readyItems = allSessionItems.filter(i => i.status === 'ready').length;
-          const progressPercentage = Math.round((readyItems / totalItems) * 100);
+          const completedItems = nonCancelledItems.filter(i => i.status === 'ready' || i.status === 'served').length;
+          const progressPercentage = Math.round((completedItems / totalItems) * 100);
 
           // Calculate our items' max remaining prep time
           let ourMaxSecsRemaining = 0;
-          allSessionItems.forEach(item => {
-            if (item.status === 'ready') return;
+          nonCancelledItems.forEach(item => {
+            if (item.status === 'ready' || item.status === 'served') return;
             if (item.status === 'preparing') {
               const left = itemTimers[item.id] ?? (item.prep_time_minutes * 60);
               if (left > ourMaxSecsRemaining) ourMaxSecsRemaining = left;
-            } else {
-              // pending
+            } else if (item.status === 'pending') {
               const left = (item.prep_time_minutes || 15) * 60;
               if (left > ourMaxSecsRemaining) ourMaxSecsRemaining = left;
             }
@@ -487,7 +646,7 @@ export default function CustomerOrderPage() {
           const ourMaxMins = Math.ceil(ourMaxSecsRemaining / 60);
           
           // Total dynamic wait: our time + (orders ahead * 5 minutes)
-          const hasActiveItems = allSessionItems.some(i => i.status !== 'ready');
+          const hasActiveItems = nonCancelledItems.some(i => ['pending', 'preparing'].includes(i.status));
           const dynamicWaitMin = hasActiveItems 
             ? Math.max(10, ourMaxMins + (queueStatus.ordersAhead * 5))
             : 0;
@@ -540,7 +699,7 @@ export default function CustomerOrderPage() {
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                   <h2 className="text-base font-bold text-[var(--text-primary)] flex items-center justify-center sm:justify-start gap-2">
                     <Clock size={16} className={`text-[var(--accent)] ${!isFullyPrepared ? 'animate-pulse' : ''}`} />
-                    {isFullyPrepared ? 'All Items Prepared! 🎉' : 'Your Order Progress'}
+                    {isFullyPrepared ? 'All Items Prepared! ' : 'Your Order Progress'}
                   </h2>
                   {!isFullyPrepared && (
                     <span className="inline-flex self-center items-center rounded-full px-2 py-0.5 text-[9px] font-medium bg-warning/10 text-warning border border-warning/20">
@@ -563,11 +722,11 @@ export default function CustomerOrderPage() {
 
                   <div className="space-y-1 text-xs text-[var(--text-secondary)] font-medium">
                     {isFullyPrepared ? (
-                      <p>🍽️ All ordered items are ready. Please collect or wait for service.</p>
+                      <p>️ All ordered items are ready. Please collect or wait for service.</p>
                     ) : (
                       <>
                         <p className="flex items-center justify-center sm:justify-start gap-1">
-                          <span>📋</span>
+                          <span></span>
                           {queueStatus.ordersAhead === 0 ? (
                             <span>Your order is next in the kitchen queue!</span>
                           ) : (
@@ -597,12 +756,12 @@ export default function CustomerOrderPage() {
                 <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--text-primary)]">Shared Cart</h2>
               </div>
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[var(--accent)]/10 text-[var(--accent)] border border-[var(--accent)]/20">
-                ⚡ Real-time · All devices
+                 Real-time · All devices
               </span>
             </div>
             {cartError && (
               <div className="flex items-center gap-2 text-destructive text-xs font-semibold p-3 bg-destructive-bg rounded-lg border border-destructive-border/50">
-                <span>⚠️</span><span>{cartError}</span>
+                <span>️</span><span>{cartError}</span>
               </div>
             )}
             {orderPlacedMsg && (
@@ -619,8 +778,8 @@ export default function CustomerOrderPage() {
               <div className="text-center py-8 space-y-3">
                 <ShoppingCart size={28} className="mx-auto text-[var(--text-secondary)]" />
                 <p className="text-sm font-semibold text-[var(--text-secondary)]">Cart is empty</p>
-                <Link href="/menu" className="inline-block btn bg-background border border-border hover:bg-surface text-xs px-5 py-2 rounded-xl font-bold text-[var(--text-primary)]">
-                  Browse Menu →
+                <Link href="/menu" className="inline-block btn btn-primary btn-premium text-xs px-5 py-2.5 rounded-xl font-bold">
+                  Add more items
                 </Link>
               </div>
             ) : (
@@ -629,17 +788,53 @@ export default function CustomerOrderPage() {
                   {cartItems.map(ci => (
                     <div key={ci.menu_item_id} className="flex items-center gap-3">
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-[var(--text-primary)] truncate">{ci.menu_items?.name || 'Item'}</p>
+                        <p className="text-sm font-semibold text-[var(--text-primary)] break-words whitespace-normal">{ci.menu_items?.name || 'Item'}</p>
                         <p className="text-xs text-[var(--text-muted)] font-mono">{formatCurrency(ci.menu_items?.price || 0)} each</p>
+                        {editingNoteFor === ci.menu_item_id ? (
+                          <div className="mt-1 flex items-center gap-2">
+                            <input
+                              type="text"
+                              autoFocus
+                              placeholder="Add a note..."
+                              defaultValue={ci.notes || ''}
+                              onBlur={(e) => {
+                                setEditingNoteFor(null);
+                                if (e.target.value !== (ci.notes || '')) {
+                                  updateCartItemQty(ci.menu_item_id, ci.quantity, e.target.value.substring(0, 100));
+                                }
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') e.target.blur();
+                              }}
+                              className="flex-1 bg-background border border-border rounded-lg px-2 py-1 text-[10px] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
+                            />
+                          </div>
+                        ) : (
+                          <div className="mt-0.5">
+                            {ci.notes ? (
+                              <button onClick={() => setEditingNoteFor(ci.menu_item_id)} className="text-[10px] text-[var(--accent)] text-left hover:underline break-words whitespace-normal inline-block cursor-pointer border-0 bg-transparent p-0">
+                                Note: {ci.notes}
+                              </button>
+                            ) : (
+                              <button onClick={() => setEditingNoteFor(ci.menu_item_id)} className="text-[10px] text-[var(--text-muted)] hover:text-[var(--text-primary)] underline decoration-dotted underline-offset-2 cursor-pointer border-0 bg-transparent p-0">
+                                + Add note
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <button onClick={() => updateCartItemQty(ci.menu_item_id, ci.quantity - 1)}
-                          className="w-7 h-7 rounded-lg bg-background hover:bg-surface-raised border border-border flex items-center justify-center text-[var(--text-primary)] transition-all cursor-pointer">
+                      <div className="flex items-center gap-0 bg-[var(--background)] border border-border rounded-xl overflow-hidden shadow-inner shrink-0">
+                        <button
+                          onClick={() => updateCartItemQty(ci.menu_item_id, ci.quantity - 1)}
+                          className="w-8 h-8 flex items-center justify-center text-[var(--text-secondary)] hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer active:scale-90"
+                        >
                           {ci.quantity === 1 ? <Trash2 size={11} className="text-red-400" /> : <Minus size={11} />}
                         </button>
-                        <span className="w-8 text-center text-sm font-bold text-[var(--text-primary)]">{ci.quantity}</span>
-                        <button onClick={() => updateCartItemQty(ci.menu_item_id, ci.quantity + 1)}
-                          className="w-7 h-7 rounded-lg bg-background hover:bg-surface-raised border border-border flex items-center justify-center text-[var(--text-primary)] transition-all cursor-pointer">
+                        <span className="w-8 text-center text-sm font-bold text-[var(--text-primary)] tabular-nums">{ci.quantity}</span>
+                        <button
+                          onClick={() => updateCartItemQty(ci.menu_item_id, ci.quantity + 1)}
+                          className="w-8 h-8 flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--accent)] hover:bg-[var(--accent)]/10 transition-all cursor-pointer active:scale-90"
+                        >
                           <Plus size={11} />
                         </button>
                       </div>
@@ -680,19 +875,35 @@ export default function CustomerOrderPage() {
                     {/* Order header */}
                     <div className="flex items-start justify-between px-5 py-4 border-b border-border/60">
                       <div>
-                        <h3 className="text-sm font-bold text-[var(--text-primary)]">Order #{idx + 1}</h3>
+                        <h3 className="text-sm font-bold text-[var(--text-primary)]">Order #{session.orders.length - idx}</h3>
                         <p className="text-[10px] text-[var(--text-muted)] mt-0.5 font-mono">
                           ID: {order.id.substring(0, 8)} · Placed {timeAgo(order.created_at, currentTime)}
                         </p>
                       </div>
                       {(() => {
                         let bc = 'bg-gray-700 text-gray-200';
-                        if (order.status === 'placed')    bc = 'bg-yellow-900/60 border border-yellow-800 text-yellow-200';
-                        if (order.status === 'preparing') bc = 'bg-orange-950/60 border border-orange-800 text-orange-300';
-                        if (order.status === 'ready')     bc = 'bg-blue-950/60 border border-blue-800 text-blue-300';
-                        if (order.status === 'delivered') bc = 'bg-green-950/60 border border-green-800 text-green-300';
-                        if (order.status === 'cancelled') bc = 'bg-red-950/60 border border-red-800 text-red-300';
-                        return <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${bc}`}>{order.status}</span>;
+                        let labelText = order.status;
+                        if (order.status === 'placed') {
+                          bc = 'bg-yellow-900/60 border border-yellow-800 text-yellow-200';
+                          labelText = 'Order Received';
+                        }
+                        if (order.status === 'preparing') {
+                          bc = 'bg-orange-950/60 border border-orange-800 text-orange-300';
+                          labelText = 'Preparing in Kitchen';
+                        }
+                        if (order.status === 'ready') {
+                          bc = 'bg-blue-950/60 border border-blue-800 text-blue-300';
+                          labelText = 'Ready for Pickup';
+                        }
+                        if (order.status === 'delivered') {
+                          bc = 'bg-green-950/60 border border-green-800 text-green-300';
+                          labelText = 'Served & Enjoy!';
+                        }
+                        if (order.status === 'cancelled') {
+                          bc = 'bg-red-950/60 border border-red-800 text-red-300';
+                          labelText = 'Cancelled';
+                        }
+                        return <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${bc}`}>{labelText}</span>;
                       })()}
                     </div>
 
@@ -708,77 +919,134 @@ export default function CustomerOrderPage() {
                     {/* ── Items — scrollable box ── */}
                     <div className="px-5 pt-3 pb-1">
                       <div className="max-h-64 overflow-y-auto space-y-2 pr-1 scrollbar-thin">
-                        {order.items?.map((item) => {
-                          const statusMeta  = getItemStatusMeta(item.status);
-                          const isReady     = item.status === 'ready';
-                          const isPreparing = item.status === 'preparing';
-                          const secsLeft    = itemTimers[item.id] ?? null;
-                          const timeLabel   = isPreparing ? formatMinsLeft(secsLeft) : null;
+                        {(() => {
+                          const grouped = [];
+                          (order.items || []).forEach(item => {
+                            const existing = grouped.find(g => g.name === item.name && g.status === item.status && g.notes === item.notes);
+                            if (existing) {
+                              existing.quantity += item.quantity;
+                              existing.subtotal += item.subtotal;
+                            } else {
+                              grouped.push({ ...item });
+                            }
+                          });
+                          return grouped.map((item) => {
+                            const statusMeta  = getItemStatusMeta(item.status);
+                            const isReady     = item.status === 'ready';
+                            const isPreparing = item.status === 'preparing';
+                            const secsLeft    = itemTimers[item.id] ?? null;
+                            const timeLabel   = isPreparing ? formatMinsLeft(secsLeft) : null;
 
-                          return (
-                            <div
-                              key={item.id || item.name}
-                              className={`rounded-xl border p-3 transition-all ${
-                                isReady
-                                  ? 'bg-success/5 border-success/20 opacity-80'
-                                  : isPreparing
-                                  ? 'bg-warning/5 border-warning/20'
-                                  : 'bg-[var(--surface-raised)] border-border'
-                              }`}
-                            >
-                              <div className="flex items-center justify-between gap-3">
-                                <div className="flex items-center gap-2 min-w-0">
-                                  {/* Status icon */}
-                                  {isReady ? (
-                                    <CheckCircle2 size={14} className="text-success shrink-0" />
-                                  ) : (
-                                    <span className={`w-2 h-2 rounded-full shrink-0 ${isPreparing ? 'bg-warning animate-pulse' : 'bg-[var(--text-secondary)]'}`} />
-                                  )}
-                                  <div className="min-w-0">
-                                    <p className={`text-sm font-semibold truncate ${isReady ? 'line-through text-[var(--text-secondary)]' : 'text-[var(--text-primary)]'}`}>
-                                      {item.name}
-                                      <span className="text-[var(--text-secondary)] font-normal ml-1.5">×{item.quantity}</span>
-                                    </p>
-                                    <p className="text-[10px] text-[var(--text-secondary)]">
-                                      {formatCurrency(item.price_at_order)} each
-                                    </p>
+                            return (
+                              <div
+                                key={item.id || item.name}
+                                className={`rounded-xl border p-3 transition-all ${
+                                  isReady
+                                    ? 'bg-success/5 border-success/20 opacity-80'
+                                    : isPreparing
+                                    ? 'bg-warning/5 border-warning/20'
+                                    : 'bg-[var(--surface-raised)] border-border'
+                                }`}
+                              >
+                                <div className="flex items-center justify-between gap-3">
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    {/* Status icon */}
+                                    {isReady ? (
+                                      <CheckCircle2 size={14} className="text-success shrink-0" />
+                                    ) : (
+                                      <span className={`w-2 h-2 rounded-full shrink-0 ${isPreparing ? 'bg-warning animate-pulse' : 'bg-[var(--text-secondary)]'}`} />
+                                    )}
+                                    <div className="min-w-0">
+                                      <p className={`text-sm font-semibold break-words whitespace-normal ${isReady ? 'line-through text-[var(--text-secondary)]' : 'text-[var(--text-primary)]'}`}>
+                                        {item.name}
+                                        <span className="text-[var(--text-secondary)] font-normal ml-1.5">×{item.quantity}</span>
+                                      </p>
+                                      {item.notes && (
+                                        <p className="text-[10px] italic text-[var(--text-secondary)] mt-0.5 break-words whitespace-normal">
+                                          Note: {item.notes}
+                                        </p>
+                                      )}
+                                      <p className="text-[10px] text-[var(--text-secondary)] mt-0.5">
+                                        {formatCurrency(item.price_at_order)} each
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="shrink-0 text-right">
+                                    <span className={`text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full border ${statusMeta.className}`}>
+                                      {statusMeta.label}
+                                    </span>
+                                    {/* Live countdown or prep time for customer */}
+                                    {item.status === 'pending' && item.prep_time_minutes && (
+                                      <p className="text-[10px] text-[var(--text-secondary)] font-mono mt-1 flex items-center justify-end gap-0.5">
+                                        <Clock size={9} /> Est: {item.prep_time_minutes}m
+                                      </p>
+                                    )}
+                                    {isPreparing && timeLabel && (
+                                      <p className="text-[10px] text-warning font-mono mt-1 flex items-center justify-end gap-0.5">
+                                        <Clock size={9} /> {timeLabel}
+                                      </p>
+                                    )}
                                   </div>
                                 </div>
-                                <div className="shrink-0 text-right">
-                                  <span className={`text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full border ${statusMeta.className}`}>
-                                    {statusMeta.label}
-                                  </span>
-                                  {/* Live countdown or prep time for customer */}
-                                  {item.status === 'pending' && item.prep_time_minutes && (
-                                    <p className="text-[10px] text-[var(--text-secondary)] font-mono mt-1 flex items-center justify-end gap-0.5">
-                                      <Clock size={9} /> Est: {item.prep_time_minutes}m
-                                    </p>
-                                  )}
-                                  {isPreparing && timeLabel && (
-                                    <p className="text-[10px] text-warning font-mono mt-1 flex items-center justify-end gap-0.5">
-                                      <Clock size={9} /> {timeLabel}
-                                    </p>
-                                  )}
+                                <div className="flex justify-between items-center mt-2 pt-1.5 border-t border-border/30 text-[10px] text-[var(--text-secondary)]">
+                                  <span>Line total</span>
+                                  <span className="font-mono">{formatCurrency(item.subtotal)}</span>
                                 </div>
                               </div>
-                              <div className="flex justify-between items-center mt-2 pt-1.5 border-t border-border/30 text-[10px] text-[var(--text-secondary)]">
-                                <span>Line total</span>
-                                <span className="font-mono">{formatCurrency(item.subtotal)}</span>
-                              </div>
-                            </div>
-                          );
-                        })}
+                            );
+                          });
+                        })()}
                       </div>
                     </div>
 
                     {/* Order footer */}
                     <div className="px-5 py-4 space-y-1">
-                      {order.status === 'preparing' && order.estimated_wait_minutes && (
-                        <div className="flex justify-between items-center text-xs font-semibold">
-                          <span className="text-[var(--text-secondary)]">Est. prep time</span>
-                          <span className="text-[var(--accent)] font-mono">{order.estimated_wait_minutes} mins</span>
-                        </div>
-                      )}
+                      {/* Live wait countdown */}
+                      {(() => {
+                        const isActive = order.status === 'placed' || order.status === 'preparing';
+                        if (!isActive) return null;
+
+                        const secsLeft = orderWaitTimers[order.id];
+                        const isPreparing = order.status === 'preparing';
+
+                        // Live label from real-time item data (when any item has started)
+                        const liveLabel = isPreparing
+                          ? formatWaitLabel(secsLeft, order.status)
+                          : null;
+
+                        // Fallback to stored initial estimate (when order is still 'placed')
+                        const staticLabel = !isPreparing
+                          ? formatStaticWaitLabel(order.estimated_wait_minutes)
+                          : null;
+
+                        const label = liveLabel || staticLabel;
+                        if (!label) return null;
+
+                        const isOverdue = isPreparing && secsLeft !== null && secsLeft <= 0;
+                        const isPulsing = isPreparing && secsLeft !== null && secsLeft > 0;
+
+                        return (
+                          <div className={`flex justify-between items-center text-xs font-semibold rounded-xl px-3 py-2 ${
+                            isOverdue
+                              ? 'bg-success/10 border border-success/30'
+                              : isPulsing
+                              ? 'bg-warning/8 border border-warning/20'
+                              : 'bg-surface border border-border'
+                          }`}>
+                            <span className={`flex items-center gap-1.5 ${
+                              isOverdue ? 'text-success' : isPulsing ? 'text-warning' : 'text-[var(--text-secondary)]'
+                            }`}>
+                              <Clock size={11} className={isPulsing ? 'animate-pulse' : ''} />
+                              {isPreparing ? 'Estimated time left' : 'Estimated wait'}
+                            </span>
+                            <span className={`font-mono font-bold ${
+                              isOverdue ? 'text-success' : isPulsing ? 'text-warning' : 'text-[var(--accent)]'
+                            }`}>
+                              {label}
+                            </span>
+                          </div>
+                        );
+                      })()}
                       <div className="flex justify-between items-center text-sm font-bold pt-1 border-t border-border/40">
                         <span className="text-[var(--text-secondary)]">Order Subtotal</span>
                         <span className="text-[var(--accent)] font-mono">{formatCurrency(order.total_price)}</span>
@@ -810,7 +1078,7 @@ export default function CustomerOrderPage() {
                 <button
                   onClick={handleEndOrdering}
                   disabled={isEndingSession || hasUnprocessed}
-                  className="btn w-full flex items-center justify-center gap-2 rounded-xl h-11 font-bold cursor-pointer bg-background border border-border hover:bg-surface text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="btn w-full flex items-center justify-center gap-2 rounded-xl h-11 font-bold cursor-pointer bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isEndingSession ? (
                     <><Loader2 className="animate-spin" size={16} /><span>Processing…</span></>
@@ -820,7 +1088,7 @@ export default function CustomerOrderPage() {
                 </button>
                 {hasUnprocessed ? (
                   <p className="text-center text-[10px] text-orange-400 mt-2 font-semibold animate-pulse">
-                    ⚠️ Please wait for all ordered items to be served before requesting the bill.
+                    ️ Please wait for all ordered items to be served before requesting the bill.
                   </p>
                 ) : (
                   <p className="text-center text-[10px] text-[var(--text-muted)] mt-2">
@@ -832,7 +1100,7 @@ export default function CustomerOrderPage() {
           })()}
           {session.status === 'locked' && (
             <div className="pt-3 border-t border-border/40 text-center">
-              <p className="text-xs text-[var(--text-muted)] font-medium">🔒 Session locked. You can still add more items.</p>
+              <p className="text-xs text-[var(--text-muted)] font-medium"> Session locked. You can still add more items.</p>
             </div>
           )}
         </div>
@@ -843,15 +1111,22 @@ export default function CustomerOrderPage() {
 
       {/* Customer ready toast — centered bottom */}
       {readyToast && (
-        <CustomerReadyToast item={readyToast} onDismiss={() => setReadyToast(null)} />
+        <CustomerReadyToast item={readyToast} onDismiss={handleDismissToast} />
       )}
 
       <style>{`
-        @keyframes slide-up {
+        @keyframes slide-up-mobile {
           from { opacity: 0; transform: translateX(-50%) translateY(16px); }
           to   { opacity: 1; transform: translateX(-50%) translateY(0); }
         }
-        .animate-slide-up { animation: slide-up 0.3s ease-out forwards; }
+        @keyframes slide-up-desktop {
+          from { opacity: 0; transform: translateY(16px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slide-up { animation: slide-up-mobile 0.3s ease-out forwards; }
+        @media (min-width: 768px) {
+          .animate-slide-up { animation: slide-up-desktop 0.3s ease-out forwards; }
+        }
       `}</style>
     </div>
   );

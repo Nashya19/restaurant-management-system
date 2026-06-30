@@ -743,15 +743,16 @@ export default function ScheduleCalendar({
               <div className="flex flex-wrap gap-2">
                 {admins.map((user) => {
                   const colors = getEmployeeColor(user.id, isDark);
+                  const initials = user.full_name ? user.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'U';
                   return (
                     <div
                       key={user.id}
                       draggable
                       onDragStart={(e) => handleEmployeeDragStart(e, user)}
                       style={{ backgroundColor: colors.bg, borderColor: colors.border, color: colors.text }}
-                      className="border hover:brightness-110 px-3.5 py-2 rounded-xl text-xs font-semibold cursor-grab active:cursor-grabbing select-none transition-all flex items-center gap-1.5"
+                      className="border hover:brightness-110 pl-1.5 pr-3.5 py-1.5 rounded-xl text-xs font-semibold cursor-grab active:cursor-grabbing select-none transition-all flex items-center gap-2"
                     >
-                      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: colors.border }} />
+                      <span className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black bg-white/20 select-none">{initials}</span>
                       {user.full_name}
                     </div>
                   );
@@ -768,15 +769,16 @@ export default function ScheduleCalendar({
               <div className="flex flex-wrap gap-2">
                 {staff.map((user) => {
                   const colors = getEmployeeColor(user.id, isDark);
+                  const initials = user.full_name ? user.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'U';
                   return (
                     <div
                       key={user.id}
                       draggable
                       onDragStart={(e) => handleEmployeeDragStart(e, user)}
                       style={{ backgroundColor: colors.bg, borderColor: colors.border, color: colors.text }}
-                      className="border hover:brightness-110 px-3.5 py-2 rounded-xl text-xs font-semibold cursor-grab active:cursor-grabbing select-none transition-all flex items-center gap-1.5"
+                      className="border hover:brightness-110 pl-1.5 pr-3.5 py-1.5 rounded-xl text-xs font-semibold cursor-grab active:cursor-grabbing select-none transition-all flex items-center gap-2"
                     >
-                      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: colors.border }} />
+                      <span className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black bg-white/20 select-none">{initials}</span>
                       {user.full_name}
                     </div>
                   );

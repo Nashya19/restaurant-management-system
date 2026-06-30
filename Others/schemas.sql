@@ -44,6 +44,7 @@ CREATE TABLE tables (
     table_number integer NOT NULL UNIQUE,
     capacity integer NOT NULL,
     qr_code_url text NOT NULL,
+    is_active boolean NOT NULL DEFAULT true,
     created_at timestamptz NOT NULL DEFAULT now()
 );
 
@@ -87,6 +88,7 @@ CREATE TABLE order_items (
     price_at_order numeric(10,2) NOT NULL CHECK (price_at_order >= 0),
     item_status text NOT NULL DEFAULT 'pending' CHECK (item_status IN ('pending', 'preparing', 'ready')),
     item_started_at timestamptz,
+    notes text,
     created_at timestamptz NOT NULL DEFAULT now()
 );
 
@@ -126,7 +128,23 @@ CREATE TABLE public.cart_items (
     session_id uuid NOT NULL REFERENCES public.table_sessions(id) ON DELETE CASCADE,
     menu_item_id uuid NOT NULL REFERENCES public.menu_items(id) ON DELETE CASCADE,
     quantity integer NOT NULL DEFAULT 1 CHECK (quantity > 0),
+    notes text,
     created_at timestamptz NOT NULL DEFAULT now(),
     
     CONSTRAINT cart_items_session_menu_item_unique UNIQUE (session_id, menu_item_id)
 );
+
+CREATE TABLE schedule_settings (
+    key text PRIMARY KEY,
+    value text NOT NULL,
+    updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE schedule_day_tags (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    date date NOT NULL UNIQUE,
+    tag_type text NOT NULL CHECK (tag_type IN ('holiday', 'end_early', 'open_late')),
+    description text,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+

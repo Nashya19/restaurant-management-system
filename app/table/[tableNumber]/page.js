@@ -105,7 +105,7 @@ export default function CustomerTablePage() {
   const handleContinue = async () => {
     const fullPin = pinDigits.join('');
     if (fullPin.length < 4) {
-      setMessage('⚠️ Please enter the complete 4-digit PIN.');
+      setMessage('️ Please enter the complete 4-digit PIN.');
       return;
     }
 
@@ -116,7 +116,7 @@ export default function CustomerTablePage() {
       const session = await validateSessionPin(tableNumber, fullPin);
 
       if (!session) {
-        setMessage('❌ Invalid PIN');
+        setMessage(' Invalid PIN');
         setPinDigits(['', '', '', '']);
         inputRefs[0].current.focus();
         setIsValidating(false);
@@ -138,19 +138,19 @@ export default function CustomerTablePage() {
       const isUnlocked = session.unlock_until && new Date(session.unlock_until) > new Date();
 
       if (session.status === 'locked' && !existingDevice && !isUnlocked) {
-        setMessage('🔒 This session is locked. New devices cannot join.');
+        setMessage(' This session is locked. New devices cannot join.');
         setIsValidating(false);
         return;
       }
 
       if (session.status === 'completed') {
-        setMessage('✅ This session has already been completed.');
+        setMessage(' This session has already been completed.');
         setIsValidating(false);
         return;
       }
 
       if (session.status === 'cleared') {
-        setMessage('🧹 This session has already been cleared.');
+        setMessage(' This session has already been cleared.');
         setIsValidating(false);
         return;
       }
@@ -171,7 +171,7 @@ export default function CustomerTablePage() {
       router.push('/menu');
     } catch (err) {
       console.error(err);
-      setMessage('⚠️ An error occurred. Please try again.');
+      setMessage('️ An error occurred. Please try again.');
       setIsValidating(false);
     }
   };
@@ -198,7 +198,7 @@ export default function CustomerTablePage() {
     return (
       <div className="min-h-screen flex items-center justify-center p-6 bg-background">
         <div className="card max-w-md w-full bg-surface border border-destructive-border bg-destructive-bg/30 p-8 rounded-2xl shadow-xl text-center space-y-4">
-          <span className="text-4xl">⚠️</span>
+          <span className="text-4xl">️</span>
           <h1 className="text-2xl font-bold text-destructive mt-4 mb-2">Table Not Found</h1>
           <p className="text-[var(--text-secondary)] text-sm font-semibold">
             Table {tableNumber} does not exist in the system. Please verify the URL or contact staff.
@@ -212,7 +212,7 @@ export default function CustomerTablePage() {
     return (
       <div className="min-h-screen flex items-center justify-center p-6 bg-background">
         <div className="card max-w-md w-full bg-surface border border-destructive-border bg-destructive-bg/30 p-8 rounded-2xl shadow-xl text-center space-y-4">
-          <span className="text-4xl">⚠️</span>
+          <span className="text-4xl">️</span>
           <h1 className="text-2xl font-bold text-destructive mt-4 mb-2">Table {tableNumber} Inactive</h1>
           <p className="text-[var(--text-secondary)] text-sm font-semibold">
             This table is currently out of service. Please contact a staff member for assistance.

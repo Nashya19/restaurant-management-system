@@ -47,6 +47,7 @@ Others/WhatsApp Image*.jpeg
 
 # Ignore generated documentation files
 *.txt
+!public/llms.txt
 *.tex
 promt.md
 /scratch

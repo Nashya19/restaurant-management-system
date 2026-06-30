@@ -724,7 +724,7 @@ export default function BillingPage() {
               {/* Filters panel */}
               <div className="bg-surface border border-border rounded-2xl p-6 space-y-4">
                 <h3 className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-2">
-                  🔍 Filter Records
+                   Filter Records
                 </h3>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   <div className="space-y-1.5">

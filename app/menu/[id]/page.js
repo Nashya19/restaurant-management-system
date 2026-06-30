@@ -34,6 +34,7 @@ import {
 } from '@/lib/api/menu';
 import { useFormState } from '@/lib/hooks/useFormState';
 import { validateMenuItemForm } from '@/lib/utils/validation';
+import { useAlertConfirm } from '@/lib/hooks/useAlertConfirm';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { UploadButton } from '@/lib/uploadthing';
 import '@uploadthing/react/styles.css';
@@ -43,6 +44,7 @@ export default function MenuItemDetailPage() {
   const params = useParams();
   const itemId = params.id;
   const isNewItem = itemId === 'new';
+  const { showAlert, AlertConfirmComponent } = useAlertConfirm();
 
   const [isLoading, setIsLoading] = useState(!isNewItem);
   const [categories, setCategories] = useState([]);
@@ -132,6 +134,7 @@ export default function MenuItemDetailPage() {
 
   return (
     <div className="w-full max-w-2xl mx-auto space-y-8 animate-fade-in">
+      {AlertConfirmComponent}
       {/* Back Button */}
       <div>
         <Link
@@ -160,7 +163,7 @@ export default function MenuItemDetailPage() {
         {/* Submit Error */}
         {errors.submit && (
           <div className="flex items-start gap-2 bg-destructive-bg border border-destructive-border text-destructive text-sm p-4 rounded-xl">
-            <span className="shrink-0 mt-0.5">⚠️</span>
+            <span className="shrink-0 mt-0.5">️</span>
             <span>{errors.submit}</span>
           </div>
         )}
@@ -291,7 +294,7 @@ export default function MenuItemDetailPage() {
                   }
                 }}
                 onUploadError={(error) => {
-                  alert(`Upload failed: ${error.message}`);
+                  showAlert(`Upload failed: ${error.message}`);
                 }}
                 appearance={{
                   button: "bg-[var(--accent)] hover:bg-[var(--accent)]/90 text-sm font-bold h-10 px-4 rounded-xl cursor-pointer shadow-md transition-colors text-white border-0",

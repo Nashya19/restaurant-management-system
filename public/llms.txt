@@ -1,0 +1,21 @@
+# Sauté - Restaurant Management System
+
+> Modern, AI-ready restaurant management platform.
+
+Sauté is a premium, real-time restaurant management system designed to streamline operations for modern dining establishments.
+
+## Core Capabilities
+
+- **Real-Time Kitchen Display System (KDS)**: Tracks active orders with intelligent wait-time estimation based on parallel kitchen capacity slots.
+- **Table Management**: Secure, PIN-protected session management with QR code ordering.
+- **Dynamic Menu**: Real-time inventory tracking, availability toggles, and rich categorization.
+- **Staff Operations**: Integrated shift management, role-based access control (Admin/Staff), and automated scheduling.
+- **Surplus Food Recovery**: Built-in module to list and sell end-of-day surplus items to reduce food waste.
+
+## Technical Architecture
+- Built on Next.js 14 (App Router)
+- Supabase (PostgreSQL) for real-time database subscriptions and row-level security.
+- Tailwind CSS for modern, dark-mode ready UI components.
+
+## Support and Contact
+For deployment inquiries, enterprise licensing, or API access, please contact the Sauté development team.
