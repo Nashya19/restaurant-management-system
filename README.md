@@ -44,6 +44,19 @@ This checklist tracks the assignment and completion of all system modules. Pleas
 
 ---
 
+## ✨ Additional Features & Enhancements
+
+Beyond the core 12 modules, the following quality-of-life and advanced features have been implemented:
+
+- **Advanced Parallel-Slot Wait Time Algorithm**: The SRS specified a naive wait time calculation (longest single item). The codebase implements a robust, dynamic algorithm (`lib/utils/wait-time.js`) that tracks overlapping parallel kitchen station slots, order queues, and calculates wait times based on available stove capacity.
+- **Client-Side Live Countdown Hooks**: Wait times are not just static numbers. Custom React hooks (`useOrderWaitTimers`) compute and tick down remaining wait times in real-time on the customer's device without requiring continuous server polling.
+- **Dynamic System Configuration**: Implemented a global `schedule_settings` database architecture to allow administrators to dynamically change system variables (like parallel kitchen slots and week-start days) without altering code.
+- **Progressive Web App (PWA) & Mobile Optimization**: Configured Web App Manifests and Apple Meta tags for native-like installable mobile experiences, alongside a responsive mobile-first UI (bottom tab bars on mobile, sidebars on desktop).
+- **Generative Engine Optimization (GEO)**: Implemented JSON-LD structured data and `llms.txt` standards to ensure the application is discoverable and parsable by modern AI search engines (ChatGPT, Perplexity).
+- **System-Wide Dark Mode & Micro-Interactions**: Full dark-mode theme switching and premium unified UI components (pill-shaped steppers, pulsing SVG indicators) that exceed the basic UI requirements of the SRS.
+
+---
+
 ## 💻 Getting Started
 
 First, ensure you have your `.env.local` configured with the Supabase credentials.
