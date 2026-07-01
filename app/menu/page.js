@@ -20,6 +20,25 @@ import CustomSelect from '@/components/ui/CustomSelect';
 import { createClient } from '@/lib/supabase/client';
 import { useHeartbeat } from '@/lib/hooks/useHeartbeat';
 
+/** Classic Indian veg/non-veg indicator icon */
+function VegTag({ isVeg }) {
+  if (isVeg === null || isVeg === undefined) return null;
+  return (
+    <span
+      title={isVeg ? 'Vegetarian' : 'Non-Vegetarian'}
+      className={`inline-flex items-center justify-center w-4 h-4 rounded-sm border-2 shrink-0 ${
+        isVeg ? 'border-green-500' : 'border-red-500'
+      }`}
+    >
+      <span
+        className={`w-2 h-2 rounded-full ${
+          isVeg ? 'bg-green-500' : 'bg-red-500'
+        }`}
+      />
+    </span>
+  );
+}
+
 function getItemImage(itemName = '', categoryName = '') {
   const name = itemName.toLowerCase();
   const cat = categoryName.toLowerCase();
@@ -53,6 +72,7 @@ export default function MenuPage() {
   const [error, setError] = useState(null);
   const [devRole, setDevRole] = useState('admin');
   const [hideArchived, setHideArchived] = useState(true);
+  const [vegOnly, setVegOnly] = useState(false);
 
   // Local selection state — user picks quantities, then clicks "Add to Cart"
   const [orderQuantities, setOrderQuantities] = useState({});
@@ -217,8 +237,9 @@ export default function MenuPage() {
       const q = searchQuery.toLowerCase();
       result = result.filter(item => item.name.toLowerCase().includes(q));
     }
+    if (vegOnly) result = result.filter(item => item.is_veg === true);
     setFilteredItems(result);
-  }, [selectedCategory, searchQuery, items, devRole, hideArchived]);
+  }, [selectedCategory, searchQuery, items, devRole, hideArchived, vegOnly]);
 
   const groupedItems = useMemo(() => {
     const groups = {};
@@ -424,7 +445,7 @@ export default function MenuPage() {
 
       {/* Filters Card */}
       <div className="card bg-surface border border-border p-6 rounded-2xl shadow-lg animate-fade-in">
-        <div className={`grid grid-cols-1 ${devRole !== 'customer' ? 'md:grid-cols-4' : 'md:grid-cols-3'} gap-6`}>
+        <div className={`grid grid-cols-1 ${devRole !== 'customer' ? 'md:grid-cols-5' : 'md:grid-cols-4'} gap-6`}>
           <div className="space-y-2">
             <label htmlFor="category" className="text-xs uppercase text-[var(--text-secondary)] font-bold tracking-wider block">
               Filter by Category
@@ -475,6 +496,44 @@ export default function MenuPage() {
               </button>
             </div>
           </div>
+
+          {/* Veg Only Slider */}
+          <div className="space-y-2">
+            <label className="text-xs uppercase text-[var(--text-secondary)] font-bold tracking-wider block">
+              Dietary
+            </label>
+            <button
+              type="button"
+              onClick={() => setVegOnly(v => !v)}
+              className={`flex items-center gap-2.5 h-10 px-3.5 rounded-xl border text-xs font-bold transition-all cursor-pointer select-none w-fit ${
+                vegOnly
+                  ? 'bg-green-900/30 border-green-600 text-green-400'
+                  : 'bg-background border-border text-[var(--text-secondary)]'
+              }`}
+            >
+              {/* Track */}
+              <span
+                className={`relative inline-flex items-center w-9 h-5 rounded-full transition-colors duration-300 shrink-0 ${
+                  vegOnly ? 'bg-green-500' : 'bg-[var(--text-muted)]/40'
+                }`}
+              >
+                {/* Thumb with veg dot icon */}
+                <span
+                  className={`absolute flex items-center justify-center w-4 h-4 rounded-full bg-white shadow transition-transform duration-300 ${
+                    vegOnly ? 'translate-x-[18px]' : 'translate-x-[2px]'
+                  }`}
+                >
+                  <span
+                    className={`w-2 h-2 rounded-full transition-colors duration-200 ${
+                      vegOnly ? 'bg-green-500' : 'bg-[var(--text-muted)]'
+                    }`}
+                  />
+                </span>
+              </span>
+              <span>Veg Only</span>
+            </button>
+          </div>
+
           {devRole !== 'customer' && (
             <div className="space-y-2">
               <label className="text-xs uppercase text-[var(--text-secondary)] font-bold tracking-wider block">
@@ -602,9 +661,12 @@ export default function MenuPage() {
                             <div className="p-4 flex-1 flex flex-col justify-between">
                               <div className="space-y-1">
                                 <div className="flex justify-between items-start gap-2">
-                                  <h4 className="font-bold text-sm text-[var(--text-primary)] leading-snug line-clamp-2">
-                                    {item.name}
-                                  </h4>
+                                  <div className="flex items-start gap-1.5 min-w-0">
+                                    <VegTag isVeg={item.is_veg} />
+                                    <h4 className="font-bold text-sm text-[var(--text-primary)] leading-snug line-clamp-2">
+                                      {item.name}
+                                    </h4>
+                                  </div>
                                   <span className="font-mono font-bold text-sm text-[var(--accent)] whitespace-nowrap">
                                     {formatCurrency(item.price)}
                                   </span>
@@ -738,11 +800,14 @@ export default function MenuPage() {
                               className={`hover:bg-background/20 transition-colors ${item.is_archived ? 'opacity-50' : ''} ${devRole === 'customer' && !item.is_available ? 'opacity-60 bg-background/50' : ''}`}
                             >
                               <td className={`px-6 py-4 text-sm font-semibold ${item.is_archived ? 'line-through text-[var(--text-muted)]' : 'text-[var(--text-primary)]'}`}>
-                                <div>
-                                  <span>{item.name}</span>
-                                  {devRole === 'customer' && !item.is_available && (
-                                    <span className="block text-[10px] text-red-500 font-bold uppercase mt-0.5 tracking-wider">Unavailable Today</span>
-                                  )}
+                                <div className="flex items-center gap-2">
+                                  <VegTag isVeg={item.is_veg} />
+                                  <div>
+                                    <span>{item.name}</span>
+                                    {devRole === 'customer' && !item.is_available && (
+                                      <span className="block text-[10px] text-red-500 font-bold uppercase mt-0.5 tracking-wider">Unavailable Today</span>
+                                    )}
+                                  </div>
                                 </div>
                               </td>
                               <td className="px-6 py-4 font-mono text-sm font-semibold text-[var(--accent)]">

@@ -49,6 +49,7 @@ export default function MenuItemDetailPage() {
   const [isLoading, setIsLoading] = useState(!isNewItem);
   const [categories, setCategories] = useState([]);
   const [imageUrl, setImageUrl] = useState('');
+  const [isVeg, setIsVeg] = useState(false);
 
   const {
     formData,
@@ -74,6 +75,7 @@ export default function MenuItemDetailPage() {
           price: data.price,
           prepTime: data.prepTime,
           imageUrl: imageUrl || null,
+          isVeg,
         });
       } else {
         await updateMenuItem(itemId, {
@@ -84,6 +86,7 @@ export default function MenuItemDetailPage() {
           isAvailable: true, // Keep unchanged
           isArchived: false, // Keep unchanged
           imageUrl: imageUrl || null,
+          isVeg,
         });
       }
     },
@@ -109,6 +112,7 @@ export default function MenuItemDetailPage() {
           setFieldValue('price', item.price.toString());
           setFieldValue('prepTime', item.prep_time_minutes.toString());
           setImageUrl(item.image_url || '');
+          setIsVeg(item.is_veg ?? false);
         }
       } catch (err) {
         setFieldError('submit', err.message);
@@ -264,6 +268,46 @@ export default function MenuItemDetailPage() {
           )}
           <p className="text-xs text-[var(--text-muted)] mt-1 font-semibold">
             Estimate how long this item takes to prepare (1 min - 24 hours)
+          </p>
+        </div>
+
+        {/* Veg / Non-Veg Toggle */}
+        <div className="space-y-1.5">
+          <label className="text-xs uppercase text-[var(--text-secondary)] font-bold tracking-wider block">
+            Dietary Type
+          </label>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setIsVeg(true)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-bold transition-all cursor-pointer ${
+                isVeg
+                  ? 'bg-green-900/40 border-green-600 text-green-400 shadow-sm shadow-green-900/30'
+                  : 'bg-background border-border text-[var(--text-secondary)] hover:border-green-700'
+              }`}
+            >
+              <span className="w-3.5 h-3.5 rounded border-2 border-green-500 flex items-center justify-center shrink-0">
+                {isVeg && <span className="w-1.5 h-1.5 rounded-full bg-green-500 block" />}
+              </span>
+              Vegetarian
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsVeg(false)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-bold transition-all cursor-pointer ${
+                !isVeg
+                  ? 'bg-red-900/40 border-red-600 text-red-400 shadow-sm shadow-red-900/30'
+                  : 'bg-background border-border text-[var(--text-secondary)] hover:border-red-700'
+              }`}
+            >
+              <span className="w-3.5 h-3.5 rounded border-2 border-red-500 flex items-center justify-center shrink-0">
+                {!isVeg && <span className="w-1.5 h-1.5 rounded-full bg-red-500 block" />}
+              </span>
+              Non-Vegetarian
+            </button>
+          </div>
+          <p className="text-xs text-[var(--text-muted)] font-semibold mt-1">
+            Customers will see a veg/non-veg indicator on the menu.
           </p>
         </div>
 

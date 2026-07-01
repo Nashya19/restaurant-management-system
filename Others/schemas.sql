@@ -34,6 +34,7 @@ CREATE TABLE menu_items (
     category_id uuid NOT NULL REFERENCES categories(id) ON DELETE RESTRICT,
     is_available boolean NOT NULL DEFAULT true,
     is_archived boolean NOT NULL DEFAULT false,
+    is_veg boolean NOT NULL DEFAULT false,
     prep_time_minutes integer NOT NULL DEFAULT 15,
     image_url text,
     created_at timestamptz NOT NULL DEFAULT now()
@@ -147,4 +148,4 @@ CREATE TABLE schedule_day_tags (
     description text,
     created_at timestamptz NOT NULL DEFAULT now()
 );
-
+
